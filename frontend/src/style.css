@@ -1,19 +1,29 @@
-/* --- Nền tảng & Font chữ (Lay tu theme "TeenTalker") --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Custom Styles (Ported) --- */
+
+/* Font */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
 body {
     font-family: 'Be Vietnam Pro', sans-serif;
-    background-color: #0A0A1A; /* Màu nền v1 */
-    color: #cbd5e1; /* slate-300 */
+    background-color: #0A0A1A;
+    color: #cbd5e1;
 }
 
-/* --- Hiệu ứng Gradient & Neon (Lay tu theme) --- */
+/* Gradient & Neon */
 .gradient-text {
-    background: linear-gradient(to right, #2563eb, #7c3aed); /* blue-600 to purple-600 */
+    background: linear-gradient(to right, #2563eb, #7c3aed);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
 }
 
 .gradient-bg {
-     background: linear-gradient(to right, #4f46e5, #a855f7); /* indigo-600 to purple-500 */
+     background: linear-gradient(to right, #4f46e5, #a855f7);
      transition: all 0.3s ease-in-out;
 }
 .gradient-bg:hover {
@@ -21,7 +31,7 @@ body {
     box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
 }
 
-/* --- Nền Aura (Lay tu theme) --- */
+/* Aura Background */
 .background-aura {
     position: fixed;
     top: 50%;
@@ -31,48 +41,48 @@ body {
     height: 800px;
     background: radial-gradient(circle, rgba(0, 255, 255, 0.05) 0%, rgba(168, 85, 247, 0.1) 50%, rgba(10, 10, 26, 0) 70%);
     z-index: -10;
+    pointer-events: none;
 }
 
-/* --- Thẻ (Card) (Dung cho Feature) --- */
+/* Cards */
 .feature-card {
     position: relative;
-    background-color: #1A1A2E; /* Màu card v1 */
-    border: 1px solid #1e293b; /* slate-800 */
+    background-color: #1A1A2E;
+    border: 1px solid #1e293b;
     transition: all 0.3s ease-in-out;
-    border-radius: 0.75rem; /* 12px */
+    border-radius: 0.75rem;
 }
 
 .feature-card:hover {
-    border-color: #4f46e5; /* indigo-600 */
+    border-color: #4f46e5;
     transform: translateY(-5px);
     box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
 }
 
-
-/* --- Style cho khung cau hoi va ket qua (Tu theme) --- */
+/* Question & Result Areas */
 #question-text {
     background-color: #0A0A1A !important; 
     border-color: #334155 !important;
-    color: #00FFFF !important; /* Mau cyan */
+    color: #00FFFF !important;
 }
 
 #transcript-text {
     background-color: #0A0A1A !important; 
     border-color: #334155 !important;
-    color: #E0E0FF !important; /* Mau tim nhat */
+    color: #E0E0FF !important;
 }
 
-/* --- Nút Ghi âm (Lay tu theme) --- */
+/* Record Button */
 #record-btn {
     transition: all 0.3s ease-in-out;
-    background-color: #DC2626; /* red-600 */
+    background-color: #DC2626;
 }
 
 #record-btn:hover {
-    background-color: #B91C1C; /* red-700 */
+    background-color: #B91C1C;
 }
 
-/* Hiệu ứng nhịp đập (pulse) */
+/* Pulse Animation */
 #record-btn.recording .pulse-ring {
     animation: pulse 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
 }
@@ -81,17 +91,16 @@ body {
     50% { box-shadow: 0 0 0 1rem rgba(239, 68, 68, 0); }
 }
 
-/* --- Vòng xoay Loading (Lay tu theme) --- */
+/* Loaders */
 .loader {
-    border: 4px solid #374151; /* Màu nền vòng xoay */
-    border-top: 4px solid #60a5fa; /* Màu xanh cho phần quay */
+    border: 4px solid #374151;
+    border-top: 4px solid #60a5fa;
     border-radius: 50%;
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
 }
 
-/* Loader nho hon (dung cho Topic) */
 .loader-small {
     border: 3px solid #374151;
     border-top: 3px solid #60a5fa;
@@ -106,17 +115,14 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* --- MA CSS CHO HIEU UNG CUON (Fade in on Scroll) --- */
-/* (Lay tu theme "TeenTalker") */
+/* Scroll Animations */
 .fade-in-on-scroll {
     opacity: 0;
     transform: translateY(20px); 
     transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-/* Trang thai khi da xuat hien (JS se them vao) */
 .fade-in-on-scroll.is-visible {
     opacity: 1;
     transform: translateY(0);
 }
-

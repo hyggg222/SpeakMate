@@ -5,34 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Speaking Coach</title>
     
-    <!-- Taiwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Phosphor Icons (cho cac icon) -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <!-- Font (Be Vietnam Pro) tu theme ban gui -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Link file CSS (tu theme ban gui) -->
-    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="antialiased overflow-x-hidden" style="background-color: #0A0A1A;">
     
-    <!-- Nen Aura (tu theme) -->
+    <!-- Nen Aura -->
     <div class="background-aura"></div>
 
-    <!-- 
-      --- HEADER (Dua theo theme "TeenTalker") --- 
-    -->
+    <!-- HEADER -->
     <header class="sticky top-0 z-40 border-b border-slate-800" style="background-color: rgba(10, 10, 26, 0.8); backdrop-filter: blur(10px);">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <a href="/" class="text-2xl font-bold gradient-text">AI Speaking Coach</a>
                 
-                <!-- Nút điều hướng (Navbar) -->
                 <nav class="flex items-center gap-4">
                     <a id="nav-link-home" href="#home-page" class="text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-800 transition-all duration-300">Trang chủ</a>
                     <a id="nav-link-practice" href="#app-section" class="gradient-bg text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">Luyện tập ngay</a>
@@ -41,12 +27,9 @@
         </div>
     </header>
 
-    <!-- 
-      --- SECTION 1: TRANG CHỦ (Hero Section) ---
-    -->
+    <!-- SECTION 1: HERO -->
     <main id="home-page" class="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         
-        <!-- Hero Section (Giới thiệu) -->
         <section id="hero-section" class="text-center fade-in-on-scroll" style="animation-delay: 100ms;">
             <h1 class="text-5xl md:text-7xl font-extrabold text-white leading-tight tracking-tight">
                 Trở thành người nói<br>tự tin với <span class="gradient-text">AI Coach</span>
@@ -59,7 +42,7 @@
             </a>
         </section>
 
-        <!-- Features Section (Giong 'TeenTalker') -->
+        <!-- Features Section -->
         <section id="features-section" class="mt-20 md:mt-32">
             <h2 class="text-4xl font-bold text-white text-center mb-12 fade-in-on-scroll" style="animation-delay: 300ms;">Tính năng chính</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -85,15 +68,12 @@
         </section>
     </main>
 
-    <!-- 
-      --- SECTION 2: PHAN UNG DUNG (San pham) ---
-      (Day la phan giao dien tu anh cua ban)
-    -->
+    <!-- SECTION 2: APP -->
     <section id="app-section" class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
         <div id="app-content" class="rounded-2xl shadow-2xl w-full max-w-3xl mx-auto flex flex-col" style="background-color: #1A1A2E; border: 1px solid #334155;">
             
-            <!-- 1. Header (Tieu de & Nut tao Topic) -->
+            <!-- Header -->
             <div class="p-5 border-b border-slate-700 flex justify-between items-center">
                 <h2 class="text-xl font-bold text-white">Luyện nói tự do</h2>
                 <button id="generate-topic-btn" class="gradient-bg text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-sm">
@@ -101,85 +81,78 @@
                 </button>
             </div>
             
-            <!-- 2. Than (Cau hoi & Ghi am) -->
+            <!-- Body -->
             <div class="p-6 md:p-8 flex-grow">
                 
-                <!-- Vung Chu de / Cau hoi -->
+                <!-- Topic Area -->
                 <div class="mb-6">
                     <p class="text-sm font-semibold text-slate-400 mb-2">Chủ đề gợi ý (hoặc nói bất cứ điều gì bạn muốn)</p>
-                    <!-- Loading cho Topic -->
                     <div id="topic-loading" class="hidden flex items-center gap-2 p-4 rounded-lg border min-h-[70px]" style="background-color: #0A0A1A; border-color: #334155;">
                         <div class="loader-small"></div>
                         <span class="text-slate-400 text-sm">Đang lấy chủ đề từ AI...</span>
                     </div>
-                    <!-- Cau hoi -->
                     <p id="question-text" class="text-lg font-semibold p-4 rounded-lg border min-h-[70px]" style="background-color: #0A0A1A; border-color: #334155; color: #00FFFF;">
                         Hãy giới thiệu về bản thân bạn trong 30 giây.
                     </p>
                 </div>
 
-                <!-- Vung Ghi am -->
+                <!-- Recording Area -->
                 <div class="text-center my-8">
                     <button id="record-btn" class="text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg transition-all duration-300 relative disabled:bg-slate-600 disabled:cursor-not-allowed" style="background-color: #E11D48;">
-                        <!-- Hieu ung (tu theme) -->
                         <div class="pulse-ring absolute w-full h-full rounded-full" style="background-color: #E11D48;"></div>
                         <div id="record-icon-container">
-                            <!-- Mic Icon (JS se them vao) -->
+                            <!-- Mic Icon -->
                         </div>
                     </button>
                     <p id="status-text" class="mt-4 text-slate-400 h-6 font-mono">Nhấn để bắt đầu ghi âm</p>
                 </div>
 
-                <!-- Vung Loading va Ket qua (tu theme) -->
+                <!-- Loading & Result -->
                 <div id="loading-area" class="hidden text-center py-4">
                     <div class="loader mx-auto"></div>
                     <p class="mt-4 text-slate-400 font-medium">AI đang lắng nghe và phân tích... (Việc này có thể mất 15-30 giây)</p>
                 </div>
                 
-                <!-- Vung Ket qua -->
                 <div id="result-area" class="hidden space-y-4">
-                    <!-- 1. Ban go (Transcript) -->
+                    <!-- Transcript -->
                     <div>
                         <h3 class="font-semibold text-white mb-2">AI phiên âm (Transcript):</h3>
                         <p id="transcript-text" class="border p-4 rounded-lg min-h-[50px] text-lg" style="background-color: #0A0A1A; border-color: #334155; color: #E0E0FF;"></p>
                     </div>
                     
-                    <!-- 2. Phat lai audio cua ban (Tu theme) -->
+                    <!-- Playback -->
                     <div id="playback-area" class="mt-4 pt-4 border-t border-slate-700">
                         <h3 class="font-semibold text-white mb-3">Nghe lại bài ghi âm của bạn:</h3>
                         <div class="flex items-center gap-4 p-3 rounded-lg" style="background-color: #0A0A1A;">
                             <button id="playback-btn" class="bg-cyan-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-cyan-500 transition-colors flex-shrink-0">
-                                <!-- Icon Play/Pause (JS se them vao) -->
                             </button>
                             <audio id="audio-player" class="hidden"></audio>
                             <p id="playback-status" class="text-sm text-slate-400">Nhấn để nghe lại</p>
                         </div>
                     </div>
 
-                    <!-- 3. Phan hoi cua AI (Text & Audio) -->
+                    <!-- Feedback -->
                     <div id="feedback-area" class="mt-4 pt-4 border-t border-slate-700 space-y-3">
                         <h3 class="font-semibold text-white">Phản hồi từ AI Trợ giảng:</h3>
                         
-                        <!-- Phan hoi (Text) -->
+                        <!-- Text -->
                         <div>
                             <span class="text-sm text-slate-400">Gợi ý của AI (Text):</span>
                             <p id="feedback-text" class="p-3 rounded-lg text-slate-300" style="background-color: #0A0A1A;"></p>
                         </div>
 
-                        <!-- Phan hoi (Audio) -->
+                        <!-- Audio -->
                         <div id="feedback-audio-area" class="hidden">
                             <span class="text-sm text-slate-400">Gợi ý của AI (Audio):</span>
                             <div class="flex items-center gap-4 p-3 rounded-lg" style="background-color: #0A0A1A;">
                                 <button id="feedback-audio-btn" class="bg-indigo-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-indigo-500 transition-colors flex-shrink-0">
-                                    <!-- Icon Play/Pause (JS se them vao) -->
                                 </button>
-                                <!-- Audio player cho AI TTS -->
                                 <audio id="feedback-audio-player" class="hidden"></audio>
                                 <p id="feedback-audio-status" class="text-sm text-slate-400">Nhấn để nghe phản hồi</p>
                             </div>
                         </div>
 
-                        <!-- Thong bao loi -->
+                        <!-- Error -->
                         <p id="feedback-error" class="hidden text-red-400"></p>
                     </div>
                 </div>
@@ -187,13 +160,13 @@
         </div>
     </section>
 
-    <!-- Footer (tu theme) -->
+    <!-- Footer -->
     <footer class="text-center py-8 border-t border-slate-800 mt-12">
         <p class="text-slate-500">&copy; 2025 AI Speaking Coach.</p>
     </footer>
 
 
-    <!-- Thu vien Icon SVG (ẩn) để JS sao chép (tu theme) -->
+    <!-- Icon Templates (Hidden) -->
     <div id="icon-templates" class="hidden">
         <!-- Mic Icon -->
         <svg id="svg-mic-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
@@ -214,9 +187,7 @@
         </svg>
     </div>
 
-    <!-- File JS chinh (logic moi) -->
-    <script src="js/main.js"></script>
-    
+    <!-- Main Logic -->
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
-
