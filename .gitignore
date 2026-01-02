@@ -1,4 +1,24 @@
+
+# Python
 /venv/
 __pycache__/
-*.DS_Store
+*.py[cod]
 .env
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend_old/
+
+# Build outputs
+dist/
+build/
+backend/static/assets
+# We might want to keep backend/static/index.html if we want to commit the build
+# But usually we don't commit build artifacts. 
+# However, for this user "refract whole project", maybe they want the runnable state.
+# I will allow backend/static for now so the repo is runnable immediately.
+
+# OS
+.DS_Store
+Thumbs.db

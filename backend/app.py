@@ -12,16 +12,16 @@ from utils import audio_utils
 print("--- Dang khoi dong server Flask ---")
 load_dotenv() # Load cac bien moi truong tu file .env
 
-# Cau hinh Flask de phuc vu frontend (duong dan 'static' tro ve thu muc 'frontend')
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
+# Cau hinh Flask de phuc vu frontend (Build tu Vite ra thu muc 'static')
+app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app) # Cho phep Cross-Origin Resource Sharing (de frontend goi duoc backend)
 logging.basicConfig(level=logging.INFO)
 
 # --- Load Model (Chi mot lan khi server khoi dong) ---
-# --- THAY DOI: Load 3 API key rieng biet ---
-GEMINI_API_KEY_FEEDBACK = "AIzaSyD89_QJP4p7gIBpSgeuicG-yoM03tUM5VU"
-GEMINI_API_KEY_TOPIC = "AIzaSyDMS3HuKFBcwdlvJlVcF98mSKnHxKkDU4U"
-GEMINI_API_KEY_TTS = "AIzaSyDWEWsGN6Ep-HPHz40x5BODpMMyspC0NLQ"
+# --- THAY DOI: Load 3 API key tu environment variables ---
+GEMINI_API_KEY_FEEDBACK = os.getenv("GEMINI_API_KEY_FEEDBACK")
+GEMINI_API_KEY_TOPIC = os.getenv("GEMINI_API_KEY_TOPIC")
+GEMINI_API_KEY_TTS = os.getenv("GEMINI_API_KEY_TTS")
 
 if not (GEMINI_API_KEY_FEEDBACK and GEMINI_API_KEY_TOPIC and GEMINI_API_KEY_TTS):
     print("LOI: Chua thiet lap du 3 API key trong file .env:")
