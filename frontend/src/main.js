@@ -1,45 +1,34 @@
 import './style.css';
 
-// --- CẤU HÌNH API ---
-// Vi su dung Proxy trong vite.config.js nen giu nguyen path tuong doi
 const API_GENERATE_TOPIC = "/api/generate-topic";
 const API_PROCESS_SPEECH = "/api/process-speech";
 
-// --- BIẾN TOÀN CỤC (GLOBAL) ---
-let mediaRecorder; // Đối tượng ghi âm
-let audioChunks = []; // Mảng chứa các mẩu âm thanh
-let lastAudioBlob; // File âm thanh (ghi am) cuối cùng (để phát lại)
-let lastFeedbackAudioWavBlob; // File am thanh (TTS) cuoi cung (de phat lai)
+let mediaRecorder;
+let audioChunks = [];
+let lastAudioBlob;
+let lastFeedbackAudioWavBlob;
 
-// --- CÁC ĐỐI TƯỢNG DOM (ELEMENTS) ---
-
-// Nav & Scroll
 const navLinkHome = document.getElementById('nav-link-home');
 const navLinkPractice = document.getElementById('nav-link-practice');
 const ctaButton = document.getElementById('cta-button');
 
-// App Chinh
 const generateTopicBtn = document.getElementById('generate-topic-btn');
 const topicLoading = document.getElementById('topic-loading');
 const questionText = document.getElementById('question-text');
 
-// Ghi am
 const recordBtn = document.getElementById('record-btn');
 const recordIconContainer = document.getElementById('record-icon-container');
 const statusText = document.getElementById('status-text');
 
-// Ket qua
 const loadingArea = document.getElementById('loading-area');
 const resultArea = document.getElementById('result-area');
 const transcriptText = document.getElementById('transcript-text');
 
-// Phat lai (Nguoi dung)
 const playbackArea = document.getElementById('playback-area');
 const playbackBtn = document.getElementById('playback-btn');
 const audioPlayer = document.getElementById('audio-player');
 const playbackStatus = document.getElementById('playback-status');
 
-// Phan hoi (AI)
 const feedbackArea = document.getElementById('feedback-area');
 const feedbackText = document.getElementById('feedback-text');
 const feedbackError = document.getElementById('feedback-error');
@@ -48,9 +37,8 @@ const feedbackAudioBtn = document.getElementById('feedback-audio-btn');
 const feedbackAudioPlayer = document.getElementById('feedback-audio-player');
 const feedbackAudioStatus = document.getElementById('feedback-audio-status');
 
-// Icon Templates (Lấy từ HTML)
 const iconTemplates = document.getElementById('icon-templates');
-// Ensure iconTemplates exists before querying
+
 let micIcon, stopIcon, playIcon, pauseIcon;
 if (iconTemplates) {
   micIcon = iconTemplates.querySelector('#svg-mic-icon').cloneNode(true);
@@ -61,28 +49,22 @@ if (iconTemplates) {
   console.error("Icon templates not found in DOM");
 }
 
-
-// --- LOGIC KHOI TAO (CHAY KHI TAI TRANG) ---
 document.addEventListener('DOMContentLoaded', () => {
-  if (!micIcon) return; // Guard clause
+  if (!micIcon) return;
 
-  // 1. Khoi tao Icon cho phan App
   recordIconContainer.appendChild(micIcon);
   playbackBtn.appendChild(playIcon.cloneNode(true));
   feedbackAudioBtn.appendChild(playIcon.cloneNode(true));
 
-  // 2. Gan su kien cho phan App
   generateTopicBtn.addEventListener('click', generateNewTopic);
   recordBtn.addEventListener('click', toggleRecording);
 
-  // 3. Gan su kien cho cac nut Phat lai
   playbackBtn.addEventListener('click', togglePlayback);
   audioPlayer.addEventListener('ended', onPlaybackEnded);
 
   feedbackAudioBtn.addEventListener('click', toggleFeedbackAudioPlayback);
   feedbackAudioPlayer.addEventListener('ended', onFeedbackAudioPlaybackEnded);
 
-  // 4. Gan su kien cho Nav & Scroll
   const homeSection = document.getElementById('home-page');
   const appSection = document.getElementById('app-section');
 
@@ -105,14 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 5. Kich hoat hieu ung cuon
   activateScrollEffects();
 });
 
-// --- LOGIC TAO CHU DE ---
 async function generateNewTopic() {
   console.log("Dang goi API tao chu de...");
-  // Hien thi loading
   topicLoading.classList.remove('hidden');
   questionText.classList.add('hidden');
   generateTopicBtn.disabled = true;
@@ -124,29 +103,24 @@ async function generateNewTopic() {
     }
     const data = await response.json();
 
-    // Hien thi topic moi
     questionText.textContent = data.topic || "Hay gioi thieu ve ban than ban.";
 
   } catch (error) {
     console.error("Loi khi tao topic:", error);
     questionText.textContent = `Loi: ${error.message}. Ban co the noi tu do.`;
   } finally {
-    // An loading
     topicLoading.classList.add('hidden');
     questionText.classList.remove('hidden');
     generateTopicBtn.disabled = false;
   }
 }
 
-// --- LOGIC GHI AM (MediaRecorder) ---
 async function toggleRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
-    // Đang ghi -> Dừng ghi
     mediaRecorder.stop();
     recordBtn.disabled = true;
     statusText.textContent = "Đang dừng ghi âm...";
   } else {
-    // Đang dừng -> Bắt đầu ghi
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       startRecording(stream);
@@ -158,7 +132,7 @@ async function toggleRecording() {
 }
 
 function startRecording(stream) {
-  audioChunks = []; // Xóa các mẩu cũ
+  audioChunks = [];
   const options = {
     mimeType: 'audio/webm;codecs=opus',
     audioBitsPerSecond: 128000,
@@ -177,36 +151,28 @@ function startRecording(stream) {
   };
 
   mediaRecorder.onstop = () => {
-    // 1. Dọn dẹp stream (tắt mic)
     stream.getTracks().forEach(track => track.stop());
 
-    // 2. Tạo file âm thanh
     lastAudioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
 
-    // 3. Tạo URL để phát lại (Nguoi dung)
     const audioUrl = URL.createObjectURL(lastAudioBlob);
     audioPlayer.src = audioUrl;
 
-    // 4. Gửi đi để xu ly (GOI API BACKEND)
     sendAudioToAPI(lastAudioBlob);
 
-    // 5. Cập nhật UI
     recordIconContainer.innerHTML = "";
     recordIconContainer.appendChild(micIcon.cloneNode(true));
     recordBtn.classList.remove('recording');
     statusText.textContent = "Đã ghi xong. Đang gửi đi phân tích...";
   };
 
-  // Bắt đầu ghi
   mediaRecorder.start();
 
-  // Cập nhật UI
   recordIconContainer.innerHTML = "";
   recordIconContainer.appendChild(stopIcon.cloneNode(true));
   recordBtn.classList.add('recording');
   statusText.textContent = "Đang ghi âm... (Nhấn để dừng)";
 
-  // Reset ket qua cu
   resetRecordingUI();
 }
 
@@ -226,20 +192,15 @@ function resetRecordingUI() {
   lastFeedbackAudioWavBlob = null;
 }
 
-// --- LOGIC GOI API CHINH (Backend) ---
-
 async function sendAudioToAPI(audioBlob) {
-  // 1. Hiển thị Loading
   loadingArea.classList.remove('hidden');
   resultArea.classList.add('hidden');
-  recordBtn.disabled = true; // Cấm ghi âm khi đang xử lý
+  recordBtn.disabled = true;
 
-  // 2. Tạo FormData
   const formData = new FormData();
   formData.append('audio', audioBlob, 'recording.webm');
 
   try {
-    // 3. Gửi API
     const response = await fetch(API_PROCESS_SPEECH, {
       method: 'POST',
       body: formData
@@ -251,19 +212,16 @@ async function sendAudioToAPI(audioBlob) {
       throw new Error(data.error || `Lỗi server: ${response.status}`);
     }
 
-    // 4. Hien thi ket qua (Transcript & Feedback Text)
     transcriptText.textContent = data.transcript || "(Không nghe rõ... Vui lòng thử lại)";
     feedbackText.textContent = data.feedback_text || "Không có phản hồi từ AI.";
 
     loadingArea.classList.add('hidden');
     resultArea.classList.remove('hidden');
-    playbackArea.classList.remove('hidden'); // Hien nut Nghe lai
-    feedbackArea.classList.remove('hidden'); // Hien phan hoi
+    playbackArea.classList.remove('hidden');
+    feedbackArea.classList.remove('hidden');
 
-    // 5. Xu ly Feedback Audio (TTS)
     if (data.feedback_audio_base64) {
       try {
-        // Ham convertPcmToWav se xu ly data base64 va tra ve 1 Blob WAV
         lastFeedbackAudioWavBlob = await convertPcmToWav(data.feedback_audio_base64);
         const audioUrl = URL.createObjectURL(lastFeedbackAudioWavBlob);
         feedbackAudioPlayer.src = audioUrl;
@@ -283,13 +241,10 @@ async function sendAudioToAPI(audioBlob) {
     feedbackError.textContent = `Lỗi: ${error.message}`;
     feedbackError.classList.remove('hidden');
   } finally {
-    // 6. Cho phép ghi âm lại
     recordBtn.disabled = false;
     statusText.textContent = "Nhấn để bắt đầu ghi âm";
   }
 }
-
-// --- LOGIC PHAT LAI ---
 
 function togglePlayback() {
   if (audioPlayer.paused) {
@@ -331,8 +286,6 @@ function onFeedbackAudioPlaybackEnded() {
   feedbackAudioStatus.textContent = "Nhấn để nghe phản hồi";
 }
 
-
-// --- HAM CHUYEN DOI PCM SANG WAV (BAT BUOC) ---
 async function convertPcmToWav(base64DataUri) {
   const parts = base64DataUri.split(',');
   const meta = parts[0];
@@ -350,7 +303,6 @@ async function convertPcmToWav(base64DataUri) {
 
   const pcm16 = new Int16Array(buffer);
 
-  // Tao header cho file WAV
   const wavBuffer = new ArrayBuffer(44 + pcm16.byteLength);
   const wavView = new DataView(wavBuffer);
 
@@ -385,7 +337,6 @@ function writeString(view, offset, string) {
   }
 }
 
-// --- LOGIC HIEU UNG ---
 function activateScrollEffects() {
   const elementsToAnimate = document.querySelectorAll('.fade-in-on-scroll');
   if (elementsToAnimate.length === 0) return;
@@ -398,7 +349,7 @@ function activateScrollEffects() {
       }
     });
   }, {
-    threshold: 0.1 // Kich hoat khi 10% phan tu xuat hien
+    threshold: 0.1
   });
 
   elementsToAnimate.forEach(el => {
