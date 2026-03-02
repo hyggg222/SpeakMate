@@ -1,0 +1,766 @@
+DỰ ÁN SPEAKMATE 
+AI Đồng Hành, Tự Tin Cất Lời 
+HỒ SƠ DỰ THI 
+CUỘC THI AI YOUNG GURU 2026 
+Đội phát triển:  Next Gents 
+MỤC LỤC 
+ 
+PHẦN 0: TÓM TẮT DỰ ÁN  
+ 
+PHẦN 1: MÔ TẢ VẤN ĐỀ & CÂU CHUYỆN TRUYỀN CẢM HỨNG 
+ 
+PHẦN 2: CÁCH THỨC TIẾP CẬN (Ý TƯỞNG & CÔNG NGHỆ)  
+ 
+PHẦN 3: MÔ TẢ SẢN PHẨM & TÍNH NĂNG CHI TIẾT 
+ 
+PHẦN 4: BẢO MẬT & ĐẠO ĐỨC AI   
+ 
+PHẦN 5: HIỆU QUẢ MANG LẠI, LỘ TRÌNH & PHỤ LỤC 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+PHẦN 0: TÓM TẮT DỰ ÁN  
+Tên dự án:  SpeakMate 
+Slogan:  AI Đồng Hành, Tự Tin Cất Lời. 
+ 
+Vấn đề cốt lõi:  Học sinh Việt Nam bị ảnh hưởng bởi nỗi sợ nói trước đám đông 
+(Glossophobia) và sự thiếu hụt một môi trường luyện tập giao tiếp an toàn, hiệu quả, có khả 
+năng phản hồi sâu sắc. Người học kỹ năng mềm thường bị mắc kẹt trong khoảng cách giữa 
+lý thuyết sách vở và áp lực của các tình huống thực tế, dẫn đến sự thiếu tự tin và bỏ lỡ nhiều 
+cơ hội phát triển cá nhân, sự nghiệp. 
+ 
+Giải pháp đột phá:  SpeakMate là một ứng dụng AI Agent được xây dựng trên tư duy "AI 
+First", sử dụng một Hệ thống Điều phối 3 Trợ lý AI (3-Agent Orchestration) chuyên biệt để 
+tạo ra một môi trường luyện tập giao tiếp siêu thực. Hệ thống bao gồm: 
+ AI Context:  Phân tích và thiết lập bối cảnh, mục tiêu luyện tập. 
+ AI Interactive:  Tương tác đối thoại với người dùng bằng giọng nói với độ trễ cực thấp. 
+ AI Analyst:  Phân tích sâu sắc toàn bộ phiên hội thoại để đưa ra nhận xét chi tiết. 
+Tính năng độc quyền - "Real-life Interaction - Bridge to Reality":  SpeakMate không phải 
+là một ứng dụng "gây nghiện” nhằm giữ chân người dùng. Triết lý cốt lõi của chúng tôi là sử 
+dụng AI làm bệ phóng, một "phòng gym" cho kỹ năng giao tiếp. Thông qua hệ thống “Nhiệm 
+vụ thực tế” (Missions) và feedback, SpeakMate chủ động khuyến khích và trang bị cho người 
+dùng sự tự tin để áp dụng những gì đã luyện tập vào các tương tác xã hội ngoài đời thực, từ 
+đó tạo ra một vòng lặp tiến bộ bền vững. SpeakMate là cây cầu nối liền thế giới ảo và năng 
+lực thực tế, giúp người dùng không chỉ giỏi hơn trong ứng dụng mà còn tỏa sáng trong cuộc 
+sống. 
+ 
+PHẦN 1: MÔ TẢ VẤN ĐỀ & CÂU CHUYỆN TRUYỀN CẢM 
+HỨNG 
+1.1. Từ "Đứng Hình" Trên Sân Khấu 
+Câu chuyện của SpeakMate bắt nguồn từ một trải nghiệm cá nhân sâu sắc. Tôi từng là một 
+học sinh cấp ba chuyên tin với nỗi sợ hãi kinh hoàng mỗi khi phải đứng trước lớp. Tim đập 
+nhanh, lòng bàn tay ướt đẫm mồ hôi, và tâm trí hoàn toàn trống rỗng. Đỉnh điểm là một buổi 
+thuyết trình môn Văn, khi tôi đã "đứng hình" hoàn toàn trên bục giảng, không thể thốt ra một 
+lời nào trước ánh mắt của hàng chục bạn học. Cảm giác xấu hổ và bất lực đó đã ám ảnh tôi 
+suốt một thời gian dài. 
+ 
+"Đó không chỉ là sự im lặng. Đó là tiếng gào thét của sự bất lực bên trong, khi kiến thức bạn có không 
+thể biến thành lời nói, khi cơ hội thể hiện bản thân trôi qua trong tiếc nuối. Tôi nhận ra rằng, rất nhiều 
+người cũng đang trải qua cuộc chiến thầm lặng này mỗi ngày." 
+ 
+Quyết tâm thay đổi, tôi lao vào một hành trình luyện tập gian khổ: tự nói trước gương, tham 
+gia các câu lạc bộ, đọc hàng chục cuốn sách về kỹ năng mềm. Dần dần, tôi đã có thể kiểm 
+soát được nỗi sợ của mình và thậm chí còn đạt nhiều thành tích cao trong các cuộc thi tranh 
+biện. Nhưng rồi tôi nhận ra quá trình đó quá đơn độc, tốn kém và thiếu đi sự phản hồi khách 
+quan, kịp thời. 
+1.2. Nỗi Đau Chung và Khoảng Trống Thị Trường 
+Câu chuyện của tôi không phải là cá biệt. Theo nhiều nghiên cứu, hội chứng sợ nói trước 
+đám đông (Glossophobia) ảnh hưởng đến gần 80% học sinh THPT Việt Nam ở các mức độ 
+khác nhau. Nỗi đau này tạo ra một rào cản vô hình, ngăn cản thế hệ trẻ kết nối, thăng tiến và 
+nắm bắt cơ hội trong một thế giới ngày càng đòi hỏi kỹ năng giao tiếp. 
+ 
+Qua khảo sát và phân tích, chúng tôi đã xác định hai "nỗi đau" cốt lõi mà các giải pháp hiện 
+tại chưa giải quyết triệt để: 
+ 
+1.  Thiếu hụt môi trường luyện tập "an toàn về tâm lý":  Việc luyện tập với người thật có thể gây 
+áp lực, phán xét. Luyện tập một mình trước gương lại thiếu tính tương tác và phản hồi. Người học 
+cần một không gian nơi họ có thể thoải mái mắc lỗi, thử nghiệm các phong cách diễn đạt khác nhau 
+mà không sợ bị đánh giá, nhưng vẫn nhận được những góp ý xây dựng. 
+ 
+2.  Khoảng cách giữa luyện tập ảo và thực tế xã hội:  Nhiều ứng dụng học ngôn ngữ hoặc kỹ 
+năng mềm chỉ dừng lại ở việc mô phỏng các đoạn hội thoại đơn giản. Chúng không chuẩn bị cho 
+người dùng đối mặt với sự phức tạp, đa dạng và áp lực của các tình huống xã hội thực tế (một buổi 
+phỏng vấn căng thẳng, một cuộc tranh luận nảy lửa, hay một bài phát biểu quan trọng). Người dùng 
+có thể nói tốt với bot, nhưng lại "đứng hình" khi đối diện với con người. 
+ 
+SpeakMate ra đời để lấp đầy khoảng trống này, mang đến một giải pháp toàn diện, kết hợp 
+sự an toàn của môi trường ảo với hiệu quả của phản hồi chuyên sâu và động lực để bước ra 
+thế giới thực. 
+PHẦN 2: CÁCH THỨC TIẾP CẬN (Ý TƯỞNG & CÔNG 
+NGHỆ) 
+2.1. Ý Tưởng Giải Pháp 
+Khái niệm "Phòng Gym Giao tiếp" (AI Coaching Loop) 
+Ý tưởng cốt lõi: Xây dựng một môi trường luyện tập "không phán xét" nhưng vẫn đảm bảo 
+tính thử thách cao thông qua việc mô phỏng một vòng lặp huấn luyện chuyên nghiệp khép 
+kín . 
+Mô hình hóa: Giải pháp không chỉ là một chatbot, mà là một Hệ sinh thái Agentic. Thay vì 
+cố gắng bắt một con bot làm tất cả mọi việc (dễ dẫn đến quá tải và sai lệch), SpeakMate chia 
+nhỏ quy trình thành 3 thực thể chuyên biệt để tối ưu hóa đồng thời 3 yếu tố: Bối cảnh - Tốc 
+độ - Chiều sâu. 
+ 
+Kiến Trúc 3-Agent 
+Để giải quyết bài toán phức tạp về tương tác và phân tích giao tiếp, SpeakMate áp dụng tư 
+duy "AI First" với một kiến trúc đột phá:  Hệ thống Điều phối 3 Trợ lý AI (3-Agent 
+Orchestration). Thay vì dùng một mô hình AI duy nhất cho mọi việc, chúng tôi chuyên môn 
+hóa nhiệm vụ, tạo ra một "phòng gym giao tiếp" nơi mỗi "huấn luyện viên" AI có một vai trò 
+riêng biệt, được điều phối bởi một lớp logic trung tâm. 
+ Model 1: The Brain (Tác nhân Tư duy & Bối cảnh):  Là "biên kịch", phân tích yêu cầu người 
+dùng để xây dựng bối cảnh, nhân vật và kịch bản luyện tập logic, đầy thử thách. 
+ Model 2: The Voice (Tác nhân Tương tác & Giọng nói):  Là "diễn viên", thực thi kịch bản, đối 
+thoại trực tiếp với người dùng bằng giọng nói với độ trễ cực thấp, tạo cảm giác chân thực. 
+ Model 3: The Analyst (Tác nhân Phân tích & Phản hồi):  Là "đạo diễn" và "huấn luyện viên", 
+âm thầm lắng nghe, phân tích sâu toàn bộ phiên tương tác để đưa ra báo cáo đánh giá toàn diện. 
+ 
+ 
+Sơ đồ: Mô hình kiến trúc 3-Agent Orchestration của SpeakMate. 
+2.2. Công Cụ AI & Hệ Thống Prompt Tinh Vi 
+Sức mạnh của SpeakMate đến từ việc lựa chọn công cụ AI phù hợp và hệ thống Prompt 
+Engineering tinh vi. 
+ Gemini 1.5 Pro (cho The Brain &; The Analyst):  Chúng tôi tận dụng cửa sổ ngữ cảnh (context 
+window) lên đến 1 triệu token và khả năng suy luận phức tạp (complex reasoning). Điều này cho 
+phép The Brain xây dựng kịch bản có chiều sâu và The Analyst phân tích đa phương thức 
+(multimodal analysis) trên dữ liệu âm thanh gốc, "nghe" và hiểu các sắc thái tinh tế trong giọng 
+nói. 
+ Gemini 1.5 Flash (cho The Voice):  Ưu tiên hàng đầu cho vai trò này là tốc độ. Model "Flash" 
+được tối ưu hóa cho các tác vụ đòi hỏi phản hồi nhanh, đảm bảo trải nghiệm giao tiếp tự nhiên, 
+liền mạch. 
+Chúng tôi sử dụng các kỹ thuật Prompt Engineering tiên tiến để điều khiển các Agent: 
+ 
+Agent
+Kỹthuật Prompt Engineering
+Ví dụPrompt (Rút gọn)
+Agent 1: Context Setter 
+ Chain-of-Thought (CoT):  Yêu 
+cầu AI suy nghĩ từng bước để tạo 
+ra một bối cảnh toàn diện.  
+ 
+Role-Prompting & Goal 
+[USER INPUT]: "Tôi muốn 
+luyện tập phỏng vấn cho 
+vị trí Senior Marketing 
+Manager tại một công ty 
+công nghệ."  
+Definition:  Định nghĩa rõ vai trò 
+và mục tiêu. 
+ 
+[SYSTEM PROMPT for AGENT 
+1]: You are a world-class 
+AI Scenario Designer. 
+Your task is to create a 
+comprehensive simulation 
+for a job interview. 
+Follow these steps: 1. 
+Analyze User Goal: The 
+user wants to practice 
+for a Senior Marketing 
+Manager interview at a 
+tech company. 2. Define 
+Personas: Interviewer 
+(for Agent 2): Name: 
+Alex, a seasoned Hiring 
+Manager. Personality: 
+Sharp, direct, friendly 
+but challenging. Goal: 
+Assess strategic 
+thinking, leadership, and 
+data-driven mindset. 
+Candidate (User): Assumed 
+to have 5+ years of 
+marketing experience. 3. 
+Create Evaluation Rubrics 
+(for Agent 3): Generate a 
+JSON object with 
+criteria: STAR method 
+usage, strategic depth, 
+clarity, confidence 
+(vocal tone), and 
+handling of behavioral 
+questions. 4. Generate 
+System Prompts: For Agent 
+2: "You are Alex, a 
+Hiring Manager... Your 
+first question is: 'Tell 
+me about a marketing 
+campaign you led that 
+failed and what you 
+learned from it.'" For 
+Agent 3: "You are an 
+expert interview analyst. 
+Evaluate the entire 
+conversation based on 
+this rubric: 
+{JSON_RUBRIC}. Provide 
+specific examples for 
+each point."  
+Agent 2: Interactive Partner 
+ Few-Shot Prompting:  Cung cấp 
+vài ví dụ về phong cách đối thoại 
+để AI "bắt chước" persona.  
+ 
+ Instruction Following:  Tuân thủ 
+nghiêm ngặt vai trò và kịch bản từ 
+[SYSTEM PROMPT from AGENT 
+1 to AGENT 2]: You are a 
+debate opponent. Your 
+persona is logical, calm, 
+and data-driven. You must 
+argue that AI poses a 
+significant threat to 
+Agent 1. 
+creative jobs. Here are 
+examples of your style: - 
+User: "AI can't replicate 
+human emotion." - You: 
+"That's a common 
+assumption, but let's 
+look at the data. Recent 
+studies in generative 
+music show that AI can 
+compose pieces that evoke 
+specific emotional 
+responses in listeners. 
+The question isn't about 
+replicating emotion, but 
+about generating an 
+emotional impact. What 
+are your thoughts on 
+that?" Your first 
+argument is: "While AI 
+today is a tool, its 
+exponential growth curve 
+suggests it will 
+inevitably transition 
+from a tool to a 
+competitor in creative 
+fields."  
+Agent 3: Analyst 
+ Rubrics Evaluation:  Cung cấp 
+một bộ tiêu chí (rubric) dạng cấu 
+trúc (JSON) để AI đánh giá một 
+cách nhất quán và khách quan.  
+ 
+ A.R.E Framework Analysis:  
+Trong chế độ tranh biện, yêu cầu 
+AI phân tích các lập luận của 
+người dùng theo cấu trúc Assertion 
+(Luận điểm), Reasoning (Lý lẽ), 
+Evidence (Bằng chứng). 
+ 
+Style Enhancement: 
+Tìm kiếm và đề xuất cách diễn đạt 
+tốt hơn từ chính lời nói của người 
+dùng. 
+ 
+[SYSTEM PROMPT from AGENT 
+1 to AGENT 3]: You are a 
+master debate coach. 
+Analyze the user's 
+performance based on the 
+full transcript and 
+audio. 1. Overall Score: 
+Use the provided rubric. 
+2. A.R.E. Analysis: For 
+each major argument the 
+user made, break it down: 
+Was the Assertion clear? 
+Was the Reasoning logical 
+and sound? Was the 
+Evidence provided 
+relevant and convincing? 
+3. Fallacy Detection: 
+Scan the user's and your 
+own (Agent 2's) arguments 
+for logical fallacies 
+(e.g., Straw Man, Ad 
+Hominem). If found, name 
+the fallacy, quote the 
+sentence, and explain why 
+it's a fallacy. 4. Style 
+Enhancement: Identify 3 
+sentences from the user 
+and suggest a more 
+impactful or professional 
+alternative. Output the 
+final report in Markdown 
+format.
+ 
+2.3. Quy Trình Thực Hiện: Nền Tảng Kỹ Thuật Vững Chắc 
+Workflow "Scenario Builder": Hợp Đồng Dữ Liệu Giữa Các Agent 
+Một trong những thách thức lớn nhất của kiến trúc đa agent là nguy cơ "logic breakdown" – 
+sự cố xảy ra khi một agent không hiểu hoặc hiểu sai chỉ dẫn từ agent khác. Để giải quyết triệt 
+để rủi ro này, chúng tôi thiết lập một "hợp đồng dữ liệu" (data contract) nghiêm ngặt giữa The 
+Brain và The Voice, được gọi là workflow "Scenario Builder". 
+ 
+Nguyên tắc cốt lõi của chúng tôi là: The Brain (Model 1) không chỉ sinh ra văn bản mô tả, mà phải 
+tạo ra một cấu trúc dữ liệu JSON có thể xác thực được một cách máy móc (machine-verifiable). 
+Điều này biến sự sáng tạo của AI thành một sản phẩm kỹ thuật có thể dự đoán và kiểm soát. 
+Quy trình thực thi của "Scenario Builder" diễn ra như sau: 
+1. Định nghĩa Cấu trúc (Type Definition):  Sử dụng các tính năng mạnh mẽ của  TypeScript 5.x, 
+chúng tôi định nghĩa các interface hoặc type cho mọi yếu tố của một kịch bản. Ví dụ:  
+ 
+// Định nghĩa một lượt nói trong hội thoại 
+interface DialogueTurn { 
+  speaker: 'AI' | 'User'; 
+  line: string; 
+  emotion?: 'neutral' | 'inquisitive' | 'challenging'; 
+  expectedUserResponse: 'technical' | 'behavioral'; 
+} 
+ 
+// Định nghĩa một kịch bản hoàn chỉnh 
+interface InterviewScenario { 
+  scenarioName: string; 
+  jobTitle: string; 
+  interviewerPersona: string; 
+  turns: DialogueTurn[]; 
+} 
+                  
+2. Sinh JSON Schema (Schema Generation):  Từ các định nghĩa TypeScript này, chúng tôi sử 
+dụng các công cụ như typescript-json-schema để tự động tạo ra một  JSON Schema  tương ứng. 
+JSON Schema là một bản thiết kế chi tiết, mô tả chính xác cấu trúc, kiểu dữ liệu, và các ràng buộc 
+của file JSON mà The Brain phải tạo ra. 
+3. Prompt Engineering Nâng cao (Advanced Prompting):  "The Brain" (Model 1) được hướng dẫn 
+(prompted) với một chỉ thị không thể phá vỡ: "Luôn luôn trả về kết quả dưới dạng một chuỗi JSON 
+tuân thủ nghiêm ngặt theo JSON Schema sau đây...". JSON Schema được nhúng trực tiếp vào trong 
+prompt. 
+4. Xác thực & Chuyển giao (Validation & Handoff):  Trước khi kịch bản được chuyển đến "The 
+Voice" (Model 2), chuỗi JSON do The Brain tạo ra sẽ được xác thực (validated) dựa trên JSON 
+Schema đã định nghĩa. Nếu hợp lệ, nó sẽ được chuyển giao. Nếu không, hệ thống sẽ yêu cầu The 
+Brain thử lại. 
+Sơ đồ: Workflow "Scenario Builder" - Data Contract giữa các Agent. 
+ 
+Lợi ích chiến lược của "Scenario Builder" 
+ Type-safe & Predictable:  Đảm bảo "The Voice" luôn nhận được dữ liệu đúng định dạng, đúng cấu trúc. 
+Điều này loại bỏ hoàn toàn các lỗi do AI "sáng tạo" ngoài kịch bản, chẳng hạn như trả về một mảng thay vì 
+một đối tượng, hoặc thiếu một trường dữ liệu quan trọng. 
+ Decoupling (Tách biệt):  Tách biệt hoàn toàn logic tạo kịch bản (của The Brain) và logic thực thi hội thoại 
+(của The Voice). Nhờ đó, chúng tôi có thể dễ dàng nâng cấp, tinh chỉnh hoặc thậm chí thay thế một trong 
+hai Agent mà không gây ảnh hưởng đến toàn bộ hệ thống. 
+ 
+Testability (Khả năng kiểm thử):  Các kịch bản JSON có thể được lưu lại, kiểm thử và tái sử dụng một cách 
+dễ dàng, giúp quá trình gỡ lỗi và phát triển nhanh hơn rất nhiều. 
+ 
+Quy Trình Xử Lý Âm Thanh "Split Stream" 
+Một trong những thách thức kỹ thuật lớn nhất là cân bằng giữa độ trễ thấp cho tương tác và 
+chất lượng cao cho phân tích. Chúng tôi giải quyết vấn đề này bằng kỹ thuật "Split Stream" 
+(Tách luồng): 
+ 
+1. Khi người dùng nói, luồng âm thanh (audio stream) được ghi lại. 
+2. Luồng 1 (Low Latency):  Âm thanh được nén và chuyển đổi thành văn bản (speech-to-text) gần 
+như ngay lập tức. Dữ liệu văn bản này được gửi đến  Agent 2 (Interactive)  để tạo ra phản hồi tức 
+thì, đảm bảo cuộc hội thoại diễn ra tự nhiên. 
+3. Luồng 2 (High Fidelity):  Đồng thời, một bản ghi âm chất lượng cao, không nén của toàn bộ câu 
+nói được lưu trữ tạm thời. Khi phiên luyện tập kết thúc (hoặc theo từng đoạn dài), toàn bộ bản ghi âm 
+chất lượng cao và bản ghi văn bản đầy đủ được gửi đến  Agent 3 (Analyst). 
+ 
+Cách tiếp cận này cho phép Agent 2 duy trì trải nghiệm tương tác mượt mà, trong khi Agent 3 
+có đủ dữ liệu "giàu" (rich data) để thực hiện các phân tích tinh vi về ngữ điệu, âm lượng, sự 
+ngập ngừng – những yếu tố phi ngôn ngữ quan trọng mà một bản ghi văn bản đơn thuần 
+không thể nắm bắt. 
+KIẾN TRÚC FRONTEND VÀ QUẢN LÝ TRẠNG THÁI TỐI ƯU 
+Kiến trúc phía người dùng (client-side) được thiết kế với hai mục tiêu chính: khả năng bảo trì 
+và mở rộng trong dài hạn, và sự ổn định tuyệt đối của trạng thái ứng dụng để mang lại trải 
+nghiệm người dùng hoàn hảo. 
+ 
+Nền tảng Frontend: Next.js 14+ và Feature-Sliced Design 
+Chúng tôi lựa chọn  Next.js 14+  với  App Router  làm nền tảng, tận dụng các tính năng hiện đại như 
+Server Components, Streaming và Server Actions. Tuy nhiên, sức mạnh của Next.js chỉ được phát 
+huy tối đa khi đi kèm với một cấu trúc dự án có kỷ luật. Vì vậy, chúng tôi áp dụng triệt để mô hình  
+Feature-Sliced Design (FSD). 
+Thay vì các thư mục chung chung như /components, /hooks, /utils, chúng tôi tổ chức code theo các "lát 
+cắt" nghiệp vụ. Cấu trúc thư mục của SpeakMate sẽ có dạng: 
+ 
+src/ 
+├── app/         # Khởi tạo, providers, global styles 
+├── pages/       # Các trang cụ thể, chỉ làm nhiệm vụ lắp ráp 
+├── widgets/     # Các thành phần UI lớn (Header, Sidebar, PracticeSession) 
+├── features/    # Các tính năng người dùng (VD: practice-dialogue, practice-
+presentation) 
+│   └── practice-dialogue/ 
+│       ├── ui/          # Components của tính năng (DialogueScreen.tsx) 
+│       ├── model/       # Logic, state (dialogueStore.ts), types 
+│       └── api/         # Các hàm gọi API liên quan 
+├── entities/    # Các thực thể nghiệp vụ (User, Report, Scenario) 
+└── shared/      # Code dùng chung, không chứa logic nghiệp vụ (UI Kit, config) 
+         
+Cách tiếp cận này, được khuyến nghị bởi các chuyên gia kiến trúc phần mềm cho các dự án Next.js 
+quy mô lớn, mang lại lợi ích vượt trội: 
+ High Cohesion (Tính gắn kết cao):  Mọi thứ liên quan đến một tính năng (UI, logic, state) đều nằm 
+cùng một nơi, giúp lập trình viên dễ dàng tìm kiếm, sửa đổi và hiểu rõ phạm vi ảnh hưởng. 
+ Low Coupling (Tính liên kết thấp):  Các features được đóng gói và độc lập, giảm thiểu sự phụ 
+thuộc chéo. Việc thay đổi một feature sẽ không làm sập một feature khác không liên quan. 
+ Scalability (Khả năng mở rộng):  Khi cần thêm một chế độ luyện tập mới, chúng tôi chỉ cần tạo 
+một thư mục feature mới mà không làm xáo trộn cấu trúc hiện có. 
+ 
+Quản lý Trạng thái: Zustand và Cơ chế "State Isolation" 
+Với một ứng dụng phức tạp như SpeakMate, việc quản lý trạng thái là cực kỳ quan trọng. Chúng tôi 
+chọn  Zustand  vì sự đơn giản, hiệu năng cao và API tinh gọn. Đặc biệt, chúng tôi áp dụng mô hình  
+Modular Stores (Slices Pattern)  kết hợp với một cơ chế "cách ly trạng thái" độc đáo. 
+Vấn đề: "State Pollution" (Ô nhiễm trạng thái) 
+ Trong một ứng dụng Single-Page Application (SPA), nếu không quản lý cẩn thận, trạng thái từ một 
+phiên làm việc (ví dụ: lịch sử chat của buổi luyện tập Thuyết trình) có thể "rò rỉ" và ảnh hưởng đến 
+phiên làm việc tiếp theo (ví dụ: xuất hiện trong buổi luyện tập Tranh biện), gây ra lỗi và trải nghiệm 
+khó hiểu cho người dùng. 
+Giải pháp: "State Isolation" với Zustand Slices 
+ Mỗi chế độ luyện tập (`Giao tiếp đối thoại`, `Thuyết trình`, `Tranh biện`) sẽ có một "slice" (store 
+con) riêng biệt, quản lý trạng thái của riêng nó.  
+ 
+// src/features/practice-dialogue/model/dialogueStore.ts 
+export const createDialogueSlice = (set) => ({ 
+  history: [], 
+  currentTurn: null, 
+  addMessage: (message) => set(...), 
+  reset: () => set({ history: [], currentTurn: null }), 
+}); 
+ 
+// src/features/practice-presentation/model/presentationStore.ts 
+export const createPresentationSlice = (set) => ({ 
+  slides: [], 
+  timer: 0, 
+  // ... 
+  reset: () => set({ slides: [], timer: 0 }), 
+}); 
+                  
+ Chúng tôi tạo một store tổng hợp (bound store) từ các slice này.  
+ 
+// src/app/stores/useBoundStore.ts 
+import { create } from 'zustand'; 
+import { createDialogueSlice } from '@/features/practice-
+dialogue/model/dialogueStore'; 
+import { createPresentationSlice } from '@/features/practice-
+presentation/model/presentationStore'; 
+ 
+export const useBoundStore = create((...a) => ({ 
+  ...createDialogueSlice(...a), 
+  ...createPresentationSlice(...a), 
+})); 
+                  
+ Điểm cốt lõi:  Khi người dùng rời khỏi một chế độ luyện tập (ví dụ, khi component của chế độ đó 
+unmount), chúng tôi sẽ gọi hàm `reset()` của slice tương ứng. Điều này được thực hiện dễ dàng 
+trong React.  
+ 
+// src/features/practice-dialogue/ui/DialogueSession.tsx 
+import { useEffect } from 'react'; 
+import { useBoundStore } from '@/app/stores/useBoundStore'; 
+ 
+function DialogueSession() { 
+  const resetDialogueState = useBoundStore((state) => state.reset); 
+ 
+  useEffect(() => { 
+    // Hàm này sẽ được gọi khi component bị hủy 
+    return () => { 
+      resetDialogueState(); 
+      console.log('Dialogue store has been reset.'); 
+    }; 
+  }, [resetDialogueState]); 
+ 
+  // ... Giao diện luyện tập 
+} 
+                  
+Cơ chế này đảm bảo rằng mỗi khi người dùng bắt đầu một phiên luyện tập mới, họ sẽ bắt đầu với 
+một "trang giấy trắng", ngăn chặn triệt để hiện tượng  "State Pollution"  và mang lại sự ổn định tuyệt 
+đối cho ứng dụng. 
+ 
+PHẦN 3: MÔ TẢ SẢN PHẨM & TÍNH NĂNG CHI TIẾT 
+3.1. Hình Thức Thể Hiện: Web App và Trợ Lý AI "Ni" 
+SpeakMate được thể hiện dưới dạng một ứng dụng web (Web App) với giao diện tối giản, 
+hiện đại, tập trung vào trải nghiệm người dùng. Trái tim của ứng dụng là "Ni" - một trợ lý AI 
+đồng hành. Dựa trên kỹ thuật Few-shot Prompting, "Ni" có thể hóa thân thành nhiều vai trò: 
+một nhà tuyển dụng khó tính, một khán giả tò mò, một đối thủ tranh biện sắc sảo, hay một 
+người bạn lắng nghe, tạo ra các tình huống luyện tập đa dạng và thực tế. 
+ 
+ 
+. Giao diện chính (Dashboard) của SpeakMate với trợ lý Ni và các chế độ luyện tập. 
+3.2. Ba Chế Độ Luyện Tập Chuyên Sâu 
+SpeakMate cung cấp ba chế độ chính, bao phủ các tình huống giao tiếp phổ biến nhất: 
+ Giao tiếp Đối thoại (Dialogue Mode):  Luyện tập các cuộc trò chuyện hàng ngày, 
+networking, phỏng vấn xin việc, hay các cuộc đối thoại khó. Người dùng có thể thiết lập 
+bối cảnh và mục tiêu (ví dụ: "thuyết phục sếp tăng lương", "làm quen với người lạ tại sự 
+kiện"). 
+ Thuyết trình Chuyên nghiệp (Presentation Mode):  Người dùng trình bày một bài nói đã 
+chuẩn bị. "Ni" sẽ đóng vai khán giả, có thể đặt câu hỏi ngẫu nhiên hoặc theo kịch bản. 
+Chế độ này tập trung vào cấu trúc bài nói, sự lưu loát, và khả năng xử lý tình huống. 
+ Tranh biện Đối kháng (Debate Mode):  Một chế độ nâng cao dành cho việc rèn luyện tư 
+duy phản biện. Người dùng chọn một chủ đề, và "Ni" sẽ trở thành một đối thủ tranh biện 
+thông minh, sử dụng lập luận logic, đưa ra phản đề, và thậm chí "gài bẫy" bằng các lỗi 
+ngụy biện để thử thách khả năng của người dùng. 
+ 
+ 
+ 
+Giao diện luyện tập tập trung (The Studio) với trợ lý Ni và sóng âm trực quan. 
+ 
+Tính năng nổi bật: Vạch Trần Ngụy Biện (Fallacy Detection) 
+Trong chế độ Tranh biện, Agent 3 (The Analyst) đóng vai trò một "trọng tài logic", quét toàn 
+bộ nội dung hội thoại để phát hiện các lỗi ngụy biện từ cả phía người dùng và đối thủ AI. 
+ Báo cáo chi tiết: Sau phiên tập, hệ thống sẽ vạch trần cụ thể: Tên lỗi ngụy biện (như 
+Người rơm, Tấn công cá nhân), trích dẫn nguyên văn câu nói và giải thích logic tại sao 
+đó là sai lầm. 
+ Giá trị cốt lõi: Tính năng này không chỉ giúp người dùng nói trôi chảy mà còn rèn 
+luyện tư duy phản biện sắc bén, giúp nhận diện và phá vỡ các cạm bẫy lập luận trong 
+đời thực . 
+Tính năng độc quyền: Nhiệm Vụ Thực Tế (Real-world Missions) 
+Chúng tôi tin rằng mục tiêu cuối cùng của việc luyện tập là để tỏa sáng trong đời thực. Vì vậy, 
+SpeakMate giới thiệu tính năng độc quyền "Real-life Mission" – cầu nối giữa không gian 
+luyện tập an toàn và các tương tác xã hội thực tế. Quy trình như sau: 
+ 
+1. Giao nhiệm vụ (AI Mission Design): Dựa trên phân tích điểm mạnh/yếu từ các buổi tập, 
+hệ thống giao thử thách cá nhân hóa với độ khó tăng dần.  
+Ví dụ: "Tuần này, hãy đặt một câu hỏi phản biện cho giảng viên để làm rõ vấn đề bạn thắc 
+mắc" 
+2. Thực thi (Real-world Action): Người dùng tạm rời ứng dụng để áp dụng kỹ năng vào các 
+tương tác xã hội thực tế. 
+3. Phản hồi & Tối ưu (AI Feedback Loop): Người dùng quay lại ứng dụng để kể cho trợ lý 
+Ni nghe về trải nghiệm (diễn biến, cảm xúc, khó khăn). 
+ 
+AI sử dụng khả năng phân tích đa phương thức để đánh giá sự chân thực và tiến bộ. 
+ 
+Hệ thống ghi nhận kết quả và điều chỉnh kịch bản luyện tập tiếp theo phù hợp với tâm 
+thế mới của người dùng 
+ 
+Ý nghĩa cốt lõi: Thành công của SpeakMate được đo bằng tiếng nói dõng dạc của người 
+dùng ở thế giới bên ngoài ứng dụng. 
+3.3. Luồng Tương Tác 5 Pha "Vòng Lặp Tiến Bộ"  
+Mỗi phiên luyện tập trong SpeakMate đều tuân theo một quy trình 5 pha được thiết kế để tối 
+đa hóa hiệu quả học tập: 
+1. Pha 1: Thiết lập (Setup):  Người dùng chọn chế độ, mô tả tình huống. Agent 1 tạo kịch bản và bộ 
+tiêu chí đánh giá. 
+2. Pha 2: Luyện tập (Practice):  Người dùng tương tác bằng giọng nói với Agent 2. 
+3. Pha 3: Phân tích (Analysis):  Agent 3 xử lý toàn bộ dữ liệu audio và text. 
+4. Pha 4: Phản hồi (Feedback):  Người dùng nhận báo cáo chi tiết, trực quan về điểm số, từ vựng, 
+cấu trúc, lỗi ngụy biện, và gợi ý "Nâng cấp văn phong". 
+5. Pha 5: Vòng lặp Tiến bộ (Progress Loop):  Hệ thống đề xuất bài tập tiếp theo hoặc các "Nhiệm 
+vụ thực tế" để người dùng áp dụng. 
+ 
+ 
+Màn hình tạo bối cảnh trước mỗi buổi luyện tập trong các chế độ 
+ 
+3.4. Tối Ưu Trải Nghiệm: Che Giấu Độ Trễ với Optimistic UI 
+Để người dùng không cảm thấy sự chậm trễ của mạng và AI, chúng tôi áp dụng kỹ thuật  
+Latency Masking (Optimistic UI). Ngay khi người dùng nói xong, giao diện lập tức hiển thị 
+hiệu ứng "SpeakMate đang nghĩ..." thay vì chờ phản hồi từ server. Khoảng thời gian chờ này 
+được "che giấu" một cách thông minh. Đối với người dùng, cảm giác là AI phản hồi gần như 
+tức thì, tạo ra một cuộc đối thoại mượt mà và tự nhiên. 
+ 
+Sơ đồ: Luồng tương tác người dùng với kỹ thuật Latency Masking (Optimistic UI). 
+ 
+PHẦN 4: BẢO MẬT VÀ ĐẠO ĐỨC AI 
+Trong kỷ nguyên của dữ liệu, SpeakMate được xây dựng trên một nền tảng không thể lay 
+chuyển: sự tôn trọng tuyệt đối quyền riêng tư của người dùng. Cam kết của chúng tôi không 
+chỉ là một lời tuyên bố trong chính sách, mà được thực thi bằng các biện pháp kỹ thuật tự 
+động, minh bạch và không thể can thiệp. Chúng tôi định vị SpeakMate là một công cụ, không 
+phải một nền tảng giám sát. 
+4.1. Nguyên tắc "Privacy First": Dữ liệu là của Người dùng 
+Triết lý "Privacy First" được thấm nhuần trong mọi dòng code và quyết định kiến trúc của 
+chúng tôi. Chúng tôi không thu thập dữ liệu để bán, để quảng cáo, hay để xây dựng hồ sơ 
+người dùng. Dữ liệu chỉ tồn tại với một mục đích duy nhất: phục vụ cho chính phiên luyện tập 
+của người dùng tại thời điểm đó. 
+Cam kết cốt lõi: SpeakMate cam kết không lưu trữ vĩnh viễn bất kỳ dữ liệu âm thanh thô (raw audio), bản 
+ghi phiên âm (transcripts), hay bất kỳ thông tin nào có khả năng nhận dạng cá nhân (Personally Identifiable 
+Information - PII) trong môi trường production. 
+Luồng dữ liệu của chúng tôi được thiết kế để trở nên "vô thường" (ephemeral): 
+ Dữ liệu âm thanh từ người dùng được truyền trực tiếp đến backend. 
+ Tại backend, dữ liệu này chỉ tồn tại trong bộ nhớ (in-memory) hoặc trên một bộ nhớ đệm tạm thời 
+(temporary storage) trong suốt vòng đời của một yêu cầu xử lý duy nhất. 
+ Sau khi "The Analyst" (Model 3) hoàn thành việc phân tích và trả về kết quả, tất cả các dữ liệu âm 
+thanh liên quan đến yêu cầu đó sẽ được đưa vào hàng đợi xóa. 
+2000
+1500
+1500
+1300
+1000
+3000
+3000
+0
+1000
+2000
+3000
+4000
+5000
+6000
+7000
+Người dùng
+Giao diện (UI)
+Backend
+Gemini AI
+Luồng Tương tác với Optimistic UI
+Che giấu độ trễ mạng và xử lý
+Hành động
+Chờ & Xử lý
+Phản hồi
+Chúng tôi không có "kho dữ liệu người dùng". Dữ liệu của bạn là của bạn, và nó sẽ biến mất khi bạn 
+kết thúc phiên làm việc. 
+4.2. Cơ chế Tự hủy Dữ liệu Chủ động (Proactive Data Self-Destruction) 
+Để hiện thực hóa cam kết "không lưu trữ", chúng tôi không dựa vào việc xóa thủ công hay 
+các quy trình có thể thất bại. Thay vào đó, chúng tôi xây dựng một hệ thống tự hủy dữ liệu tự 
+động 2 lớp, đảm bảo không một byte dữ liệu nào của người dùng bị bỏ sót. 
+Lớp 1: Chính sách Vòng đời (Lifecycle Policy) trên Supabase Storage 
+ Công nghệ:  Chúng tôi sử dụng Supabase Storage, một giải pháp lưu trữ đối tượng mạnh mẽ và 
+an toàn. 
+ Cấu hình:  Mỗi file audio được tải lên tạm thời để xử lý sẽ được gán một chính sách vòng đời 
+(Lifecycle Policy) với  TTL (Time-To-Live) là 1 giờ. 
+ Cơ chế hoạt động:  Supabase sẽ tự động và không cần can thiệp, xóa vĩnh viễn file đó khỏi 
+bucket lưu trữ sau khi hết thời gian TTL. Đây là tuyến phòng thủ chính, đảm bảo rằng ngay cả khi 
+ứng dụng gặp lỗi và không thể gửi lệnh xóa, dữ liệu vẫn sẽ tự động biến mất. 
+Lớp 2: Fallback Cronjob - "Người dọn dẹp" không mệt mỏi 
+ Công nghệ:  Chúng tôi tận dụng Supabase Cron Jobs để thực thi các tác vụ định kỳ. 
+ Cấu hình:  Một cronjob được lên lịch chạy tự động mỗi giờ. 
+ Nhiệm vụ:  Tác vụ này sẽ quét toàn bộ storage bucket và thực thi một logic đơn giản: xóa tất cả 
+các file "mồ côi" (orphaned files) có thời gian tồn tại (creation date) quá 1 giờ. 
+ Mục đích:  Đây là cơ chế dự phòng tối quan trọng. Nó đảm bảo dọn dẹp sạch sẽ trong các trường 
+hợp cực kỳ hy hữu như: hệ thống TTL của Supabase gặp sự cố tạm thời, hoặc một file được tạo 
+ra mà không qua luồng xử lý chính (ví dụ: trong quá trình gỡ lỗi). 
+ 
+Sơ đồ: Hệ thống tự hủy dữ liệu 2 lớp của SpeakMate. 
+4.3. Tính Tương Thích Và Năng Lực Xử Lý Rủi Ro 
+Một sản phẩm AI hiện đại phải hoạt động trơn tru trên mọi thiết bị. Chúng tôi đã chủ động 
+thực hiện các bài kiểm thử chuyên sâu (spike tests) để đảm bảo trải nghiệm nhất quán, đặc 
+biệt là với sự khác biệt giữa các trình duyệt. 
+Phát hiện:  Các trình duyệt Chromium (Chrome, Edge) xuất ra định dạng audio/webm, trong 
+khi Safari trên iOS lại xuất ra audio/mp4. Sự khác biệt này có thể khiến ứng dụng không 
+hoạt động trên Safari. 
+Giải pháp Phía Backend:  Để giải quyết vấn đề này, chúng tôi đã triển khai một logic xử lý 
+có điều kiện ở phía backend: 
+1. Phát hiện Định dạng (MIME Type Detection):  Backend kiểm tra MIME type của chunk audio 
+nhận được. 
+2. Xử lý có điều kiện (Conditional Processing):   
+ Nếu là audio/webm: Chuyển thẳng đến Gemini API. 
+ Nếu là audio/mp4: Backend kích hoạt một quy trình chuyển mã (transcoding) cực nhanh bằng 
+FFmpeg để chuyển đổi sang định dạng PCM 16-bit mà Gemini API yêu cầu. 
+ 
+Sơ đồ: Logic xử lý audio đa nền tảng phía backend. 
+Kết quả và Ý nghĩa 
+ Trải nghiệm Đồng nhất:  Người dùng trên iPhone, Android, Windows hay macOS đều có thể sử 
+dụng SpeakMate một cách mượt mà mà không cần quan tâm đến trình duyệt họ đang dùng là gì. 
+ Chất lượng Tối ưu:  Bằng cách chuyển mã về định dạng PCM nguyên bản theo yêu cầu của Gemini, 
+chúng tôi đảm bảo rằng ngay cả âm thanh từ Safari cũng được phân tích với chất lượng cao nhất có 
+thể. 
+ Giữ vững Nguyên tắc:  Toàn bộ gánh nặng xử lý được đặt ở phía server, giữ cho client-side nhẹ 
+nhàng, nhanh chóng và tuân thủ nguyên tắc không chuyển đổi định dạng, bảo toàn tối đa độ trung 
+thực của âm thanh gốc trước khi nó được gửi đi. 
+Cách tiếp cận này không chỉ giải quyết một vấn đề kỹ thuật cụ thể mà còn thể hiện tư duy kỹ 
+thuật sâu sắc của đội ngũ SpeakMate: lường trước vấn đề, chủ động kiểm thử, và xây dựng 
+các giải pháp linh hoạt, mạnh mẽ để tạo ra một sản phẩm thực sự toàn diện và đáng tin cậy. 
+ 
+PHẦN 5: HIỆU QUẢ MANG LẠI, LỘ TRÌNH & PHỤ LỤC 
+5.1. Giá Trị Thực Tế và Tác Động Xã Hội 
+SpeakMate không chỉ là một sản phẩm công nghệ, mà là một công cụ trao quyền cho con 
+người. Giá trị mà dự án mang lại bao gồm: 
+ Dân chủ hóa việc rèn luyện kỹ năng mềm:  Cung cấp một "chuyên gia" giao tiếp cá nhân 24/7 
+với chi phí thấp, giúp mọi người, đặc biệt là học sinh, sinh viên, người mới đi làm, có cơ hội rèn 
+luyện như nhau. 
+ Giảm nỗi sợ giao tiếp và tăng cường sức khỏe tinh thần:  Môi trường an toàn của SpeakMate 
+giúp người dùng dần dần xây dựng sự tự tin, giảm bớt lo âu xã hội, từ đó cải thiện chất lượng 
+cuộc sống. 
+ Trang bị tư duy phản biện cho thế hệ trẻ:  Trong một thế giới đầy rẫy thông tin sai lệch, khả 
+năng nhận diện ngụy biện và xây dựng lập luận vững chắc là một kỹ năng sống còn. SpeakMate 
+trực tiếp rèn luyện kỹ năng này. 
+ Thúc đẩy tương tác đời thực (Bridge to Reality):  Thông qua hệ thống "Nhiệm vụ", chúng tôi 
+phá vỡ rào cản của ứng dụng, khuyến khích người dùng can đảm bước ra ngoài và áp dụng kỹ 
+năng, tạo ra tác động tích cực và hữu hình trong các mối quan hệ và sự nghiệp của họ. 
+5.2. Tính Mới So Với Các Giải Pháp Cũ 
+SpeakMate không chỉ là một chatbot hay một ứng dụng học phát âm. Đây là một phòng gym 
+giao tiếp toàn diện. 
+ 
+Tiêu chí
+SpeakMate
+ChatGPT (Voice)
+ELSA Speak
+Mục tiêu 
+chính 
+Rèn luyện giao tiếp, thuyết trình, 
+tranh biện trong bối cảnh thực 
+tế.
+Trò chuyện tổng quát, 
+trả lời câu hỏi. 
+Luyện phát âm tiếng 
+Anh. 
+Kiến trúc AI 
+3-Agent Orchestration  chuyên 
+biệt (Tư duy, Tương tác, Phân 
+tích).
+Mô hình đơn lẻ, đa 
+năng. 
+AI nhận dạng giọng nói 
+chuyên sâu. 
+Phản hồi 
+Đánh giá sâu theo  bộ tiêu chí 
+(rubric), ngữ điệu, cấu trúc, 
+ngụy biện.
+Phản hồi dựa trên nội 
+dung trò chuyện. 
+Chấm điểm phát âm 
+từng âm tiết. 
+Kết nối thực 
+tế 
+Có, thông qua hệ thống  
+"Nhiệm vụ thực tế" 
+(Missions). 
+Không. 
+Không. 
+Định vị 
+"Bridge to Reality"  - Cầu nối 
+giữa luyện tập ảo và năng lực 
+thực tế.
+Trợ lý kiến thức. 
+Huấn luyện viên phát 
+âm. 
+5.3. Rủi Ro & Hướng Khắc Phục 
+1. Rủi ro chi phí API: Chi phí gọi API có thể tăng cao khi lượng người dùng lớn. Hiện tại, Gemini 
+1.5 Flash có mức giá cực kỳ tối ưu (khoảng $0.075/1M tokens đầu vào). Với một phiên luyện tập 10 
+phút (~2,000 tokens audio/văn bản), chi phí API chỉ rơi vào khoảng 0.00015 USD/phiên. 
+ Chiến lược tối ưu: Sử dụng mô hình Tiered-inference: 
+ Tương tác (The Voice): 100% sử dụng Gemini 1.5 Flash để duy trì chi phí thấp và tốc độ cao . 
+ Phân tích (The Analyst): Chỉ gọi Gemini 1.5 Pro một lần duy nhất vào cuối buổi tập để xuất 
+báo cáo chất lượng cao, giúp kiểm soát ngân sách hiệu quả. 
+ Giải pháp dài hạn: Áp dụng Caching Context (Tính năng mới của Gemini) để giảm 50% chi phí 
+cho các phần prompt cố định (hệ thống rubric, bối cảnh kịch bản). 
+ 
+2. Rủi ro bảo trì và mở rộng: Một dự án phức tạp có thể khó bảo trì và thêm tính năng mới.  
+ Khắc phục: Kiến trúc Feature-Sliced Design (FSD)  được áp dụng ngay từ đầu. Việc thêm một 
+chế độ luyện tập mới (ví dụ: "Đàm phán") chỉ đơn giản là tạo một "slice" mới mà không ảnh 
+hưởng đến các phần còn lại của hệ thống. 
+5.4. Lộ Trình Phát Triển Tương Lai 
+Chúng tôi có một tầm nhìn dài hạn cho SpeakMate, với tư duy "AI First" làm kim chỉ nam. 
+ Q3 2026 - Tích hợp Vision AI:  Phiên bản tiếp theo sẽ cho phép người dùng bật camera trong 
+lúc luyện tập. Một Agent thứ tư (Vision Analyst) sẽ được tích hợp để phân tích các yếu tố phi 
+ngôn ngữ như giao tiếp bằng mắt (eye contact), ngôn ngữ cơ thể, biểu cảm khuôn mặt. Phản hồi 
+sẽ trở nên toàn diện hơn bao giờ hết. 
+ Q1 2027 - Mở rộng cho Đội nhóm (SpeakMate for Teams):  Phát triển phiên bản dành cho 
+doanh nghiệp, giúp các đội nhóm luyện tập kỹ năng thuyết trình, đàm phán, và phản hồi cho nhau 
+trong một môi trường có cấu trúc. 
+ Q3 2027 - Cá nhân hóa sâu hơn với Trí nhớ dài hạn:  Tích hợp các kỹ thuật như RAG 
+(Retrieval-Augmented Generation) để "Ni" có thể ghi nhớ các phiên luyện tập trước, hiểu rõ điểm 
+mạnh, điểm yếu và mục tiêu dài hạn của người dùng, từ đó đưa ra những lời khuyên và lộ trình 
+học tập ngày càng cá nhân hóa. 
+5.5. Phụ Lục 
+ Link truy cập sản phẩm:  [Link sẽ được cập nhật] 
+ Link video giới thiệu sản phẩm:  [Link sẽ được cập nhật] 
+ Link truy cập bản mô phỏng (Prototype Figma):  [Link sẽ được cập nhật] 
+ Tài liệu tham khảo:   
+[1] Google. (2024). Gemini 1.5 Pro: The next-generation model, now available for public preview. Google 
+AI Blog. Truy cập từ https://ai.google/discover/gemini-1-5  
+[2] Google. (2024). Introducing Gemini 1.5 Flash: Our fastest and most efficient model yet. Google for 
+Developers Blog. Truy cập từ https://developers.googleblog.com/  
+[3] Wei, J., Wang, X., Schuurmans, D., Bosma, M., Ichter, B., Xia, F., ... & Zhou, D. (2022). Chain-of-
+thought prompting elicits reasoning in large language models. arXiv preprint arXiv:2201.11903. 
+[4] Gemini Live API overview | Generative AI on Vertex AI: https://docs.cloud.google.com/vertex-
+ai/generative-ai/docs/live-api  
+[5] Storage | Supabase Docs: https://supabase.com/docs/guides/storage  
+[6] How to use Gemini Live API Native Audio in Vertex AI: 
+https://cloud.google.com/blog/topics/developers-practitioners/how-to-use-gemini-live-api-native-audio-in-
+vertex-ai  
+[7] Get started with Live API | Gemini API - Google AI for Developers: https://ai.google.dev/gemini-
+api/docs/live  
+[8] Live API capabilities guide | Gemini API: https://ai.google.dev/gemini-api/docs/live-guide   
+[9] Quickstart | Supabase Docs: https://supabase.com/docs/guides/cron/quickstart  
+[10] Generate json-schema from your Typescript sources: https://github.com/YousefED/typescript-json-
+schema  
+[11] The Ultimate Next.js App Router Architecture: https://feature-sliced.design/vi/blog/nextjs-app-router-
+guide  
+ 
+Hồ Sơ Dự Thi AI Young Guru 2026 | Dự Án SpeakMate | © 2026 
