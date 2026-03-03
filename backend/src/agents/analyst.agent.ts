@@ -2,7 +2,10 @@ import { config } from '../config/env';
 import { GoogleGenAI } from '@google/genai';
 import { EvaluationRubric } from '../contracts/data.contracts';
 
-// Agent 3: The Analyst uses Gemini 1.5 Pro for deep multimodal analysis (audio/text)
+/**
+ * AnalystAgent evaluates the user's performance after a practice session concludes.
+ * It uses the Gemini 2.0 Flash model to produce structured multimodal analysis.
+ */
 const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 export class AnalystAgent {
@@ -30,6 +33,14 @@ Always respond in Vietnamese syntax inside the JSON string properties.
 `;
     }
 
+    /**
+     * Evaluates the entire session transcript based on the provided rubric.
+     *
+     * @param {EvaluationRubric} rubric - The scoring categories and logic.
+     * @param {string} sessionAudioPath - Used for accessing full-session audio if needed for pacing analysis.
+     * @param {string} transcript - The combined transcript of the entire session.
+     * @returns {Promise<any>} A structured JSON evaluation report.
+     */
     public async evaluateSession(rubric: EvaluationRubric, sessionAudioPath: string, transcript: string): Promise<any> {
         try {
             const promptText = `
@@ -51,7 +62,7 @@ Analysis Request: Review the transcript and return the JSON report.
             const cleanJson = text.replace(/```json/gi, '').replace(/```/g, '').trim();
             return JSON.parse(cleanJson);
         } catch (error) {
-            console.error("AnalystAgent evaluate error:", error);
+            console.error("[AnalystAgent] Session evaluation failed:", error);
             throw error;
         }
     }

@@ -2,7 +2,10 @@ import { config } from '../config/env';
 import { GoogleGenAI } from '@google/genai';
 import { FullScenarioContext } from '../contracts/data.contracts';
 
-// Agent 1: The Brain uses Gemini 1.5 Pro to process text/pdf into JSON Scenario
+/**
+ * BrainAgent is responsible for processing user requirements into structured JSON scenarios.
+ * It uses the Gemini 2.0 Flash model to generate contexts for practice sessions.
+ */
 const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 export class BrainAgent {
@@ -38,6 +41,14 @@ Adapt scenario content based on the user's goal. This is a "Safe Mode" practice,
 CRITICAL: Output ONLY the JSON object, nothing else.`;
   }
 
+  /**
+   * Generates a complete scenario context including goals, starting turns, and evaluation rules
+   * based on the user's requirement.
+   *
+   * @param {string} userRequirement - The target skill, job, or topic the user wants to practice.
+   * @returns {Promise<FullScenarioContext>} A structured scenario object containing setup data.
+   * @throws Will throw an error if the model fails to generate content or returns invalid JSON.
+   */
   public async generateScenario(userRequirement: string): Promise<FullScenarioContext> {
     try {
       const response = await genAI.models.generateContent({
@@ -55,6 +66,40 @@ CRITICAL: Output ONLY the JSON object, nothing else.`;
     } catch (error) {
       console.error("BrainAgent error:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Generates contextual scaffolding hints (a.k.a "Ni ơi, cứu!") to help the user 
+   * when they are stuck during a conversation.
+   *
+   * @param {any} scenario - The current active scenario context.
+   * @param {any[]} conversationHistory - The chat history of the current session.
+   * @returns {Promise<string[]>} An array of 3 short hint phrases in Vietnamese.
+   */
+  public async generateHints(scenario: any, conversationHistory: any[]): Promise<string[]> {
+    try {
+      const historyText = conversationHistory.map((h: any) => `${h.speaker}: ${h.line}`).join('\n');
+      const prompt = `Scenario: ${JSON.stringify(scenario)}
+Conversation so far:
+${historyText}
+
+The user is stuck and needs help. Generate exactly 3 short Vietnamese keyword hints or phrases (max 5 words each) that would help the user continue the conversation naturally. These should be suggestive, not full sentences.
+Output ONLY a JSON array of 3 strings, no markdown. Example: ["từ khóa 1", "cụm từ 2", "gợi ý 3"]`;
+
+      const response = await genAI.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.8,
+        }
+      });
+      const jsonStr = response.text || '["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"]';
+      return JSON.parse(jsonStr);
+    } catch (error) {
+      console.error("[BrainAgent] Failed to generate hints:", error);
+      return ["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"];
     }
   }
 }

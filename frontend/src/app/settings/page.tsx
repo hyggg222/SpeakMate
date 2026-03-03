@@ -1,9 +1,25 @@
+'use client'
+
 import { User, Bell, Shield, Moon, Monitor, Sun, Mic, Sliders, LogOut, Check, ChevronDown, CheckCircle2, ChevronRight, Settings } from 'lucide-react'
 import Topbar from '@/components/dashboard/Topbar'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 export default function SettingsPage() {
+    const [displayName, setDisplayName] = useState('');
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const storedName = localStorage.getItem('speakmate_username') || '';
+        setDisplayName(storedName);
+    }, []);
+
+    const handleSaveProfile = () => {
+        localStorage.setItem('speakmate_username', displayName);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
     return (
         <div className="flex flex-col min-h-[100vh] bg-[#f8fafc] w-full">
             <Topbar />
@@ -40,7 +56,9 @@ export default function SettingsPage() {
                                             <label className="text-sm font-semibold text-slate-700">Tên hiển thị</label>
                                             <input
                                                 type="text"
-                                                defaultValue="Nguyen Le Gia Huy"
+                                                value={displayName}
+                                                onChange={(e) => setDisplayName(e.target.value)}
+                                                placeholder="Nhập tên của bạn"
                                                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-slate-700 font-medium"
                                             />
                                         </div>
@@ -66,8 +84,8 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
 
-                                        <button className="w-full py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-semibold text-sm transition-colors mt-2 shadow-sm shadow-teal-500/20">
-                                            Lưu thay đổi
+                                        <button onClick={handleSaveProfile} className="w-full py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-semibold text-sm transition-colors mt-2 shadow-sm shadow-teal-500/20">
+                                            {saved ? '✓ Đã lưu!' : 'Lưu thay đổi'}
                                         </button>
                                     </div>
                                 </div>

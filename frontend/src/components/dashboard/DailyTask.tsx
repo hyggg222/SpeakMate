@@ -1,15 +1,33 @@
 "use client";
 
 import { Radio } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const TOTAL = 25;
-const DONE = 0;
-const pct = (DONE / TOTAL) * 100;
-const radius = 28;
-const circ = 2 * Math.PI * radius;
-const strokeDash = (pct / 100) * circ;
 
 export default function DailyTask() {
+  const [done, setDone] = useState(0);
+
+  useEffect(() => {
+    // Count today's sessions from localStorage
+    try {
+      const stored = localStorage.getItem('speakmate_history');
+      if (stored) {
+        const sessions = JSON.parse(stored);
+        const today = new Date().toLocaleDateString('vi-VN');
+        const todaySessions = sessions.filter((s: any) => s.date?.startsWith(today));
+        setDone(todaySessions.length);
+      }
+    } catch (e) {
+      console.error("Failed to read history", e);
+    }
+  }, []);
+
+  const pct = (done / TOTAL) * 100;
+  const radius = 28;
+  const circ = 2 * Math.PI * radius;
+  const strokeDash = (pct / 100) * circ;
+
   return (
     <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
       {/* Header */}
@@ -26,12 +44,14 @@ export default function DailyTask() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[18px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>
-            Luyện {TOTAL} lần để
-            <br />
-            đạt aim nhé!
+            {done >= TOTAL ? (
+              <>🎉 Hoàn thành<br />xuất sắc!</>
+            ) : (
+              <>Luyện {TOTAL} lần để<br />đạt aim nhé!</>
+            )}
           </p>
           <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-            Nói nhiều mới tiến bộ á :)
+            {done > 0 ? `Đã luyện ${done} lần hôm nay 💪` : 'Nói nhiều mới tiến bộ á :)'}
           </p>
         </div>
 
@@ -55,11 +75,12 @@ export default function DailyTask() {
               strokeDasharray={`${strokeDash} ${circ}`}
               strokeDashoffset={circ * 0.25}
               transform="rotate(-90 36 36)"
+              style={{ transition: 'stroke-dasharray 0.5s ease' }}
             />
           </svg>
           <div className="absolute text-center">
             <span className="text-[13px] font-bold" style={{ color: "var(--foreground)" }}>
-              {DONE}/{TOTAL}
+              {done}/{TOTAL}
             </span>
           </div>
         </div>

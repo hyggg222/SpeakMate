@@ -13,9 +13,20 @@ const analystAgent = new AnalystAgent();
 const storageService = new StorageService();
 const audioService = new AudioService();
 
+/**
+ * Controller handling all business logic for the practice sessions.
+ * Acts as the orchestrator between the Frontend and the three core AI Agents:
+ * BrainAgent (Context Creation), VoiceAgent (Interactive Conversation), and AnalystAgent (Evaluation).
+ */
 export class PracticeController {
 
-    // Phase 1: Setup Scenario 
+    /**
+     * Phase 1: Scenario Setup
+     * Initiates the BrainAgent to design a custom practice scenario based on user goals.
+     *
+     * @param {Request} req - Express request containing `userGoal`.
+     * @param {Response} res - Express response.
+     */
     public async setupScenario(req: Request, res: Response): Promise<void> {
         try {
             const { userGoal } = req.body;
@@ -24,19 +35,26 @@ export class PracticeController {
                 return;
             }
 
-            // Model 1: The Brain designs scenario based on raw input
+            // BrainAgent designs the scenario structure based on raw input
             const scenarioContext: FullScenarioContext = await brainAgent.generateScenario(userGoal);
             res.status(200).json({ data: scenarioContext });
         } catch (err: any) {
-            console.error(err);
+            console.error("[PracticeController] Setup scenario failed:", err);
             res.status(500).json({ error: 'Failed to generate scenario' });
         }
     }
 
-    // Phase 2: Audio interaction (Split Stream handling)
+    /**
+     * Phase 2: Audio Interaction (Split-Stream Handling)
+     * Processes user audio input, handles STT, generates AI response, converts AI response to TTS,
+     * and asynchronously uploads the high-fidelity user audio for later analysis.
+     *
+     * @param {Request} req - Express request containing multipart form data (audio file + JSON strings).
+     * @param {Response} res - Express response.
+     */
     public async interactAudio(req: Request, res: Response): Promise<void> {
         try {
-            // Multer parses file into req.file
+            // Multer parses the incoming audio file into req.file
             const audioFile = req.file;
             const { scenarioStr, conversationHistoryStr } = req.body;
 
@@ -45,7 +63,7 @@ export class PracticeController {
                 return;
             }
 
-            // Step 1: Detect MIME Type and handle Safari `audio/mp4` transcoding risk
+            // Process MIME Type and handle Safari `audio/mp4` transcoding requirements
             const mimeType = audioFile.mimetype;
             let finalBuffer = audioFile.buffer;
 
@@ -57,18 +75,18 @@ export class PracticeController {
             const scenario = JSON.parse(scenarioStr || '{}');
             const history = JSON.parse(conversationHistoryStr || '[]');
 
-            // STREAM 1: Low-latency execution to Model 2 (Multimodal: STT + AI Gen)
+            // STREAM 1: Low-latency execution via VoiceAgent (Multimodal: STT + AI Gen)
             const result = await voiceAgent.interactAudioStream(scenario, history, finalBuffer);
             const userTranscriptText = result.userTranscript;
             const botResponseText = result.aiResponse;
 
-            // STREAM 2: Background upload HIGH-FIDELITY audio to Supabase for Analyst
+            // STREAM 2: Background upload HIGH-FIDELITY audio to Supabase for later evaluation
             const tempFileName = `session_${Date.now()}.wav`;
             storageService.uploadAudio(tempFileName, finalBuffer, 'audio/wav')
-                .then(path => console.log('Bg upload success to:', path))
-                .catch(e => console.error('Bg upload fail:', e));
+                .then(path => console.log('[PracticeController] Background upload success:', path))
+                .catch(e => console.error('[PracticeController] Background upload failed:', e));
 
-            // Tạo Data URI Audio từ text bằng google-tts-api (tránh lỗi CORS trên Frontend)
+            // Generate TTS Data URI from the bot response using google-tts-api to avoid Frontend CORS issues
             let botAudioUrl = '';
             try {
                 const results = await googleTTS.getAllAudioBase64(botResponseText, {
@@ -77,16 +95,16 @@ export class PracticeController {
                     host: 'https://translate.google.com',
                 });
 
-                // Nối các đoạn base64 (MP3 format hỗ trợ nối buffer trực tiếp)
+                // Concatenate base64 audio chunks (MP3 format supports direct buffer concatenation)
                 const buffers = results.map(r => Buffer.from(r.base64, 'base64'));
                 const combinedBuffer = Buffer.concat(buffers);
                 const combinedBase64 = combinedBuffer.toString('base64');
                 botAudioUrl = `data:audio/mp3;base64,${combinedBase64}`;
             } catch (ttsErr) {
-                console.error("Google TTS failed:", ttsErr);
+                console.error("[PracticeController] Google TTS generation failed:", ttsErr);
             }
 
-            // Respond immediately to Client with both transcript and response
+            // Respond immediately to Client with both transcript, API reply, and TTS audio
             res.status(200).json({
                 userTranscript: userTranscriptText,
                 botResponse: botResponseText,
@@ -94,29 +112,56 @@ export class PracticeController {
                 botAudioUrl: botAudioUrl
             });
         } catch (err) {
-            console.error(err);
+            console.error("[PracticeController] Audio interaction failed:", err);
             res.status(500).json({ error: 'Interaction failed' });
         }
     }
 
-    // Phase 3: Final Analysis
+    /**
+     * Phase 3: Final Session Analysis
+     * Initiates the AnalystAgent to score and provide feedback for the entire completed session.
+     *
+     * @param {Request} req - Express request containing full transcript and evaluation rubric.
+     * @param {Response} res - Express response.
+     */
     public async evaluateSession(req: Request, res: Response): Promise<void> {
         try {
             const { rubricStr, audioFileKeys, fullTranscript } = req.body;
             const rubric = JSON.parse(rubricStr || '{}');
 
-            // Get secure signed URL for Model 3
+            // Generate secure signed URLs to pass valid audio references to the AnalystAgent
             const signedUrls = await Promise.all(
                 (audioFileKeys || []).map((k: string) => storageService.getSignedUrl(k))
             );
 
-            // Model 3: The Analyst evaluates everything
+            // AnalystAgent evaluates the entire history context
             const report = await analystAgent.evaluateSession(rubric, signedUrls[0] || '', fullTranscript);
 
             res.status(200).json({ evaluationReport: report });
         } catch (err) {
-            console.error(err);
+            console.error("[PracticeController] Evaluation failed:", err);
             res.status(500).json({ error: 'Analysis failed' });
+        }
+    }
+
+    /**
+     * Phase 4: Scaffolding Hints
+     * Generates real-time conversational hints when the user is stuck.
+     *
+     * @param {Request} req - Express request containing current scenario and conversation history.
+     * @param {Response} res - Express response.
+     */
+    public async generateHints(req: Request, res: Response): Promise<void> {
+        try {
+            const { scenarioStr, conversationHistoryStr } = req.body;
+            const scenario = JSON.parse(scenarioStr || '{}');
+            const history = JSON.parse(conversationHistoryStr || '[]');
+
+            const hints = await brainAgent.generateHints(scenario, history);
+            res.status(200).json({ hints });
+        } catch (err) {
+            console.error("[PracticeController] Hint generation failed:", err);
+            res.status(500).json({ error: 'Failed to generate hints' });
         }
     }
 }
