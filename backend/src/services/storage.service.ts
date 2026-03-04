@@ -7,7 +7,9 @@ import { config } from '../config/env';
 const supabaseUrl = config.supabaseUrl;
 const supabaseKey = config.supabaseKey;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: { fetch: globalThis.fetch }
+});
 
 export class StorageService {
     private bucketName = 'temp-audio-sessions';
