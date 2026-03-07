@@ -19,6 +19,9 @@ export const config = {
     // Unified Cloud Pipeline (Modal)
     modalInteractUrl: process.env.MODAL_INTERACT_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-interact.modal.run",
     modalTranscribeUrl: process.env.MODAL_TRANSCRIBE_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-transcribe.modal.run",
+    // TTS endpoints — always-on containers per voice (TTSChar1 / TTSChar2 on Modal)
+    modalTtsUrlChar1: process.env.MODAL_TTS_URL_CHAR1 || '',
+    modalTtsUrlChar2: process.env.MODAL_TTS_URL_CHAR2 || '',
     // Wake endpoint — triggers LiveKit agent worker to start on Modal
     modalWakeAgentUrl: process.env.MODAL_WAKE_AGENT_URL || '',
     // Internal API (Modal worker → backend)

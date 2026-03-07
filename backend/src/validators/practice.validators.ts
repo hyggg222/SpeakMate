@@ -130,7 +130,9 @@ export const mentorChatSchema = z.object({
  * POST /api/practice/challenge/generate
  */
 export const generateChallengeSchema = z.object({
-    sessionId: z.string().uuid('Invalid Session ID')
+    sessionId: z.string().optional(),
+    scenarioStr: z.string().optional(),
+    evaluationStr: z.string().optional(),
 });
 
 /**

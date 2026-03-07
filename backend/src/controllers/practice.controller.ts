@@ -297,6 +297,107 @@ export class PracticeController {
         }
     }
 
+    // Dual-character text-only: skip STT, use userMessage directly → scoring → TTS
+    public async interactDualCharText(req: Request, res: Response): Promise<void> {
+        try {
+            const { scenarioStr, conversationHistoryStr, userMessage } = req.body;
+            if (!userMessage?.trim()) {
+                res.status(400).json({ error: 'userMessage is required' });
+                return;
+            }
+
+            const scenario = JSON.parse(scenarioStr || '{}');
+            const history = JSON.parse(conversationHistoryStr || '[]');
+            const characters = scenario.characters || [];
+
+            if (characters.length < 2) {
+                res.status(400).json({ error: 'Dual-char mode requires at least 2 characters in scenario' });
+                return;
+            }
+
+            const userName = req.user?.email?.split('@')[0] || undefined;
+            const result = await voiceAgent.interactDualCharText(
+                scenario, characters, history, userMessage, userName
+            );
+
+            res.status(200).json({
+                userTranscript: result.userTranscript,
+                botResponse: result.aiResponse,
+                characterId: result.characterId,
+                characterName: result.characterName,
+                audioBase64: result.audioBase64,
+                audioMimeType: result.audioMimeType,
+            });
+        } catch (err) {
+            console.error("[PracticeController] Dual-char text interaction failed:", err);
+            res.status(500).json({ error: 'Dual-char text interaction failed' });
+        }
+    }
+
+    // Synthesize TTS for a given text + character index (used for initial room greeting)
+    public async synthesizeSpeech(req: Request, res: Response): Promise<void> {
+        try {
+            const { text, charIdx } = req.body;
+            if (!text?.trim()) {
+                res.status(400).json({ error: 'text is required' });
+                return;
+            }
+            const result = await voiceAgent.synthesizeTTS(text, typeof charIdx === 'number' ? charIdx : 0);
+            res.json({ audioBase64: result.data, mimeType: result.mimeType });
+        } catch (err) {
+            console.error('[PracticeController] synthesizeSpeech failed:', err);
+            res.status(500).json({ error: 'TTS failed' });
+        }
+    }
+
+    // Dual-character HTTP round-trip: STT → parallel scoring → winner TTS
+    public async interactDualChar(req: Request, res: Response): Promise<void> {
+        try {
+            const audioFile = req.file;
+            const { scenarioStr, conversationHistoryStr } = req.body;
+
+            if (!audioFile) {
+                res.status(400).json({ error: 'Audio file missing' });
+                return;
+            }
+
+            const scenario = JSON.parse(scenarioStr || '{}');
+            const history = JSON.parse(conversationHistoryStr || '[]');
+            const characters = scenario.characters || [];
+
+            if (characters.length < 2) {
+                res.status(400).json({ error: 'Dual-char mode requires at least 2 characters in scenario' });
+                return;
+            }
+
+            let mimeType = audioFile.mimetype;
+            let finalBuffer = audioFile.buffer;
+
+            if (audioService.isTranscodingRequired(mimeType)) {
+                console.log("[DualChar] Safari detected: Transcoding MP4 to PCM...");
+                finalBuffer = await audioService.transcodeToPcm(audioFile.buffer);
+                mimeType = 'audio/wav';
+            }
+
+            const userName = req.user?.email?.split('@')[0] || undefined;
+            const result = await voiceAgent.interactDualCharacter(
+                scenario, characters, history, finalBuffer, mimeType, userName
+            );
+
+            res.status(200).json({
+                userTranscript: result.userTranscript,
+                botResponse: result.aiResponse,
+                characterId: result.characterId,
+                characterName: result.characterName,
+                audioBase64: result.audioBase64,
+                audioMimeType: result.audioMimeType,
+            });
+        } catch (err) {
+            console.error("[PracticeController] Dual-char interaction failed:", err);
+            res.status(500).json({ error: 'Dual-char interaction failed' });
+        }
+    }
+
     // [Step 474 evaluateSession] ...
     public async evaluateSession(req: Request, res: Response): Promise<void> {
         try {
@@ -423,18 +524,46 @@ export class PracticeController {
     // [Gamification]
     public async generateChallenge(req: Request, res: Response): Promise<void> {
         try {
-            const { sessionId } = req.body;
-            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const { sessionId, scenarioStr, evaluationStr } = req.body;
 
-            const session = await databaseService.getSession(sessionId);
-            const evaluation = await databaseService.getEvaluation(sessionId);
-            if (!session || !evaluation) {
-                res.status(400).json({ error: 'Session or Evaluation not found' });
+            // Try to get scenario + evaluation from DB first, fallback to body payload
+            let scenarioData: any = null;
+            let evaluationData: any = null;
+
+            const isValidUuid = sessionId && /^[0-9a-f-]{36}$/i.test(sessionId);
+            if (isValidUuid) {
+                const [session, evaluation] = await Promise.all([
+                    databaseService.getSession(sessionId).catch(() => null),
+                    databaseService.getEvaluation(sessionId).catch(() => null),
+                ]);
+                scenarioData = session?.scenario ?? null;
+                evaluationData = evaluation;
+            }
+
+            // Fallback to body-provided data (guest / local session)
+            if (!scenarioData && scenarioStr) {
+                try { scenarioData = JSON.parse(scenarioStr); } catch { /* ignore */ }
+            }
+            if (!evaluationData && evaluationStr) {
+                try { evaluationData = JSON.parse(evaluationStr); } catch { /* ignore */ }
+            }
+
+            if (!scenarioData && !evaluationData) {
+                res.status(400).json({ error: 'No scenario or evaluation data available' });
                 return;
             }
 
-            const challengeData = await brainAgent.generateChallenge(session.scenario, evaluation);
-            const challenge = await databaseService.createChallenge(req.user.id, sessionId, challengeData);
+            const challengeData = await brainAgent.generateChallenge(scenarioData || {}, evaluationData || {});
+
+            // Save to DB only if user is authenticated
+            let challenge = { ...challengeData, id: `local_${Date.now()}` };
+            if (req.user?.id) {
+                try {
+                    const saved = await databaseService.createChallenge(req.user.id, sessionId || null, challengeData);
+                    if (saved) challenge = saved;
+                } catch { /* continue with local challenge */ }
+            }
+
             res.status(200).json({ data: challenge });
         } catch (err: any) {
             console.error("[PracticeController] generateChallenge error:", err);
@@ -620,19 +749,19 @@ export class PracticeController {
 
     // [Free Share — no challenge required]
     public async submitFeedbackFree(req: Request, res: Response): Promise<void> {
+        console.log('[submitFeedbackFree] called, body keys:', Object.keys(req.body || {}), 'files:', req.files ? Object.keys(req.files) : 'none');
         try {
-            const { situation, emotionBefore, emotionAfter, whatUserSaid, othersReaction, whatWorked, whatStuck } = req.body;
+            const { situation, emotionBefore, emotionAfter, whatUserSaid, othersReaction, whatWorked, whatStuck, completed, challengeId } = req.body;
 
             // Collect all audio files — voiceBlob (mic) and/or audioFile (upload)
             const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
             const audioFiles = [
                 ...(files?.['voiceBlob'] || []),
                 ...(files?.['audioFile'] || []),
-                // fallback: single file upload (backward compat)
                 ...(req.file ? [req.file] : []),
             ];
 
-            // Transcribe all audio files and concatenate transcripts
+            // Transcribe all audio files in parallel, concatenate with separator
             let voiceTranscript: string | null = null;
             if (audioFiles.length > 0) {
                 const transcripts = await Promise.all(
@@ -644,8 +773,9 @@ export class PracticeController {
                 if (joined) voiceTranscript = joined;
             }
 
+            const isCompleted = completed === 'true' || completed === true || (!challengeId);
             const feedbackData = {
-                completed: true, // free shares are always positive
+                completed: isCompleted,
                 situation,
                 emotionBefore,
                 emotionAfter,
@@ -655,25 +785,66 @@ export class PracticeController {
                 whatStuck,
             };
 
-            const analysis = await mentorAgent.analyzeFeedback(
-                { title: 'Chia sẻ tự do', description: 'Trải nghiệm giao tiếp thực tế', difficulty: 3 },
-                feedbackData,
-                voiceTranscript
-            );
+            // Fetch challenge context if linked
+            const challenge = challengeId && req.user?.id
+                ? await databaseService.getChallengeById(challengeId, req.user.id).catch(() => null)
+                : null;
 
-            res.status(200).json({ data: { analysis } });
+            // Fetch previous real-world metrics for comparison
+            const previousMetricsRows = req.user?.id
+                ? await databaseService.getPreviousRealWorldMetrics(req.user.id, 5).catch(() => [])
+                : [];
+
+            // Compute average previous metrics if available
+            const prevMetrics = previousMetricsRows.length > 0 ? {
+                coherenceScore: Math.round(previousMetricsRows.reduce((s: number, r: any) => s + (r.coherence_score || 0), 0) / previousMetricsRows.length),
+                jargonCount: Math.round(previousMetricsRows.reduce((s: number, r: any) => s + (r.jargon_count || 0), 0) / previousMetricsRows.length),
+                fillerPerMinute: parseFloat((previousMetricsRows.reduce((s: number, r: any) => s + (r.filler_per_minute || 0), 0) / previousMetricsRows.length).toFixed(1)),
+                fluencyScore: 0,
+                jargonList: [],
+                fillerCount: 0,
+                fillerList: [],
+                fluencyNote: '',
+            } : null;
+
+            console.log('[submitFeedbackFree] transcript length:', voiceTranscript?.length ?? 0, '| prevMetrics:', !!prevMetrics);
+            const tStart = Date.now();
+            // Run full real-world analysis (new pipeline)
+            const analysis = await mentorAgent.analyzeFeedbackFull(
+                challenge ? { title: challenge.title, description: challenge.description, difficulty: challenge.difficulty || 3, sourceWeakness: challenge.source_weakness } : null,
+                feedbackData,
+                voiceTranscript,
+                prevMetrics
+            );
+            console.log('[submitFeedbackFree] analyzeFeedbackFull done in', Date.now() - tStart, 'ms | niComment:', analysis.niComment?.slice(0, 60));
+
+            // Save metrics to DB (non-blocking) if user logged in and has expression data
+            if (req.user?.id && analysis.expression) {
+                databaseService.saveRealWorldMetrics(
+                    req.user.id,
+                    analysis.expression,
+                    { trend: analysis.psychology.trend, trendNote: analysis.psychology.trendNote }
+                ).catch(() => {});
+            }
+
+            // Attach previousExpression so frontend can show ▲/▼ comparison arrows
+            if (prevMetrics) analysis.previousExpression = prevMetrics;
+            res.status(200).json({ data: { analysis, transcript: voiceTranscript } });
         } catch (err) {
             console.error("[PracticeController] submitFeedbackFree error:", err);
             res.status(200).json({
                 data: {
                     analysis: {
+                        hasAudio: false,
+                        sourceType: 'realworld',
                         xpEarned: 50,
                         niComment: 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.',
                         nextDifficulty: 3,
                         nextChallengeHint: 'Tiếp tục luyện tập nhé!',
                         newStoryCandidate: false,
-                        comparisonWithGym: '',
-                        progressNote: '',
+                        psychology: { trend: 'unknown', trendNote: '' },
+                        strengths: [],
+                        improvements: [],
                     }
                 }
             });
@@ -759,14 +930,15 @@ export class PracticeController {
     public async getProgressDetail(req: Request, res: Response): Promise<void> {
         try {
             if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
-            const [userProgress, sessionHistory] = await Promise.all([
+            const [userProgress, gymHistory, realworldHistory] = await Promise.all([
                 databaseService.getUserProgress(req.user.id).catch(() => null),
-                databaseService.getRecentSessionMetrics(req.user.id, 10).catch(() => []),
+                databaseService.getRecentSessionMetrics(req.user.id, 10, 'gym').catch(() => []),
+                databaseService.getRecentSessionMetrics(req.user.id, 10, 'realworld').catch(() => []),
             ]);
-            res.status(200).json({ data: { userProgress, sessionHistory } });
+            res.status(200).json({ data: { userProgress, gymHistory, realworldHistory } });
         } catch (err) {
             console.error("[PracticeController] getProgressDetail failed:", err);
-            res.status(200).json({ data: { userProgress: null, sessionHistory: [] } });
+            res.status(200).json({ data: { userProgress: null, gymHistory: [], realworldHistory: [] } });
         }
     }
 

@@ -15,5 +15,8 @@ export {
     type StoryPracticeHistory,
     type ChallengeFeedbackInput,
     type FeedbackAnalysis,
-    type RealWorldChallenge
+    type RealWorldChallenge,
+    type RealWorldMetrics,
+    type PsychologyMetrics,
+    type RealWorldEvaluation
 } from '@speakmate/contracts';

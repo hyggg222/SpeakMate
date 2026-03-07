@@ -1,6 +1,6 @@
 import { PromptService } from '../services/prompt.service';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
-import type { FeedbackAnalysis } from '../contracts/data.contracts';
+import type { FeedbackAnalysis, RealWorldEvaluation, RealWorldMetrics } from '../contracts/data.contracts';
 
 export interface MentorChatResponse {
     reply: string;
@@ -310,6 +310,120 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
                 : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
             dialogueAnalysis: null,
             betterPhrasing: null,
+        };
+    }
+
+    /**
+     * Full real-world feedback analysis — returns RealWorldEvaluation.
+     * Separate from analyzeFeedback() which handles challenge-only feedback.
+     * Uses realworld_feedback_analysis.txt prompt.
+     */
+    public async analyzeFeedbackFull(
+        challenge: { title: string; description: string; difficulty: number; sourceWeakness?: string } | null,
+        feedbackData: {
+            completed: boolean;
+            situation?: string;
+            emotionBefore?: string;
+            emotionAfter?: string;
+            whatUserSaid?: string;
+            othersReaction?: string;
+            whatWorked?: string;
+            whatStuck?: string;
+        },
+        transcript: string | null,
+        previousMetrics?: RealWorldMetrics | null
+    ): Promise<RealWorldEvaluation> {
+        const maxAttempts = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const context = `
+${transcript ? `Transcript (bài kể lại hoặc ghi âm):\n${transcript}\n` : 'Transcript: null (user chỉ điền text form)\n'}
+Form data:
+- Diễn biến: ${feedbackData.situation || 'Không có'}
+- Cảm xúc trước: ${feedbackData.emotionBefore || 'Không có'}
+- Cảm xúc sau: ${feedbackData.emotionAfter || 'Không có'}
+- Bạn đã nói gì: ${feedbackData.whatUserSaid || 'Không có'}
+- Người kia phản ứng: ${feedbackData.othersReaction || 'Không có'}
+- Suôn sẻ: ${feedbackData.whatWorked || 'Không có'}
+- Kẹt: ${feedbackData.whatStuck || 'Không có'}
+
+${challenge ? `Challenge context:\n- Tiêu đề: ${challenge.title}\n- Mô tả: ${challenge.description}\n- Điểm yếu: ${challenge.sourceWeakness || 'N/A'}\n` : 'Challenge context: null (free share)\n'}
+${previousMetrics ? `5 lượt thực tế gần nhất:\n- coherenceScore trung bình: ${previousMetrics.coherenceScore}\n- jargonCount trung bình: ${previousMetrics.jargonCount}\n- fillerPerMinute trung bình: ${previousMetrics.fillerPerMinute}` : 'previousMetrics: null (lần đầu tiên)'}
+
+completed: ${feedbackData.completed}
+`;
+                const response = await getGenAI().models.generateContent({
+                    model: this.modelName,
+                    contents: [{ role: 'user', parts: [{ text: context }] }],
+                    config: {
+                        systemInstruction: this.promptService.getRealWorldFeedbackPrompt(),
+                        responseMimeType: 'application/json',
+                        temperature: 0.7,
+                        safetySettings: SAFETY_SETTINGS,
+                    }
+                });
+
+                const raw = response.text || '{}';
+                let parsed: any;
+                try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+
+                const xp = feedbackData.completed ? 150 : (challenge ? 75 : 50);
+                return {
+                    hasAudio: !!transcript,
+                    transcript: transcript || undefined,
+                    expression: parsed.expression || null,
+                    psychology: {
+                        emotionBefore: feedbackData.emotionBefore,
+                        emotionAfter: feedbackData.emotionAfter,
+                        trend: parsed.psychology?.trend || 'unknown',
+                        trendNote: parsed.psychology?.trendNote || 'Không có đủ dữ liệu',
+                    },
+                    strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+                    improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
+                    niComment: parsed.niComment || 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.',
+                    dialogueAnalysis: parsed.dialogueAnalysis || null,
+                    betterPhrasing: parsed.betterPhrasing || null,
+                    newStoryCandidate: parsed.newStoryCandidate === true,
+                    newStorySuggestion: parsed.newStorySuggestion || undefined,
+                    nextDifficulty: Math.min(5, Math.max(1, parsed.nextDifficulty || (challenge?.difficulty ?? 3))),
+                    nextChallengeHint: parsed.nextChallengeHint || 'Tiếp tục luyện tập nhé!',
+                    xpEarned: parsed.xpEarned || xp,
+                    sourceType: 'realworld',
+                    comparisonWithPrevious: parsed.comparisonWithPrevious || undefined,
+                };
+            } catch (error) {
+                lastError = error;
+                console.error(`[MentorAgent] analyzeFeedbackFull attempt ${attempt}/${maxAttempts} failed:`, error);
+                if (isRateLimited(error)) switchToFallback();
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        // Fallback
+        return {
+            hasAudio: !!transcript,
+            transcript: transcript || undefined,
+            expression: null,
+            psychology: {
+                emotionBefore: feedbackData.emotionBefore,
+                emotionAfter: feedbackData.emotionAfter,
+                trend: 'unknown',
+                trendNote: 'Không có đủ dữ liệu để phân tích',
+            },
+            strengths: ['Bạn đã dám chia sẻ trải nghiệm thực tế'],
+            improvements: ['Tiếp tục luyện tập để cải thiện'],
+            niComment: feedbackData.completed
+                ? 'Bạn đã dám thử và hoàn thành — đó là điều quan trọng nhất!'
+                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ tự tin hơn!',
+            dialogueAnalysis: null,
+            betterPhrasing: null,
+            newStoryCandidate: false,
+            nextDifficulty: challenge?.difficulty ?? 3,
+            nextChallengeHint: 'Tiếp tục luyện tập để cải thiện nhé!',
+            xpEarned: feedbackData.completed ? 150 : (challenge ? 75 : 50),
+            sourceType: 'realworld',
         };
     }
 

@@ -255,6 +255,86 @@ export const apiClient = {
         };
     },
 
+    /** Synthesize TTS for a specific text + character index via Modal NeuTTS. */
+    async synthesizeSpeech(text: string, charIdx: number): Promise<{ audioBase64: string; mimeType: string }> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/tts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({ text, charIdx }),
+        });
+        if (!res.ok) throw new Error(`TTS failed [${res.status}]`);
+        return await res.json();
+    },
+
+    /**
+     * Dual-character text-only (no audio): sends userMessage, backend scores both characters,
+     * winner responds with its own Gemini TTS voice.
+     */
+    async interactDualCharText(
+        userMessage: string,
+        scenario: any,
+        history: any[]
+    ): Promise<{
+        botResponse: string;
+        userTranscript: string;
+        characterId: string;
+        characterName: string;
+        audioBase64?: string;
+        audioMimeType?: string;
+    }> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/interact-dual-text`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({
+                userMessage,
+                scenarioStr: JSON.stringify(scenario),
+                conversationHistoryStr: JSON.stringify(history),
+            }),
+        });
+        if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Dual-char text interact failed [${res.status}]: ${errBody}`);
+        }
+        return await res.json();
+    },
+
+    /**
+     * Dual-character HTTP round-trip: sends audio, backend scores both characters,
+     * winner responds with its own Gemini TTS voice.
+     * Returns base64 PCM audio (24kHz) + winner character info.
+     */
+    async interactDualChar(
+        audioBlob: Blob,
+        scenario: any,
+        history: any[]
+    ): Promise<{
+        botResponse: string;
+        userTranscript: string;
+        characterId: string;
+        characterName: string;
+        audioBase64?: string;
+        audioMimeType?: string;
+    }> {
+        const authHeaders = await getAuthHeaders();
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'record.webm');
+        formData.append('scenarioStr', JSON.stringify(scenario));
+        formData.append('conversationHistoryStr', JSON.stringify(history));
+
+        const res = await fetch(`${API_BASE_URL}/practice/interact-dual`, {
+            method: 'POST',
+            headers: { ...authHeaders },
+            body: formData,
+        });
+        if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Dual-char interact failed [${res.status}]: ${errBody}`);
+        }
+        return await res.json();
+    },
+
     /**
      * Đóng băng phiên và gọi AnalystAgent phân tích kết quả Fallacy & Lời Khuyên.
      */
@@ -406,14 +486,20 @@ export const apiClient = {
         return json.data;
     },
 
-    async generateChallenge(sessionId: string): Promise<any> {
+    async generateChallenge(sessionId: string, scenario?: any, evalReport?: any): Promise<any> {
         const authHeaders = await getAuthHeaders();
+        const body: any = { sessionId };
+        if (scenario) body.scenarioStr = JSON.stringify(scenario);
+        if (evalReport) body.evaluationStr = JSON.stringify(evalReport);
         const res = await fetch(`${API_BASE_URL}/practice/challenge/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeaders },
-            body: JSON.stringify({ sessionId })
+            body: JSON.stringify(body)
         });
-        if (!res.ok) throw new Error("Generate challenge failed");
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Generate challenge failed');
+        }
         const json = await res.json();
         return json.data;
     },
@@ -593,7 +679,7 @@ export const apiClient = {
         return json.data;
     },
 
-    async getProgressDetail(): Promise<{ userProgress: any; sessionHistory: any[] } | null> {
+    async getProgressDetail(): Promise<{ userProgress: any; gymHistory: any[]; realworldHistory: any[] } | null> {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/progress/detail`, {
             headers: { ...authHeaders },

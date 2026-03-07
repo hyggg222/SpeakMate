@@ -54,6 +54,15 @@ router.post('/gemini-direct-token', livekitLimiter, validate(geminiDirectTokenSc
 // 2. Transcode (if needed), upload to Supabase & get real-time response from "The Voice" (Gemini 1.5 Flash)
 router.post('/interact', upload.single('audio'), validate(interactAudioSchema), (req, res) => practiceController.interactAudio(req, res));
 
+// 2.5 Dual-character HTTP round-trip: each character scores relevance, winner responds with own voice
+router.post('/interact-dual', upload.single('audio'), validate(interactAudioSchema), (req, res) => practiceController.interactDualChar(req, res));
+
+// 2.6 Dual-character text-only (no audio): for text input mode
+router.post('/interact-dual-text', (req, res) => practiceController.interactDualCharText(req, res));
+
+// 2.7 TTS synthesis for initial room greeting (dual-char mode)
+router.post('/tts', (req, res) => practiceController.synthesizeSpeech(req, res));
+
 // 2.5. Text-only interaction (no audio, for testing)
 router.post('/interact-text', (req, res) => practiceController.interactText(req, res));
 
@@ -76,9 +85,9 @@ router.post('/mentor-chat', validate(mentorChatSchema), (req, res) => practiceCo
 router.post('/mentor-eval-comment', (req, res) => practiceController.generateEvalComment(req, res));
 
 // Gamification (Phase 3)
-router.post('/challenge/generate', authRequired, validate(generateChallengeSchema), (req, res) => practiceController.generateChallenge(req, res));
+router.post('/challenge/generate', authOptional, validate(generateChallengeSchema), (req, res) => practiceController.generateChallenge(req, res));
 router.post('/challenge/adjust', authRequired, (req, res) => practiceController.adjustChallenge(req, res));
-router.get('/challenges', authRequired, (req, res) => practiceController.getUserChallenges(req, res));
+router.get('/challenges', authOptional, (req, res) => practiceController.getUserChallenges(req, res));
 router.post('/challenge/deadline', authRequired, validate(setDeadlineSchema), (req, res) => practiceController.setChallengeDeadline(req, res));
 router.post('/challenge/report', authRequired, upload.single('audio'), (req, res) => practiceController.reportChallenge(req, res));
 router.post('/challenge/feedback/voice', authRequired, upload.single('audio'), (req, res) => practiceController.submitFeedbackVoice(req, res));

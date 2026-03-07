@@ -8,8 +8,18 @@ import { FullScenarioContext } from '../contracts/data.contracts';
 const supabaseUrl = config.supabaseUrl;
 const supabaseKey = config.supabaseKey;
 
+// Wrap fetch with a timeout so Supabase network failures fail fast (not 75s TCP timeout on Windows)
+function fetchWithTimeout(url: RequestInfo | URL, options?: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    return (globalThis.fetch as typeof fetch)(url as RequestInfo, {
+        ...options,
+        signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey, {
-    global: { fetch: globalThis.fetch }
+    global: { fetch: fetchWithTimeout }
 });
 
 export interface TurnData {
@@ -137,9 +147,10 @@ export class DatabaseService {
                 throw error;
             }
             return data || [];
-        } catch (err) {
-            console.error('[DatabaseService] getUserSessions failed:', err);
-            throw err;
+        } catch (err: any) {
+            // Network errors (ETIMEDOUT, ECONNREFUSED, AbortError) — return empty gracefully
+            console.error('[DatabaseService] getUserSessions failed (returning []):', err?.message || err);
+            return [];
         }
     }
 
@@ -877,19 +888,74 @@ export class DatabaseService {
     /**
      * Save SessionMetrics after evaluation (coherence, jargon, filler, etc.)
      */
-    async getRecentSessionMetrics(userId: string, limit = 10): Promise<any[]> {
+    async getRecentSessionMetrics(userId: string, limit = 10, sourceType?: 'gym' | 'realworld'): Promise<any[]> {
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('session_metrics')
                 .select('*')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(limit);
+            if (sourceType) {
+                query = query.eq('source_type', sourceType);
+            }
+            const { data, error } = await query;
             if (error) {
                 if (this.isTableMissing(error)) return [];
                 throw error;
             }
-            return (data || []).reverse(); // chronological order for charts
+            return (data || []).reverse(); // chronological for charts
+        } catch {
+            return [];
+        }
+    }
+
+    async saveRealWorldMetrics(userId: string, metrics: any, psychology?: { trend: string; trendNote: string }): Promise<void> {
+        try {
+            const { error } = await supabase.from('session_metrics').insert({
+                session_id: null,           // no practice_session link for real-world
+                user_id: userId,
+                source_type: 'realworld',
+                coherence_score: metrics?.coherenceScore ?? 0,
+                jargon_count: metrics?.jargonCount ?? 0,
+                jargon_list: metrics?.jargonList ?? [],
+                filler_count: metrics?.fillerCount ?? 0,
+                filler_per_minute: metrics?.fillerPerMinute ?? 0,
+                filler_list: metrics?.fillerList ?? [],
+                avg_response_time: null,    // not applicable for real-world
+                fluency_score: metrics?.fluencyScore ?? null,
+                fluency_note: metrics?.fluencyNote ?? null,
+                emotion_trend: psychology?.trend ?? null,
+                emotion_trend_note: psychology?.trendNote ?? null,
+            });
+            if (error) {
+                if (this.isTableMissing(error)) return;
+                // Column might not exist yet (migration 009 pending) — skip gracefully
+                if (error.code === '42703') {
+                    console.warn('[DatabaseService] session_metrics missing realworld columns — run migration 009');
+                    return;
+                }
+                console.error('[DatabaseService] saveRealWorldMetrics error:', error);
+            }
+        } catch (err) {
+            console.error('[DatabaseService] saveRealWorldMetrics failed:', err);
+        }
+    }
+
+    async getPreviousRealWorldMetrics(userId: string, limit = 5): Promise<any[]> {
+        try {
+            const { data, error } = await supabase
+                .from('session_metrics')
+                .select('coherence_score, jargon_count, filler_per_minute, emotion_trend, created_at')
+                .eq('user_id', userId)
+                .eq('source_type', 'realworld')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            if (error) {
+                if (this.isTableMissing(error)) return [];
+                return [];
+            }
+            return data || [];
         } catch {
             return [];
         }

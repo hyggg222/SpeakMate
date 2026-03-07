@@ -1,13 +1,88 @@
 """
 LiveKitAgentWorker — long-running Modal worker connecting to LiveKit Cloud SFU.
 Prewarms models in subprocess, then runs ManualBridgeAgent per session.
+
+TTSChar1 / TTSChar2 — always-on TTS containers, one per character voice.
+keep_warm=1 eliminates cold-start latency. Each container pre-loads its own voice ref.
 """
 import os
 import modal
+from pydantic import BaseModel
 
 from ai.modal.app import app, volumes
 from ai.modal.image import image
 from ai.agents.bridge_agent import ManualBridgeAgent
+
+
+# ---------------------------------------------------------------------------
+# Always-on TTS containers — 1 per voice, no cold start
+# ---------------------------------------------------------------------------
+
+class TTSRequest(BaseModel):
+    text: str
+
+
+def _synthesize_wav(tts, text: str, voice_ref: str) -> dict:
+    """Shared synthesis helper: NeuTTS → WAV base64."""
+    import io, base64
+    import numpy as np
+    import soundfile as sf
+
+    audio_np, sr = tts.synthesize(text, reference_audio=voice_ref)
+    audio_int16 = (audio_np * 32767).astype(np.int16)
+    buf = io.BytesIO()
+    sf.write(buf, audio_int16, sr, format="WAV", subtype="PCM_16")
+    return {"audio_base64": base64.b64encode(buf.getvalue()).decode(), "mimeType": "audio/wav"}
+
+
+@app.cls(
+    image=image,
+    gpu="L4",
+    volumes=volumes,
+    keep_warm=1,   # always-on: no cold start for character 1
+    timeout=300,
+)
+class TTSChar1:
+    """Always-on TTS for character 1 (voice1.wav). Falls back to voice2.mp3 if not uploaded yet."""
+    VOICE_REF  = "/valtec_models/voice_clone/voice1.wav"
+    FALLBACK   = "/valtec_models/voice_clone/voice2.mp3"
+
+    @modal.enter()
+    def load(self):
+        os.environ["HF_HUB_CACHE"] = "/hf_cache"
+        from ai.livekit_plugins.neutts import NeuTTS
+        self.tts = NeuTTS()
+        self.ref = self.VOICE_REF if os.path.exists(self.VOICE_REF) else self.FALLBACK
+        self.tts.synthesize("Xin chào.", self.ref)   # pre-encode ref codes
+        print(f"[TTSChar1] Ready — ref={self.ref}", flush=True)
+
+    @modal.fastapi_endpoint(method="POST")
+    def tts(self, req: TTSRequest):
+        return _synthesize_wav(self.tts, req.text, self.ref)
+
+
+@app.cls(
+    image=image,
+    gpu="L4",
+    volumes=volumes,
+    keep_warm=1,   # always-on: no cold start for character 2
+    timeout=300,
+)
+class TTSChar2:
+    """Always-on TTS for character 2 (voice2.mp3)."""
+    VOICE_REF = "/valtec_models/voice_clone/voice2.mp3"
+
+    @modal.enter()
+    def load(self):
+        os.environ["HF_HUB_CACHE"] = "/hf_cache"
+        from ai.livekit_plugins.neutts import NeuTTS
+        self.tts = NeuTTS()
+        self.tts.synthesize("Xin chào.", self.VOICE_REF)   # pre-encode ref codes
+        print(f"[TTSChar2] Ready — ref={self.VOICE_REF}", flush=True)
+
+    @modal.fastapi_endpoint(method="POST")
+    def tts(self, req: TTSRequest):
+        return _synthesize_wav(self.tts, req.text, self.VOICE_REF)
 
 
 @app.cls(

@@ -116,12 +116,31 @@ export default function ConversationStudioPage() {
             try {
                 if (mode === 'gemini-direct') {
                     const scenarioData = scenario.scenario || scenario as any;
+                    const isDual = (scenarioData?.characters?.length || 0) >= 2;
+                    if (isDual) {
+                        // Dual-char uses HTTP round-trip — skip WebSocket, mark ready immediately
+                        setForceReady(true);
+                        return;
+                    }
                     const chars = (scenarioData as any)?.characters?.map((c: any) => ({ id: c.id, name: c.name, gender: c.gender }));
                     if (geminiDirectSession) {
                         await gd.connect(geminiDirectSession.token, geminiDirectSession.model, chars);
                     } else {
-                        const data = await apiClient.createGeminiDirectToken(scenarioData);
-                        await gd.connect(data.token, data.model, (data as any).characters || chars);
+                        // Retry up to 2 times with 2s gap (backend may be starting up)
+                        let lastErr: unknown;
+                        for (let attempt = 1; attempt <= 2; attempt++) {
+                            try {
+                                const data = await apiClient.createGeminiDirectToken(scenarioData);
+                                await gd.connect(data.token, data.model, (data as any).characters || chars);
+                                lastErr = null;
+                                break;
+                            } catch (e) {
+                                lastErr = e;
+                                console.warn(`[GeminiDirect] Token attempt ${attempt}/2:`, (e as any)?.message);
+                                if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+                            }
+                        }
+                        if (lastErr) throw lastErr;
                     }
                 } else if (mode === 'livekit') {
                     if (livekitSession) {
@@ -132,8 +151,9 @@ export default function ConversationStudioPage() {
                     }
                 }
             } catch (e) {
-                console.error(`${mode} connect error:`, e);
+                console.warn(`[${mode}] realtime connect failed, falling back to HTTP mode:`, (e as any)?.message);
                 hasConnectedRef.current = false;
+                // Fall back gracefully — HTTP mode will work without realtime
                 setForceReady(true);
             }
         };
@@ -141,12 +161,48 @@ export default function ConversationStudioPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scenario]);
 
-    // Set initial bot message for HTTP mode
+    // Set initial bot message for HTTP mode (single-char)
     useEffect(() => {
         if (!scenario || isRealtimeMode || history.length > 0) return;
         const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns?.[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.');
         setCurrentBotMsg(firstTurn);
         setHistory([{ speaker: 'AI', line: firstTurn }]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scenario]);
+
+    // Dual-char: show initial starting turn + play TTS greeting when room loads
+    const hasPlayedGreetingRef = useRef(false);
+    useEffect(() => {
+        if (!scenario || history.length > 0 || hasPlayedGreetingRef.current) return;
+        const scenarioData = scenario?.scenario || scenario as any;
+        const isDual = (scenarioData?.characters?.length || 0) >= 2;
+        if (!isDual) return;
+
+        hasPlayedGreetingRef.current = true;
+        const firstStartingTurn = scenarioData?.startingTurns?.[0];
+        if (!firstStartingTurn) return;
+
+        const firstLine = sanitize(firstStartingTurn.line || '');
+        if (!firstLine) return;
+
+        // Determine which character speaks first
+        const firstCharId = firstStartingTurn.characterId || scenarioData?.characters?.[0]?.id;
+        const charIdx = scenarioData.characters.findIndex((c: any) => c.id === firstCharId);
+        const firstChar = scenarioData.characters[charIdx >= 0 ? charIdx : 0];
+
+        // Show text immediately
+        setHistory([{
+            speaker: 'AI',
+            character_id: firstChar?.id,
+            character_name: firstChar?.name,
+            line: firstLine,
+            confirmed: true
+        }]);
+
+        // Play TTS asynchronously (fire-and-forget — fall back gracefully if Modal not ready)
+        apiClient.synthesizeSpeech(firstLine, charIdx >= 0 ? charIdx : 0)
+            .then(result => playAudioBase64(result.audioBase64, result.mimeType))
+            .catch(e => console.warn('[InitialTTS] TTS not available yet:', (e as Error).message));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scenario]);
 
@@ -184,10 +240,48 @@ export default function ConversationStudioPage() {
         });
     };
 
+    /** Play base64-encoded audio (WAV or raw PCM) returned by Modal NeuTTS */
+    const playAudioBase64 = async (base64: string, mimeType?: string) => {
+        try {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+            if (!mimeType || mimeType.includes('wav') || mimeType.includes('mpeg') || mimeType.includes('mp3')) {
+                // WAV / MP3: play via HTMLAudioElement (handles headers automatically)
+                const blob = new Blob([bytes], { type: mimeType || 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.onended = () => URL.revokeObjectURL(url);
+                await audio.play();
+            } else {
+                // Raw PCM fallback (e.g. audio/pcm;rate=24000)
+                const sampleRate = mimeType?.match(/rate=(\d+)/)?.[1]
+                    ? parseInt(mimeType.match(/rate=(\d+)/)![1])
+                    : 24000;
+                const int16 = new Int16Array(bytes.buffer);
+                const float32 = new Float32Array(int16.length);
+                for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+                const ctx = new AudioContext({ sampleRate });
+                const buf = ctx.createBuffer(1, float32.length, sampleRate);
+                buf.getChannelData(0).set(float32);
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                src.connect(ctx.destination);
+                src.start();
+            }
+        } catch (e) {
+            console.error("Error playing audio base64:", e);
+        }
+    };
+
     const handleMicToggle = async () => {
         if (isProcessing) return;
 
-        if (mode === 'gemini-direct') {
+        const scenarioData = scenario?.scenario || scenario as any;
+        const isDual = (scenarioData?.characters?.length || 0) >= 2;
+
+        if (mode === 'gemini-direct' && !isDual) {
             await gd.toggleMic();
             if (!gd.isMicEnabled) setShowHints(false);
             return;
@@ -212,16 +306,37 @@ export default function ConversationStudioPage() {
 
     const processUserAudio = async (blob: Blob) => {
         setIsProcessing(true)
+        const scenarioData = scenario?.scenario || scenario as any;
+        const isDual = (scenarioData?.characters?.length || 0) >= 2;
+
         try {
-            const result = await apiClient.interactAudio(blob, scenario?.scenario || scenario as any, history)
-
-            if (result.botAudioUrl) {
-                playAudioUrl(result.botAudioUrl);
-            }
-
-            setHistory([...history, { speaker: 'User', line: result.userTranscript }, { speaker: 'AI', line: sanitize(result.botResponse) }])
-            if (result.audioUploadedKey) {
-                setAudioFileKeys([...audioFileKeys, result.audioUploadedKey])
+            if (isDual) {
+                // Dual-character mode: each character scores relevance, winner responds with its own voice
+                const result = await apiClient.interactDualChar(blob, scenarioData, history);
+                if (result.audioBase64) {
+                    await playAudioBase64(result.audioBase64, result.audioMimeType);
+                } else if (result.botResponse) {
+                    browserTTS.speak(result.botResponse);
+                }
+                if (result.userTranscript) {
+                    setHistory(prev => [...prev,
+                        { speaker: 'User', line: result.userTranscript, confirmed: true },
+                        { speaker: 'AI', character_id: result.characterId, character_name: result.characterName, line: sanitize(result.botResponse), confirmed: true }
+                    ]);
+                }
+            } else {
+                // Single-character HTTP mode
+                const result = await apiClient.interactAudio(blob, scenarioData, history);
+                if (result.botAudioUrl) {
+                    playAudioUrl(result.botAudioUrl);
+                }
+                setHistory([...history,
+                    { speaker: 'User', line: result.userTranscript },
+                    { speaker: 'AI', line: sanitize(result.botResponse) }
+                ]);
+                if (result.audioUploadedKey) {
+                    setAudioFileKeys([...audioFileKeys, result.audioUploadedKey]);
+                }
             }
         } catch (error) {
             console.error('Lỗi khi tương tác âm thanh:', error)
@@ -263,30 +378,52 @@ export default function ConversationStudioPage() {
         }
     }
 
-    // Text input — send through Gemini Live session (responds with audio)
-    // Falls back to backend API if not connected
+    // Text input — send through Gemini Live session or HTTP API
     const handleTextSend = async () => {
         const text = textInput.trim();
         if (!text || isProcessing) return;
         setTextInput('');
 
-        // Add user turn to history
+        const scenarioData = scenario?.scenario || scenario as any;
+        const isDual = (scenarioData?.characters?.length || 0) >= 2;
+
+        // Add user turn to history immediately
         setHistory((prev: any[]) => [...prev, { speaker: 'User', line: text, confirmed: true }]);
 
-        if (mode === 'gemini-direct' && isConnected) {
-            // Send text through existing Gemini Live WebSocket — AI responds with audio naturally
+        if (mode === 'gemini-direct' && isConnected && !isDual) {
+            // Single-char: send through Gemini Live WebSocket — AI responds with audio naturally
             gd.sendText(text);
-        } else {
-            // Fallback: call backend text API + browser TTS
-            setIsProcessing(true);
-            try {
-                const scenarioData = scenario?.scenario || scenario as any;
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            if (isDual) {
+                // Dual-char: score both characters, winner responds with its own voice
+                const historySnapshot = historyRef.current;
+                const result = await apiClient.interactDualCharText(text, scenarioData, historySnapshot);
+                if (result.audioBase64) {
+                    await playAudioBase64(result.audioBase64, result.audioMimeType);
+                } else if (result.botResponse) {
+                    browserTTS.speak(result.botResponse);
+                }
+                if (result.botResponse) {
+                    setHistory((prev: any[]) => [...prev, {
+                        speaker: 'AI',
+                        character_id: result.characterId,
+                        character_name: result.characterName,
+                        line: sanitize(result.botResponse),
+                        confirmed: true
+                    }]);
+                }
+            } else {
+                // Single-char HTTP fallback
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/interact-text`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         scenarioStr: JSON.stringify(scenarioData),
-                        conversationHistoryStr: JSON.stringify(history),
+                        conversationHistoryStr: JSON.stringify(historyRef.current),
                         userMessage: text,
                     }),
                 });
@@ -294,12 +431,12 @@ export default function ConversationStudioPage() {
                 const aiResponse = sanitize(data.botResponse || data.response || 'Xin lỗi, tôi chưa hiểu.');
                 setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: aiResponse, confirmed: true }]);
                 browserTTS.speak(aiResponse);
-            } catch (err) {
-                console.error('Text interaction error:', err);
-                setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: 'Xin lỗi, có lỗi xảy ra.', confirmed: true }]);
-            } finally {
-                setIsProcessing(false);
             }
+        } catch (err) {
+            console.error('Text interaction error:', err);
+            setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: 'Xin lỗi, có lỗi xảy ra.', confirmed: true }]);
+        } finally {
+            setIsProcessing(false);
         }
         textInputRef.current?.focus();
     };

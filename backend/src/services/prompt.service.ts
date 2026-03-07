@@ -6,7 +6,8 @@ import * as path from 'path';
  * Single source of truth for prompt templates (extracted from files in data/prompts/).
  */
 export class PromptService {
-    private readonly promptsDir = path.join(process.cwd(), '..', 'data', 'prompts');
+    // __dirname = dist/services/ (prod) or src/services/ (dev) → go up 3 levels to repo root
+    private readonly promptsDir = path.join(__dirname, '..', '..', '..', 'data', 'prompts');
     private readonly cache: Map<string, string> = new Map();
 
     private static readonly FRAMEWORK_FIELDS: Record<string, string> = {
@@ -19,6 +20,7 @@ export class PromptService {
         // Pre-warm cache for critical prompts
         this.getTemplate('conversation');
         this.getTemplate('conversation_multi');
+        this.getTemplate('character_score');
         this.getTemplate('scenario');
         this.getTemplate('evaluation');
         this.getTemplate('mentor');
@@ -86,6 +88,27 @@ export class PromptService {
             .replace(/\{\{startingTurns\}\}/g, startingTurns);
     }
 
+    /**
+     * Build per-character prompt for dual-character relevance scoring.
+     * Returns a prompt asking the character to score its own relevance (0-100) and draft a response.
+     */
+    buildCharacterScoringPrompt(
+        char: { name: string; persona: string },
+        otherChar: { name: string; persona: string },
+        goals: string,
+        recentHistory: string,
+        userMessage: string
+    ): string {
+        return this.getTemplate('character_score')
+            .replace(/\{\{charName\}\}/g, char.name)
+            .replace(/\{\{charPersona\}\}/g, char.persona)
+            .replace(/\{\{otherCharName\}\}/g, otherChar.name)
+            .replace(/\{\{otherCharPersona\}\}/g, otherChar.persona)
+            .replace(/\{\{goals\}\}/g, goals)
+            .replace(/\{\{recentHistory\}\}/g, recentHistory || '(Chưa có lịch sử)')
+            .replace(/\{\{userMessage\}\}/g, userMessage);
+    }
+
     getScenarioSystemPrompt(): string {
         return this.getTemplate('scenario');
     }
@@ -120,6 +143,10 @@ export class PromptService {
 
     getFeedbackAnalysisPrompt(): string {
         return this.getTemplate('feedback_analysis');
+    }
+
+    getRealWorldFeedbackPrompt(): string {
+        return this.getTemplate('realworld_feedback_analysis');
     }
 
     getMentorChatSystemPrompt(userContext: string): string {

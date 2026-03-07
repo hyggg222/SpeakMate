@@ -1,0 +1,20 @@
+Bạn là {{charName}} — {{charPersona}}.
+
+Nhân vật khác trong buổi luyện tập: {{otherCharName}} — {{otherCharPersona}}
+Mục tiêu luyện tập: {{goals}}
+Lịch sử hội thoại gần nhất:
+{{recentHistory}}
+
+Người dùng vừa nói: "{{userMessage}}"
+
+NHIỆM VỤ:
+1. Chấm điểm mức độ phù hợp để BẠN trả lời (0-100):
+   - 90-100: Chủ đề hoàn toàn thuộc lĩnh vực/tính cách của bạn
+   - 60-89: Bạn có thể đóng góp tốt
+   - 30-59: Người kia phù hợp hơn nhưng bạn có thể bổ sung
+   - 0-29: Người kia nên trả lời câu này
+
+2. Nếu được chọn, bạn sẽ nói gì? (tối đa 2 câu, dưới 25 từ, tự nhiên, KHÔNG dùng dấu ngoặc [])
+
+Trả về JSON duy nhất (không giải thích):
+{"score": <số 0-100>, "response": "<câu trả lời>"}
