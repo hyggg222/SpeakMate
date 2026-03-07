@@ -1,39 +1,98 @@
 'use client'
 
-import { ArrowLeft, Home, Settings, Edit3, Plus, Loader2 } from 'lucide-react'
-import Image from 'next/image'
+import { ArrowLeft, Home, Loader2, BookOpen, Plus, ChevronDown, ChevronUp, Clock, Search, CheckCircle2, Sparkles } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScenario } from '@/context/ScenarioContext'
 import { apiClient } from '@/lib/apiClient'
 import { FEATURE_FLAGS } from '@/lib/featureFlags'
+import { useStoryBankSuggestions } from '@/hooks/useStoryBankSuggestions'
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    draft: { label: "Bản nháp", color: "#94a3b8" },
+    ready: { label: "Sẵn sàng", color: "#10b981" },
+    "battle-tested": { label: "Thực chiến", color: "#f59e0b" },
+};
 
 export default function ContextConfirmationPage() {
-    const { scenario, livekitSession, setLivekitSession } = useScenario()
+    const { scenario, livekitSession, setLivekitSession, geminiDirectSession, setGeminiDirectSession, selectedStoryIds, setSelectedStoryIds } = useScenario()
     const router = useRouter()
     const hasPreCreatedRef = useRef(false)
 
+    // Story Bank
+    const scenarioData = scenario?.scenario || scenario as any;
+    const relevantTags = scenarioData?.relevantTags
+        || [scenarioData?.scenarioName, ...(scenarioData?.goals || [])].filter(Boolean).slice(0, 5);
+    const { suggestions: storySuggestions, loading: storiesLoading, allStories, hasStories } = useStoryBankSuggestions(
+        relevantTags.length > 0 ? relevantTags : undefined
+    );
+
+    // Browse mode
+    const [showAll, setShowAll] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    // Selected stories (local toggle)
+    const toggleStory = (id: string) => {
+        setSelectedStoryIds(
+            selectedStoryIds.includes(id)
+                ? selectedStoryIds.filter(s => s !== id)
+                : [...selectedStoryIds, id]
+        );
+    };
+
+    // Filter stories for browse mode
+    const filteredStories = useMemo(() => {
+        const source = showAll ? allStories : storySuggestions;
+        if (!searchQuery.trim()) return source;
+        const q = searchQuery.toLowerCase();
+        return source.filter((s: any) =>
+            s.title?.toLowerCase().includes(q) ||
+            s.tags?.some((t: string) => t.toLowerCase().includes(q))
+        );
+    }, [showAll, allStories, storySuggestions, searchQuery]);
+
+    // Handle return from /stories/create
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const pendingId = sessionStorage.getItem('pendingStoryForContext');
+            if (pendingId) {
+                sessionStorage.removeItem('pendingStoryForContext');
+                setSelectedStoryIds([...selectedStoryIds, pendingId]);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Pre-load session
     useEffect(() => {
         if (!scenario) {
             router.push('/setup')
             return
         }
 
-        // Pre-create LiveKit session so the agent starts loading while user reviews
-        if (FEATURE_FLAGS.useLiveKit && !livekitSession && !hasPreCreatedRef.current) {
-            hasPreCreatedRef.current = true
-            apiClient.createLivekitSession(scenario.scenario || scenario as any, [])
-                .then(data => {
-                    setLivekitSession({ token: data.token, livekitUrl: data.livekitUrl })
-                    console.log('[Confirm] LiveKit session pre-created, agent loading...')
-                })
-                .catch(e => {
-                    console.error('[Confirm] Pre-create LiveKit session failed:', e)
-                    hasPreCreatedRef.current = false
-                })
+        if (!hasPreCreatedRef.current) {
+            if (FEATURE_FLAGS.useGeminiDirect && !geminiDirectSession) {
+                hasPreCreatedRef.current = true;
+                apiClient.createGeminiDirectToken(scenario.scenario || scenario as any)
+                    .then(data => {
+                        setGeminiDirectSession({ token: data.token, model: data.model });
+                    })
+                    .catch(() => { hasPreCreatedRef.current = false; });
+            } else if (FEATURE_FLAGS.useGeminiLive && !livekitSession) {
+                hasPreCreatedRef.current = true
+                apiClient.createGeminiLiveSession(scenario.scenario || scenario as any)
+                    .then(data => setLivekitSession({ token: data.token, livekitUrl: data.livekitUrl }))
+                    .catch(() => { hasPreCreatedRef.current = false })
+            } else if (FEATURE_FLAGS.useLiveKit && !livekitSession) {
+                hasPreCreatedRef.current = true
+                apiClient.createLivekitSession(scenario.scenario || scenario as any, [])
+                    .then(data => setLivekitSession({ token: data.token, livekitUrl: data.livekitUrl }))
+                    .catch(() => { hasPreCreatedRef.current = false })
+            }
         }
-    }, [scenario, router, livekitSession, setLivekitSession])
+    }, [scenario, router, livekitSession, setLivekitSession, geminiDirectSession, setGeminiDirectSession])
 
     if (!scenario) {
         return (
@@ -57,111 +116,188 @@ export default function ContextConfirmationPage() {
                         <span className="text-sm font-medium">Trang chủ</span>
                     </Link>
                 </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium">Mentor Ni</span>
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-600 bg-slate-800">
-                            <Image src="/ni-avatar.png" alt="Mentor Ni" width={32} height={32} className="object-cover" />
-                        </div>
-                    </div>
-                    <button className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
-                        <Settings className="w-5 h-5 text-slate-300" />
-                    </button>
-                </div>
             </header>
 
-            <main className="flex-1 max-w-[1200px] w-full mx-auto p-6 lg:py-16 flex flex-col items-center">
+            <main className="flex-1 max-w-[900px] w-full mx-auto p-6 lg:py-12 flex flex-col">
 
-                <div className="text-center mb-12">
-                    <h1 className="text-3xl font-bold text-slate-800 mb-4 tracking-tight">Xác nhận bối cảnh thuyết trình</h1>
-                    <p className="text-slate-500 font-medium">Đây là bối cảnh mà chúng ta sẽ dùng trong buổi luyện tập sắp tới. Hãy kiểm tra lại một lần nữa nhé.</p>
+                {/* Title */}
+                <div className="text-center mb-8">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                        <BookOpen className="w-7 h-7 text-teal-500" />
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Chuẩn bị trước buổi tập</h1>
+                    </div>
+                    <p className="text-slate-500 text-sm">Chọn story để ôn trước khi vào phòng, hoặc bỏ qua để vào luôn.</p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-6 lg:gap-10 w-full max-w-[1100px] items-start justify-center mt-4">
-
-                    {/* Left: Ni Mascot */}
-                    <div className="hidden md:flex flex-col w-[260px] shrink-0 pt-2 lg:pt-6">
-                        <div className="bg-white p-4 rounded-2xl rounded-br-none shadow-sm border border-slate-100 relative mb-4 text-[14px] leading-relaxed font-medium text-slate-700 z-10">
-                            Đây là bối cảnh hiện tại. Nếu mọi thứ ổn rồi, chúng ta vào phòng luyện tập nhé!
-                            <div className="absolute -bottom-[10px] right-4 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent z-10" />
-                            <div className="absolute -bottom-[11px] right-[15px] w-0 h-0 border-t-[11px] border-t-slate-100 border-l-[11px] border-l-transparent border-r-[11px] border-r-transparent z-0" />
+                {/* Tab toggle + Search */}
+                <div className="flex items-center gap-3 mb-5">
+                    <button
+                        onClick={() => { setShowAll(false); setSearchQuery(''); }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${!showAll ? 'bg-teal-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-teal-300'}`}
+                    >
+                        <Sparkles className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                        Gợi ý phù hợp
+                    </button>
+                    <button
+                        onClick={() => setShowAll(true)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${showAll ? 'bg-teal-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-teal-300'}`}
+                    >
+                        Tất cả ({allStories.length})
+                    </button>
+                    {showAll && (
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder="Tìm story..."
+                                className="w-full pl-9 pr-4 py-2 rounded-full bg-white border border-slate-200 text-sm outline-none focus:border-teal-400"
+                            />
                         </div>
-                        <div className="flex justify-end pr-2">
-                            <Image src="/ni-avatar.png" alt="Ni Avatar" width={180} height={180} className="object-cover rounded-full shadow-lg border-4 border-[#f8fafc]" />
-                        </div>
-                    </div>
+                    )}
+                    <button
+                        onClick={() => router.push('/stories/create?returnTo=/setup/confirm')}
+                        className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-full text-sm font-medium text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Tạo mới
+                    </button>
+                </div>
 
-                    {/* Center: Context Card */}
-                    <div className="flex flex-col w-full max-w-xl shrink-0 relative">
-                        <div className="absolute -top-4 right-4 z-10">
-                            <Link href="/setup" className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-lg shadow-md border border-slate-100 font-medium text-sm hover:text-teal-600 transition-colors">
-                                <Edit3 className="w-4 h-4" />
-                                <span>Chỉnh sửa bối cảnh</span>
-                            </Link>
+                {/* Story List */}
+                <div className="flex-1 mb-8">
+                    {storiesLoading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <Loader2 className="w-6 h-6 animate-spin text-teal-500 mr-2" />
+                            <span className="text-sm text-slate-400">Đang tải Story Bank...</span>
                         </div>
-
-                        <div className="bg-white rounded-3xl p-8 pt-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col text-[15px] leading-relaxed relative z-0">
-                            <h2 className="text-xl font-bold text-slate-800 mb-6">{scenario.scenario?.scenarioName || (scenario as any).scenarioName}</h2>
-                            <div className="space-y-5 text-slate-700 flex-1">
-                                <div>
-                                    <strong className="text-slate-900 block mb-1">Vai trò đối phương (The Voice):</strong>
-                                    <p className="text-sm text-slate-600">{scenario.scenario?.interviewerPersona || (scenario as any).interviewerPersona}</p>
-                                </div>
-                                <div>
-                                    <strong className="text-slate-900 block mb-1">Mục tiêu luyện tập:</strong>
-                                    <ul className="list-disc pl-5 text-sm space-y-1 text-slate-600">
-                                        {(scenario.scenario?.goals || (scenario as any).goals || []).map((g: string, i: number) => <li key={i}>{g}</li>)}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <strong className="text-slate-900 block mb-1">Câu mở đầu của Đối phương:</strong>
-                                    <p className="text-sm italic bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600">
-                                        &ldquo;{(scenario.scenario?.startingTurns || (scenario as any).startingTurns || [])[0]?.line}&rdquo;
-                                    </p>
-                                </div>
-                                <div>
-                                    <strong className="text-slate-900 block mb-1">Tiêu chí đánh giá:</strong>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                        {(scenario.evalRules?.categories || []).map((cat: any, i: number) => (
-                                            <span key={i} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-medium border border-teal-100">
-                                                {cat.category}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="mt-12 flex flex-col items-center gap-4">
-                            <Link
-                                href="/practice/conversation"
-                                className="w-full max-w-sm text-center py-3.5 bg-teal-500 hover:bg-teal-600 text-white rounded-full font-bold shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-wide"
+                    ) : filteredStories.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <BookOpen className="w-12 h-12 text-slate-200 mb-4" />
+                            <p className="text-slate-500 font-medium mb-1">
+                                {hasStories ? 'Không tìm thấy story phù hợp' : 'Chưa có story nào'}
+                            </p>
+                            <p className="text-slate-400 text-sm mb-4">
+                                {hasStories ? 'Thử tìm kiếm hoặc xem tất cả' : 'Tạo story đầu tiên để ôn trước buổi tập'}
+                            </p>
+                            <button
+                                onClick={() => router.push('/stories/create?returnTo=/setup/confirm')}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-full text-sm font-medium shadow-md transition-all"
                             >
-                                Vào phòng luyện tập
-                            </Link>
-                            <Link href="/setup" className="text-slate-500 font-medium text-sm hover:text-slate-800 underline underline-offset-4 transition-colors">
-                                Quay lại chỉnh bối cảnh
-                            </Link>
+                                <Plus className="w-4 h-4" />
+                                Tạo Story mới
+                            </button>
                         </div>
-                    </div>
-
-                    {/* Right: Gợi ý */}
-                    <div className="hidden xl:flex flex-col w-[240px] shrink-0 pt-[80px]">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4">Gợi ý cuối cùng</h3>
+                    ) : (
                         <div className="space-y-3">
-                            {['Thêm áp lực về thời gian', 'Khán giả đông hơn dự kiến'].map((hint, idx) => (
-                                <button key={idx} className="w-full bg-white p-3 pr-10 rounded-xl shadow-sm border border-slate-200 text-left text-[13px] text-slate-600 hover:border-teal-300 hover:shadow-md transition-all relative group">
-                                    <span className="line-clamp-2 leading-snug">{hint}</span>
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-                                        <Plus className="w-4 h-4" />
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                            {filteredStories.map((story: any) => {
+                                const isSelected = selectedStoryIds.includes(story.id);
+                                const isExpanded = expandedId === story.id;
+                                const status = STATUS_LABELS[story.status] || STATUS_LABELS.draft;
 
+                                return (
+                                    <div key={story.id} className={`bg-white rounded-2xl border transition-all ${isSelected ? 'border-teal-400 shadow-md shadow-teal-500/10' : 'border-slate-200 shadow-sm'}`}>
+                                        {/* Story header row */}
+                                        <div className="flex items-center gap-4 px-5 py-4">
+                                            {/* Checkbox */}
+                                            <button
+                                                onClick={() => toggleStory(story.id)}
+                                                className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-teal-500 border-teal-500' : 'border-slate-300 hover:border-teal-400'}`}
+                                            >
+                                                {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                            </button>
+
+                                            {/* Title + meta */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-slate-800 truncate">{story.title}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                                                        {story.framework || 'STAR'}
+                                                    </span>
+                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: `${status.color}15`, color: status.color }}>
+                                                        {status.label}
+                                                    </span>
+                                                    <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
+                                                        <Clock className="w-3 h-3" />
+                                                        ~{story.estimated_duration || 30}s
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Expand toggle */}
+                                            <button
+                                                onClick={() => setExpandedId(isExpanded ? null : story.id)}
+                                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+                                            >
+                                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+
+                                        {/* Expanded content */}
+                                        {isExpanded && (
+                                            <div className="px-5 pb-4 pt-0 border-t border-slate-100">
+                                                {story.structured && (
+                                                    <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-slate-600">
+                                                        {story.structured.situation && (
+                                                            <div className="bg-slate-50 p-2.5 rounded-lg">
+                                                                <span className="font-semibold text-slate-700 block mb-0.5">Situation</span>
+                                                                {story.structured.situation}
+                                                            </div>
+                                                        )}
+                                                        {story.structured.task && (
+                                                            <div className="bg-slate-50 p-2.5 rounded-lg">
+                                                                <span className="font-semibold text-slate-700 block mb-0.5">Task</span>
+                                                                {story.structured.task}
+                                                            </div>
+                                                        )}
+                                                        {story.structured.action && (
+                                                            <div className="bg-slate-50 p-2.5 rounded-lg">
+                                                                <span className="font-semibold text-slate-700 block mb-0.5">Action</span>
+                                                                {story.structured.action}
+                                                            </div>
+                                                        )}
+                                                        {story.structured.result && (
+                                                            <div className="bg-slate-50 p-2.5 rounded-lg">
+                                                                <span className="font-semibold text-slate-700 block mb-0.5">Result</span>
+                                                                {story.structured.result}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {story.full_script && (
+                                                    <p className="text-xs text-slate-500 mt-3 italic leading-relaxed line-clamp-3">{story.full_script}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Bottom Actions */}
+                <div className="sticky bottom-0 bg-[#f8fafc] pt-4 pb-6 border-t border-slate-200 flex items-center justify-between gap-4">
+                    <div className="text-sm text-slate-500">
+                        {selectedStoryIds.length > 0
+                            ? <span className="font-medium text-teal-600">{selectedStoryIds.length} story đã chọn</span>
+                            : 'Chưa chọn story nào'
+                        }
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/practice/conversation"
+                            className="px-6 py-2.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
+                        >
+                            Bỏ qua
+                        </Link>
+                        <Link
+                            href="/practice/conversation"
+                            className="px-8 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-full font-bold shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 text-sm"
+                        >
+                            Vào luyện tập
+                        </Link>
+                    </div>
                 </div>
 
             </main>

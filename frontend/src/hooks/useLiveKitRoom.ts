@@ -3,6 +3,8 @@ import { Room, RoomEvent, Track, RemoteParticipant, Participant, DataPacket_Kind
 
 export interface TurnData {
     speaker: 'AI' | 'User';
+    character_id?: string;
+    character_name?: string;
     line: string;
     turn_index?: number;
     confirmed?: boolean;
@@ -90,20 +92,20 @@ export function useLiveKitRoom(
             setIsAgentSpeaking(isAgentActive);
 
             if (isUserActive) {
-                // User is speaking, clear any pending timeout and set local state immediately
                 if (userSpeakingTimeoutRef.current) {
                     clearTimeout(userSpeakingTimeoutRef.current);
                     userSpeakingTimeoutRef.current = null;
                 }
                 setIsUserSpeaking(true);
             } else {
-                // User stopped speaking, wait before updating UI state
-                if (!userSpeakingTimeoutRef.current) {
-                    userSpeakingTimeoutRef.current = setTimeout(() => {
-                        setIsUserSpeaking(false);
-                        userSpeakingTimeoutRef.current = null;
-                    }, 1500); // 1.5s delay to match backend pause tolerance
+                // Update UI immediately when user stops speaking
+                if (userSpeakingTimeoutRef.current) {
+                    clearTimeout(userSpeakingTimeoutRef.current);
                 }
+                userSpeakingTimeoutRef.current = setTimeout(() => {
+                    setIsUserSpeaking(false);
+                    userSpeakingTimeoutRef.current = null;
+                }, 300); // Short delay to avoid flicker
             }
         });
 
@@ -129,6 +131,20 @@ export function useLiveKitRoom(
             setIsMicEnabled(willEnable);
         }
     }, [room, isMicEnabled]);
+
+    // Keepalive: send ping every 30s to prevent idle disconnect
+    useEffect(() => {
+        if (!room || !isConnected) return;
+        const interval = setInterval(() => {
+            try {
+                room.localParticipant.publishData(
+                    new TextEncoder().encode(JSON.stringify({ type: 'ping' })),
+                    { reliable: true }
+                );
+            } catch {}
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [room, isConnected]);
 
     useEffect(() => {
         return () => {

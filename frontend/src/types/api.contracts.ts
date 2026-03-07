@@ -4,4 +4,7 @@ export {
     type InterviewScenario,
     type EvaluationRubric,
     type FullScenarioContext,
+    type RealWorldChallenge,
+    type ChallengeFeedbackInput,
+    type FeedbackAnalysis,
 } from '@speakmate/contracts';

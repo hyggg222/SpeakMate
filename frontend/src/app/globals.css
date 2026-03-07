@@ -82,7 +82,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Arial', Helvetica, sans-serif;
+  --font-sans: "Be Vietnam Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -141,8 +141,80 @@
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Modern refined scrollbars */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    /* Always take up space, but invisible */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s;
+  }
+
+  *:hover::-webkit-scrollbar-thumb {
+    background-color: oklch(0.8 0.01 210);
+  }
+
+  /* Support for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    /* Invisible but exists */
+    transition: scrollbar-color 0.2s;
+  }
+
+  *:hover {
+    scrollbar-color: oklch(0.8 0.01 210) transparent;
+  }
+}
+
+/* Custom premium horizontal scrollbar */
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  margin: 0 24px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+  opacity: 0.5;
+}
+
+.custom-scrollbar-horizontal:hover::-webkit-scrollbar-thumb {
+  background: var(--accent);
+}
+
+.custom-scrollbar-horizontal {
+  -ms-overflow-style: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 5s infinite;
 }

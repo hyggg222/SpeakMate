@@ -83,11 +83,8 @@ export default function SignupPage() {
         <div className="absolute bottom-[-60px] right-[-60px] w-[260px] h-[260px] bg-teal-400/10 rounded-full blur-[80px] pointer-events-none" />
 
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#0f1b2d] border border-slate-700/60 flex items-center justify-center rounded-sm">
-            <svg viewBox="0 0 100 100" className="w-7 h-7" fill="none">
-              <text x="25" y="65" fontFamily="Georgia, serif" fontSize="48" fill="white" fontWeight="bold">N</text>
-              <path d="M 60,45 Q 68,30 75,45 T 90,45" stroke="#2dd4bf" strokeWidth="6" fill="none" strokeLinecap="round" />
-            </svg>
+          <div className="w-10 h-10 bg-[#0f1b2d] border border-slate-700/60 flex items-center justify-center rounded-lg overflow-hidden">
+            <Image src="/brand-logo.png" alt="SpeakMate" width={40} height={40} className="w-full h-full object-cover" />
           </div>
           <span className="text-white font-bold text-lg tracking-wide">SpeakMate</span>
         </div>
@@ -137,11 +134,8 @@ export default function SignupPage() {
         <div className="w-full max-w-[420px] space-y-7">
 
           <div className="flex lg:hidden items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-[#0f172a] flex items-center justify-center rounded-sm">
-              <svg viewBox="0 0 100 100" className="w-6 h-6" fill="none">
-                <text x="25" y="65" fontFamily="Georgia, serif" fontSize="48" fill="white" fontWeight="bold">N</text>
-                <path d="M 60,45 Q 68,30 75,45 T 90,45" stroke="#2dd4bf" strokeWidth="6" fill="none" strokeLinecap="round" />
-              </svg>
+            <div className="w-8 h-8 bg-[#0f172a] flex items-center justify-center rounded-lg overflow-hidden">
+              <Image src="/brand-logo.png" alt="SpeakMate" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-slate-800">SpeakMate</span>
           </div>

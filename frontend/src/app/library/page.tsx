@@ -2,86 +2,40 @@
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { Search, Clock, Layers } from "lucide-react";
-import Link from "next/link";
+import { Search } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { hotScenarios, ScenarioItem } from "@/data/scenarios";
+
+function PlayIcon() {
+    return (
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+        </svg>
+    );
+}
 
 export default function LibraryPage() {
-    const scripts = [
-        {
-            mode: "Tranh biện", modeColor: "badge-orange", title: "Kịch bản tranh biện: Học sinh nên tự chọn nghề", desc: "Bao gồm: mở bài, 2 luận điểm chính và kết bài. Gợi ý câu nối giữa các ý.", time: "3-5 phút", parts: "3 phần chính", details: [
-                { title: "Mở bài", desc: "Giới thiệu chủ đề và quan điểm." },
-                { title: "Thân bài", desc: "Triển khai 2 luận điểm chính có dẫn chứng." },
-                { title: "Kết bài", desc: "Khẳng định lại vấn đề." }
-            ]
-        },
-        {
-            mode: "Giao tiếp cơ bản", modeColor: "badge-green", title: "Kịch bản luyện nói 3 phút: Giới thiệu bản thân", desc: "Cấu trúc đơn giản cho bài giới thiệu ngắn gọn, tạo điểm nhấn nhẹ nhàng.", time: "2-3 phút", parts: "3 phần chính", details: [
-                { title: "Mở đoạn", desc: "Chào hỏi và giới thiệu tên tuổi." },
-                { title: "Thân đoạn", desc: "Nói về sở thích, công việc hiện tại." },
-                { title: "Kết đoạn", desc: "Mong muốn học hỏi và giao lưu." }
-            ]
-        },
-        {
-            mode: "Giao tiếp", modeColor: "badge-blue", title: "Kịch bản giao tiếp: Đàm phán lương", desc: "Các bước đàm phán mức thu nhập mong muốn với nhà tuyển dụng.", time: "4-6 phút", parts: "4 phần chính", details: [
-                { title: "Chuẩn bị", desc: "Nghiên cứu thị trường và xác định mức lương." },
-                { title: "Mở đầu", desc: "Khẳng định giá trị bản thân." },
-                { title: "Đàm phán", desc: "Thương lượng cứng rắn nhưng khéo léo." },
-                { title: "Kết thúc", desc: "Chốt vấn đề vui vẻ." }
-            ]
-        },
-        {
-            mode: "Tranh biện", modeColor: "badge-orange", title: "Kịch bản tranh biện: Làm việc từ xa hiệu quả hơn", desc: "So sánh ưu nhược điểm của mô hình làm việc hiện đại.", time: "3-5 phút", parts: "3 phần chính", details: [
-                { title: "Mở bài", desc: "Nêu xu hướng làm việc từ xa." },
-                { title: "Thân bài", desc: "Những lợi ích vượt trội về thời gian, chi phí." },
-                { title: "Kết bài", desc: "Gắn kết đội ngũ bằng phần mềm." }
-            ]
-        },
-        {
-            mode: "Giao tiếp cơ bản", modeColor: "badge-green", title: "Giao tiếp cơ bản: Lời mời tham gia khóa học", desc: "Cấu trúc thân thiện, thuyết phục nhẹ nhàng người thân tham gia.", time: "5-8 phút", parts: "4 phần chính", details: [
-                { title: "Mở đoạn", desc: "Chào hỏi vui vẻ và hỏi thăm sức khỏe." },
-                { title: "Thân đoạn 1", desc: "Giới thiệu về khóa học, tại sao lại nghĩ là phù hợp với đối phương." },
-                { title: "Thân đoạn 2", desc: "Nhấn mạnh những lợi ích nó mang lại (không cưỡng ép)." },
-                { title: "Kết đoạn", desc: "Mời gọi nhẹ nhàng, để đối phương có thời gian suy nghĩ." }
-            ]
-        },
-        {
-            mode: "Giao tiếp", modeColor: "badge-blue", title: "Kịch bản giao tiếp: Giải quyết xung đột nhóm", desc: "Các bước hòa giải và xây dựng lại sự tin tưởng.", time: "3-5 phút", parts: "3 phần chính", details: [
-                { title: "Lắng nghe", desc: "Tạo không gian để hai bên giãi bày." },
-                { title: "Giải quyết", desc: "Tìm ra điểm chung và thống nhất." },
-                { title: "Hòa giải", desc: "Xóa bỏ khúc mắc, tập trung vào mục tiêu chung." }
-            ]
-        },
-    ];
-
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterMode, setFilterMode] = useState('Tất cả');
-    const [filterLength, setFilterLength] = useState('Tất cả');
-    const [selectedScript, setSelectedScript] = useState(scripts[1]); // Giao tiếp cơ bản by default
+    const [filterTag, setFilterTag] = useState('Tất cả');
+    const [filterDifficulty, setFilterDifficulty] = useState('Tất cả');
+    const [loadingId, setLoadingId] = useState<string | null>(null);
 
-    const filteredScripts = scripts.filter(s => {
-        if (filterMode !== 'Tất cả' && s.mode !== filterMode) return false;
-        if (filterLength !== 'Tất cả') {
-            if (filterLength === 'Ngắn' && !s.time.includes('2-3')) return false;
-            if (filterLength === 'Vừa' && !s.time.includes('3-5') && !s.time.includes('4-6')) return false;
-            if (filterLength === 'Dài' && !s.time.includes('5-8')) return false;
-        }
-        if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    const tags = ['Tất cả', ...Array.from(new Set(hotScenarios.map(s => s.tag)))];
+
+    const filteredScenarios = hotScenarios.filter(s => {
+        if (filterTag !== 'Tất cả' && s.tag !== filterTag) return false;
+        if (filterDifficulty !== 'Tất cả' && s.difficulty !== filterDifficulty) return false;
+        if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase()) && !s.requirement.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
     });
 
-    const getModeColorStr = (mode: string) => {
-        if (mode === 'Giao tiếp cơ bản') return '#10b981';
-        if (mode === 'Giao tiếp') return '#3b82f6';
-        if (mode === 'Tranh biện') return '#f59e0b';
-        return '#94a3b8';
-    };
-
-    const getBadgeStyle = (mode: string) => {
-        return {
-            backgroundColor: getModeColorStr(mode),
-            color: "white"
-        };
+    const selectScenario = async (scenario: ScenarioItem) => {
+        setLoadingId(scenario.id);
+        router.push(`/setup?topic=${encodeURIComponent(scenario.requirement)}`);
+        setLoadingId(null);
     };
 
     return (
@@ -95,168 +49,137 @@ export default function LibraryPage() {
                     <div className="max-w-7xl mx-auto">
 
                         {/* Header */}
-                        <h1 className="text-4xl font-bold font-serif mb-8 text-slate-900">
-                            Thư viện
-                        </h1>
-
-                        {/* Tabs */}
-                        <div className="flex items-center gap-8 border-b border-slate-200 mb-8">
-                            <button className="pb-4 text-[15px] font-medium text-slate-500 hover:text-slate-800 transition-colors">Đề bài & Chủ đề</button>
-                            <button className="pb-4 text-[15px] font-medium text-slate-500 hover:text-slate-800 transition-colors">Tài liệu của tôi</button>
-                            <button className="pb-4 text-[15px] font-bold text-slate-900 border-b-2 border-slate-900">Mẫu kịch bản</button>
+                        <div className="mb-8">
+                            <h1 className="text-4xl font-bold font-serif text-slate-900 mb-2">
+                                Thư viện Bối cảnh 🔥
+                            </h1>
+                            <p className="text-slate-500 text-[15px]">
+                                Khám phá hàng chục tình huống giao tiếp Tiếng Việt thực tế được chuẩn bị sẵn.
+                            </p>
                         </div>
 
-                        {/* Main Grid: Left Content (Filters + Cards) & Right Panel (Quick View) */}
-                        <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        {/* Filters */}
+                        <div className="flex flex-wrap items-center gap-4 bg-[#f8fafc] pb-8 border-b border-slate-200">
+                            <div className="relative flex-1 min-w-[250px] max-w-sm">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Tìm kiếm bối cảnh..."
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[var(--teal)] transition-colors shadow-sm bg-white"
+                                />
+                            </div>
 
-                            {/* Left Content */}
-                            <div className="flex-1 space-y-6 w-full lg:w-auto">
+                            <div className="flex flex-col ml-4">
+                                <span className="text-[11px] font-medium text-slate-500 px-1 mb-0.5">Chủ đề</span>
+                                <select
+                                    value={filterTag}
+                                    onChange={(e) => setFilterTag(e.target.value)}
+                                    className="border-none bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer pr-4 appearance-none custom-select"
+                                >
+                                    {tags.map(t => (
+                                        <option key={t}>{t}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                {/* Filters */}
-                                <div className="flex flex-wrap items-center gap-4 bg-[#f8fafc] pb-2">
-                                    <div className="relative flex-1 min-w-[250px] max-w-sm">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder="Tìm mẫu kịch bản..."
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[var(--teal)] transition-colors shadow-sm bg-white"
-                                        />
-                                    </div>
+                            <div className="flex flex-col ml-4">
+                                <span className="text-[11px] font-medium text-slate-500 px-1 mb-0.5">Độ khó</span>
+                                <select
+                                    value={filterDifficulty}
+                                    onChange={(e) => setFilterDifficulty(e.target.value)}
+                                    className="border-none bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer pr-4 appearance-none custom-select"
+                                >
+                                    <option>Tất cả</option>
+                                    <option>Dễ</option>
+                                    <option>Trung bình</option>
+                                    <option>Khó</option>
+                                </select>
+                            </div>
+                        </div>
 
-                                    <div className="flex flex-col">
-                                        <span className="text-[11px] font-medium text-slate-500 px-1 mb-0.5">Chế độ</span>
-                                        <select
-                                            value={filterMode}
-                                            onChange={(e) => setFilterMode(e.target.value)}
-                                            className="border-none bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer pr-4 appearance-none custom-select"
-                                        >
-                                            <option>Tất cả</option>
-                                            <option>Giao tiếp cơ bản</option>
-                                            <option>Giao tiếp</option>
-                                            <option>Tranh biện</option>
-                                        </select>
-                                    </div>
+                        {/* Flash Cards Grid */}
+                        <div className="pt-8 pb-16">
+                            {filteredScenarios.length === 0 && (
+                                <div className="text-center text-slate-500 py-10 w-full">Không tìm thấy bối cảnh phù hợp.</div>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {filteredScenarios.map((s, index) => (
+                                    <motion.div
+                                        key={s.id}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: index * 0.05, duration: 0.3 }}
+                                        className={`group relative flex-shrink-0 w-full aspect-[2/3] lg:aspect-auto lg:h-[400px] rounded-[32px] overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all border border-white/10 bg-gradient-to-br ${s.color} select-none`}
+                                        onClick={() => !loadingId && selectScenario(s)}
+                                    >
+                                        {/* Decorative dynamic circles */}
+                                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500" />
+                                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500" />
 
-                                    <div className="flex flex-col">
-                                        <span className="text-[11px] font-medium text-slate-500 px-1 mb-0.5">Độ dài</span>
-                                        <select
-                                            value={filterLength}
-                                            onChange={(e) => setFilterLength(e.target.value)}
-                                            className="border-none bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer pr-4 appearance-none custom-select"
-                                        >
-                                            <option>Tất cả</option>
-                                            <option>Ngắn</option>
-                                            <option>Vừa</option>
-                                            <option>Dài</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Script Cards Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {filteredScripts.length === 0 && (
-                                        <div className="col-span-2 text-center text-slate-500 py-10">Không tìm thấy mẫu kịch bản phù hợp.</div>
-                                    )}
-                                    {filteredScripts.map((script, i) => {
-                                        const isDisabled = script.mode !== "Giao tiếp cơ bản";
-                                        return (
-                                            <div
-                                                key={i}
-                                                onClick={() => setSelectedScript(script)}
-                                                className={`bg-white rounded-2xl p-5 border cursor-pointer border-slate-200 shadow-sm flex flex-col h-full ${isDisabled ? 'opacity-80 grayscale-[20%]' : 'hover:border-[var(--teal)] hover:shadow-md transition-all'} ${selectedScript.title === script.title ? 'border-[var(--teal)] shadow-md ring-2 ring-teal-100' : ''}`}
-                                            >
-                                                <div className="mb-3">
-                                                    <span className="inline-block text-[11px] font-bold px-3 py-1 rounded-full mb-3 shadow-sm border border-slate-100" style={getBadgeStyle(script.mode)}>
-                                                        {script.mode}
+                                        {/* Card Content */}
+                                        <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
+                                            <div>
+                                                {/* Badges */}
+                                                <div className="flex gap-2 mb-6">
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white text-black/80">
+                                                        {s.tag}
                                                     </span>
-                                                    <div className="flex justify-between items-start gap-2">
-                                                        <h3 className="text-base font-bold text-slate-900 leading-snug mb-2 line-clamp-2">
-                                                            {script.title}
-                                                        </h3>
-                                                        {isDisabled && (
-                                                            <span className="bg-slate-100 text-slate-500 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md whitespace-nowrap">Sắp ra mắt</span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[13px] text-slate-600 line-clamp-2 leading-relaxed">
-                                                        {script.desc}
-                                                    </p>
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-black/20 text-white border border-white/10 backdrop-blur-md">
+                                                        {s.difficulty}
+                                                    </span>
                                                 </div>
 
-                                                <div className="mt-auto pt-4 space-y-4">
-                                                    <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Clock size={14} />
-                                                            {script.time}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Layers size={14} />
-                                                            {script.parts}
-                                                        </div>
-                                                    </div>
+                                                {/* Typography Section */}
+                                                <h3 className="text-[20px] font-black text-white leading-[1.2] mb-4">
+                                                    {s.title}
+                                                </h3>
 
-                                                    <div className="flex items-center gap-4">
-                                                        {!isDisabled && (
-                                                            <Link href={`/setup?topic=${encodeURIComponent(script.title)}`} className="bg-[var(--teal)] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors inline-block text-center shadow-[0_2px_10px_rgba(20,184,166,0.2)]">
-                                                                Dùng kịch bản này
-                                                            </Link>
-                                                        )}
+                                                <div className="space-y-3">
+                                                    <div className="w-12 h-1 bg-white/40 rounded-full group-hover:w-16 transition-all" />
+                                                    <div className="bg-black/10 backdrop-blur-sm rounded-xl p-3 border border-white/5">
+                                                        <p className="text-[13px] text-white/90 leading-relaxed font-medium line-clamp-5">
+                                                            {s.requirement}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
-                                        )
-                                    })}
-                                </div>
 
-                                {/* Pagination */}
-                                <div className="flex items-center justify-center gap-4 pt-8 pb-10">
-                                    <button className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
-                                        Trang trước
-                                    </button>
-                                    <div className="flex items-center gap-1">
-                                        <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--navy)] text-white text-sm font-bold">1</button>
-                                        <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium transition-colors">2</button>
-                                        <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 text-sm font-medium transition-colors">3</button>
-                                    </div>
-                                    <button className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">
-                                        Trang sau
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Right Panel: Quick View */}
-                            <div className="lg:w-[320px] shrink-0 lg:sticky lg:top-10">
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                                        <h3 className="font-bold text-slate-900">Xem nhanh</h3>
-                                    </div>
-                                    <div className="p-5 space-y-4">
-                                        <p className="font-semibold text-slate-800 text-sm leading-snug">
-                                            {selectedScript?.title || 'Chưa chọn kịch bản'}
-                                        </p>
-
-                                        <div className="w-full h-[1px] bg-slate-100" />
-
-                                        <ul className="space-y-3">
-                                            {selectedScript?.details?.map((detail, idx) => (
-                                                <li key={idx} className="flex items-start gap-2 text-[13px] text-slate-600 leading-relaxed">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 shrink-0" />
-                                                    <p><span className="font-semibold text-slate-800">{detail.title}:</span> {detail.desc}</p>
-                                                </li>
-                                            ))}
-                                        </ul>
-
-                                        <div className="pt-2">
-                                            <Link href={`/setup?topic=${encodeURIComponent(selectedScript?.title || '')}`} className="block w-full text-center bg-[var(--teal)] text-white text-[13px] font-bold py-2.5 rounded-xl hover:bg-teal-600 transition-colors shadow-sm">
-                                                Vào luyện với kịch bản này
-                                            </Link>
+                                            {/* Action Row */}
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <span className="text-[12px] font-bold text-white/80 group-hover:text-white transition-colors underline underline-offset-4 decoration-white/30 hidden sm:inline-block">
+                                                    Bắt đầu
+                                                </span>
+                                                <div
+                                                    className={`bg-white text-black h-12 w-12 rounded-xl flex flex-shrink-0 items-center justify-center shadow-xl transition-all group-hover:scale-110 group-hover:rotate-6 sm:ml-auto ${loadingId === s.id ? 'animate-pulse' : ''}`}
+                                                >
+                                                    {loadingId === s.id ? (
+                                                        <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                    ) : (
+                                                        <PlayIcon />
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
 
+                                        {/* Immersive Loading State */}
+                                        {loadingId === s.id && (
+                                            <div className="absolute inset-0 bg-black/30 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center z-30">
+                                                <div className="relative">
+                                                    <div className="w-12 h-12 border-4 border-white/10 rounded-full" />
+                                                    <div className="absolute inset-0 w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
+                                                </div>
+                                                <div className="mt-4 text-white text-[12px] font-black uppercase tracking-[0.2em] animate-pulse">
+                                                    Initializing
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </div>
                         </div>
+
                     </div>
                 </section>
             </main>

@@ -57,6 +57,22 @@ export const livekitSessionSchema = z.object({
 });
 
 /**
+ * POST /api/practice/gemini-live-session
+ * Requires: scenarioStr (valid JSON string)
+ */
+export const geminiLiveSessionSchema = z.object({
+    scenarioStr: jsonString('scenarioStr'),
+});
+
+/**
+ * POST /api/practice/gemini-direct-token
+ * Requires: scenarioStr (valid JSON string)
+ */
+export const geminiDirectTokenSchema = z.object({
+    scenarioStr: jsonString('scenarioStr'),
+});
+
+/**
  * POST /api/practice/analyze
  * Requires: rubricStr (valid JSON string), audioFileKeys (string[]), fullTranscript (string)
  */

@@ -51,7 +51,7 @@ export default function DailyTask() {
   const strokeDash = (pct / 100) * circ;
 
   return (
-    <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
+    <div className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center justify-center w-6 h-6 rounded-full" style={{ backgroundColor: "var(--teal)" }}>
@@ -88,7 +88,7 @@ export default function DailyTask() {
 
         {/* Circular Progress */}
         <div className="relative flex items-center justify-center flex-shrink-0">
-          <svg width="72" height="72" viewBox="0 0 72 72">
+          <svg width="60" height="60" viewBox="0 0 72 72">
             <circle cx="36" cy="36" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="5" />
             <circle
               cx="36" cy="36" r={radius}

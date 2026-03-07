@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Home, Settings, Mic, FileText, Sparkles, Plus, UploadCloud, Loader2, RefreshCw, Trash2, Save, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Home, Settings, Sparkles, Loader2, RefreshCw, Trash2, Save, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,25 +8,49 @@ import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useScenario } from '@/context/ScenarioContext'
 import { FullScenarioContext } from '@/types/api.contracts'
+import { Users, User } from 'lucide-react'
 
 const STORAGE_KEY = 'speakmate_saved_context';
-const DEFAULT_SUGGESTIONS = [
-    'Thêm nhân vật phản biện khó tính',
-    'Bối cảnh hội trường lớn',
-    'Khán giả là học sinh cấp 3',
-];
+interface AgentConfig {
+    name: string;
+    persona: string;
+    gender: 'male' | 'female';
+}
+
+const DEFAULT_AGENT: AgentConfig = { name: '', persona: '', gender: 'male' };
+
+// PII patterns (mirrors backend)
+const PHONE_RE = /\b(0\d{9,10})\b/g;
+const EMAIL_RE = /\b[\w.-]+@[\w.-]+\.\w{2,}\b/gi;
+const CCCD_RE = /\b(\d{12})\b/g;
+
+function detectPII(text: string): string | null {
+    PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
+    if (PHONE_RE.test(text)) return 'Phát hiện số điện thoại trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
+    if (EMAIL_RE.test(text)) return 'Phát hiện địa chỉ email trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
+    if (CCCD_RE.test(text)) return 'Phát hiện số CCCD trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    return null;
+}
 
 export default function ContextBuilderPage() {
     const [userGoal, setUserGoal] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
     const [isAdjusting, setIsAdjusting] = useState(false)
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
     const [hasCreatedFirst, setHasCreatedFirst] = useState(false)
-    const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS)
     const [saveIndicator, setSaveIndicator] = useState(false)
     const [adjustmentText, setAdjustmentText] = useState('')
+    const [filterError, setFilterError] = useState<string | null>(null)
+    const [piiWarning, setPiiWarning] = useState<string | null>(null)
     const { scenario, setScenario, setHistory, setAudioFileKeys } = useScenario()
     const router = useRouter()
+
+    // Agent config state
+    const [agentCount, setAgentCount] = useState<1 | 2>(1)
+    const [agent1, setAgent1] = useState<AgentConfig>({ ...DEFAULT_AGENT })
+    const [agent2, setAgent2] = useState<AgentConfig>({ ...DEFAULT_AGENT, gender: 'female' })
+    const [activeCharIndex, setActiveCharIndex] = useState(0)
 
 
     // Load saved context from localStorage on mount
@@ -47,10 +71,6 @@ export default function ContextBuilderPage() {
                         setScenario(parsed.scenario);
                         setUserGoal(parsed.userGoal || '');
                         setHasCreatedFirst(true);
-                        // Load saved suggestions or fetch new ones
-                        if (parsed.suggestions && parsed.suggestions.length > 0) {
-                            setSuggestions(parsed.suggestions);
-                        }
                     }
                 } catch (e) {
                     console.error('Failed to load saved context:', e);
@@ -60,60 +80,84 @@ export default function ContextBuilderPage() {
     }, []);
 
     // Save context to localStorage whenever scenario changes
-    const saveToMemory = useCallback((scenarioData: FullScenarioContext, goal: string, suggestionsData?: string[]) => {
+    const saveToMemory = useCallback((scenarioData: FullScenarioContext, goal: string) => {
         if (typeof window !== 'undefined') {
             const data = {
                 scenario: scenarioData,
                 userGoal: goal,
-                suggestions: suggestionsData || suggestions,
                 savedAt: new Date().toISOString(),
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
-            // Show save indicator
             setSaveIndicator(true);
             setTimeout(() => setSaveIndicator(false), 2000);
         }
-    }, [suggestions]);
-
-    // Fetch context-aware suggestions when scenario changes
-    const fetchSuggestions = useCallback(async (scenarioData: FullScenarioContext) => {
-        setIsLoadingSuggestions(true);
-        try {
-            const newSuggestions = await apiClient.getSuggestions(scenarioData);
-            setSuggestions(newSuggestions);
-            // Update saved memory with new suggestions
-            if (typeof window !== 'undefined') {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    parsed.suggestions = newSuggestions;
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch suggestions:', error);
-        } finally {
-            setIsLoadingSuggestions(false);
-        }
     }, []);
+
+    // Build goal string with agent config appended
+    const buildGoalWithAgents = (goal: string): string => {
+        let enriched = goal;
+        if (agentCount === 2) {
+            const a1 = agent1.name ? `${agent1.name} (${agent1.gender === 'male' ? 'nam' : 'nữ'}): ${agent1.persona}` : '';
+            const a2 = agent2.name ? `${agent2.name} (${agent2.gender === 'male' ? 'nam' : 'nữ'}): ${agent2.persona}` : '';
+            if (a1 || a2) {
+                enriched += `\n\n[CẤU HÌNH 2 NHÂN VẬT AI]\nNhân vật 1: ${a1 || 'Tự tạo'}\nNhân vật 2: ${a2 || 'Tự tạo'}`;
+            } else {
+                enriched += '\n\n[Yêu cầu: Tạo kịch bản có 2 nhân vật AI với tính cách khác nhau]';
+            }
+        } else if (agent1.name || agent1.persona) {
+            enriched += `\n\n[CẤU HÌNH NHÂN VẬT AI]\nTên: ${agent1.name || 'Tự tạo'}, Giới tính: ${agent1.gender === 'male' ? 'nam' : 'nữ'}, Tính cách: ${agent1.persona || 'Tự tạo'}`;
+        }
+        return enriched;
+    };
+
+    // Real-time PII detection when user types
+    const handleGoalChange = (val: string) => {
+        setUserGoal(val);
+        setFilterError(null);
+        setPiiWarning(detectPII(val));
+    };
 
     // FIRST TIME: Generate a brand new scenario
     const handleGenerateScenario = async () => {
         if (!userGoal.trim()) return;
+        if (piiWarning) return; // Block if PII present
+        setFilterError(null);
         setIsGenerating(true);
         try {
-            const result = await apiClient.setupScenario(userGoal);
+            const enrichedGoal = buildGoalWithAgents(userGoal);
+            const result = await apiClient.setupScenario(enrichedGoal);
+
+            const scenarioObj = result.scenario || result as any;
+            if (agentCount === 2) {
+                // Inject characters if LLM didn't generate them
+                if (!scenarioObj?.characters?.length) {
+                    const chars = [
+                        { id: 'char_1', name: agent1.name || 'Nhân vật 1', persona: agent1.persona || scenarioObj.interviewerPersona || '', gender: agent1.gender, color: 'teal' },
+                        { id: 'char_2', name: agent2.name || 'Nhân vật 2', persona: agent2.persona || 'Đồng nghiệp thân thiện', gender: agent2.gender, color: 'indigo' },
+                    ];
+                    scenarioObj.characters = chars;
+                    if (!result.scenario) {
+                        (result as any).scenario = scenarioObj;
+                    }
+                }
+            } else {
+                // Single agent — remove characters to ensure AUDIO mode
+                delete scenarioObj.characters;
+            }
+
             setScenario(result);
             setHistory([]);
             setAudioFileKeys([]);
             setHasCreatedFirst(true);
             saveToMemory(result, userGoal);
-            // Fetch context-aware suggestions for the new scenario
-            fetchSuggestions(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error generating scenario:', error);
-            alert('Không thể tạo kịch bản. Vui lòng kiểm tra lại kết nối.');
+            if (error?.filtered) {
+                setFilterError(error.message);
+            } else {
+                setFilterError('Không thể tạo kịch bản. Vui lòng kiểm tra lại kết nối.');
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -129,20 +173,12 @@ export default function ContextBuilderPage() {
             setScenario(result);
             saveToMemory(result, userGoal);
             setAdjustmentText('');
-            // Fetch new suggestions based on adjusted context
-            fetchSuggestions(result);
         } catch (error) {
             console.error('Error adjusting scenario:', error);
             alert('Không thể điều chỉnh kịch bản. Vui lòng thử lại.');
         } finally {
             setIsAdjusting(false);
         }
-    };
-
-    // SUGGESTION CLICK: Apply a suggestion to adjust the context
-    const handleSuggestionClick = async (suggestion: string) => {
-        if (!scenario) return;
-        await handleAdjustScenario(suggestion);
     };
 
     // CREATE NEW: Reset everything and start fresh
@@ -153,10 +189,13 @@ export default function ContextBuilderPage() {
         setScenario(null);
         setUserGoal('');
         setHasCreatedFirst(false);
-        setSuggestions(DEFAULT_SUGGESTIONS);
         setHistory([]);
         setAudioFileKeys([]);
         setAdjustmentText('');
+        setAgentCount(1);
+        setAgent1({ ...DEFAULT_AGENT });
+        setAgent2({ ...DEFAULT_AGENT, gender: 'female' });
+        setActiveCharIndex(0);
     };
 
     return (
@@ -211,10 +250,10 @@ export default function ContextBuilderPage() {
                         )}
                     </div>
 
-                    <div className="bg-[#0f172a] rounded-3xl p-6 lg:p-8 flex-1 flex flex-col relative overflow-hidden text-white shadow-xl shadow-slate-200/50 border border-slate-200">
+                    <div className="bg-[#0f172a] rounded-3xl p-6 lg:p-8 flex flex-col relative overflow-hidden text-white shadow-xl shadow-slate-200/50 border border-slate-200">
 
                         {/* Main Input — for first-time goal entry */}
-                        <div className="bg-white rounded-2xl p-4 lg:p-6 mb-4 shadow-sm border border-slate-100 flex flex-col min-h-[120px]">
+                        <div className="bg-white rounded-2xl p-5 lg:p-6 mb-4 shadow-sm border border-slate-100 flex flex-col min-h-[140px]">
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                                     {hasCreatedFirst ? 'Nội dung gốc' : 'Nhập mục tiêu'}
@@ -228,7 +267,7 @@ export default function ContextBuilderPage() {
                             </div>
                             <textarea
                                 value={userGoal}
-                                onChange={(e) => setUserGoal(e.target.value)}
+                                onChange={(e) => handleGoalChange(e.target.value)}
                                 placeholder="Nhập đề cương, nội dung chính hoặc ý tưởng thuyết trình tại đây... Ví dụ: Tôi muốn phỏng vấn Software Engineer bằng tiếng Việt."
                                 className="w-full flex-1 resize-none bg-transparent outline-none text-slate-700 placeholder:text-slate-400 text-[15px] leading-relaxed"
                                 disabled={isGenerating || (hasCreatedFirst && true)}
@@ -236,9 +275,25 @@ export default function ContextBuilderPage() {
                             />
                         </div>
 
+                        {/* PII Warning — real-time */}
+                        {piiWarning && (
+                            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 text-sm">
+                                <span className="shrink-0 mt-0.5">⚠️</span>
+                                <span>{piiWarning}</span>
+                            </div>
+                        )}
+
+                        {/* Filter Error — from server */}
+                        {filterError && (
+                            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 text-sm">
+                                <span className="shrink-0 mt-0.5">🚫</span>
+                                <span>{filterError}</span>
+                            </div>
+                        )}
+
                         {/* Adjustment Input — shown after first context is created */}
                         {hasCreatedFirst && (
-                            <div className="bg-gradient-to-br from-slate-800/80 to-slate-700/50 rounded-2xl p-4 lg:p-5 mb-4 border border-slate-600/50 flex flex-col min-h-[100px] backdrop-blur-sm">
+                            <div className="bg-gradient-to-br from-slate-800/80 to-slate-700/50 rounded-2xl p-5 lg:p-6 mb-4 border border-slate-600/50 flex flex-col min-h-[120px] backdrop-blur-sm">
                                 <label className="text-xs font-semibold text-teal-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <RefreshCw className="w-3 h-3" />
                                     Điều chỉnh bối cảnh
@@ -252,6 +307,93 @@ export default function ContextBuilderPage() {
                                 />
                             </div>
                         )}
+
+                        {/* Agent Config — choose 1 or 2 AI characters */}
+                        <div className="mb-4 relative z-10">
+                            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Số nhân vật AI</label>
+                            <div className="flex gap-3 mb-4">
+                                <button
+                                    onClick={() => setAgentCount(1)}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all border ${agentCount === 1
+                                        ? 'bg-teal-500/20 border-teal-500 text-teal-300'
+                                        : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:border-slate-500'}`}
+                                >
+                                    <User className="w-4 h-4" /> 1 nhân vật
+                                </button>
+                                <button
+                                    onClick={() => setAgentCount(2)}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all border ${agentCount === 2
+                                        ? 'bg-teal-500/20 border-teal-500 text-teal-300'
+                                        : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:border-slate-500'}`}
+                                >
+                                    <Users className="w-4 h-4" /> 2 nhân vật
+                                </button>
+                            </div>
+
+                            {/* Agent cards */}
+                            <div className={`grid gap-4 ${agentCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                {/* Agent 1 */}
+                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-600/40">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+                                        <span className="text-sm font-semibold text-teal-300">Nhân vật {agentCount === 2 ? '1' : 'AI'}</span>
+                                        <select
+                                            value={agent1.gender}
+                                            onChange={e => setAgent1(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
+                                            className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
+                                        >
+                                            <option value="male">Nam</option>
+                                            <option value="female">Nữ</option>
+                                        </select>
+                                    </div>
+                                    <input
+                                        value={agent1.name}
+                                        onChange={e => setAgent1(a => ({ ...a, name: e.target.value }))}
+                                        placeholder="Tên (VD: Anh Minh)"
+                                        className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 mb-3"
+                                    />
+                                    <textarea
+                                        value={agent1.persona}
+                                        onChange={e => setAgent1(a => ({ ...a, persona: e.target.value }))}
+                                        placeholder="Tính cách (VD: Giám đốc nghiêm túc, hay đưa ra những câu hỏi sắc bén và tình huống khó)"
+                                        rows={4}
+                                        className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 resize-none leading-relaxed"
+                                    />
+                                </div>
+
+                                {/* Agent 2 */}
+                                {agentCount === 2 && (
+                                    <div className="bg-slate-800/60 rounded-2xl p-5 border border-indigo-500/30">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+                                            <span className="text-sm font-semibold text-indigo-300">Nhân vật 2</span>
+                                            <select
+                                                value={agent2.gender}
+                                                onChange={e => setAgent2(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
+                                                className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
+                                            >
+                                                <option value="male">Nam</option>
+                                                <option value="female">Nữ</option>
+                                            </select>
+                                        </div>
+                                        <input
+                                            value={agent2.name}
+                                            onChange={e => setAgent2(a => ({ ...a, name: e.target.value }))}
+                                            placeholder="Tên (VD: Chị Lan)"
+                                            className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-indigo-500/20 focus:border-indigo-500/50 mb-3"
+                                        />
+                                        <textarea
+                                            value={agent2.persona}
+                                            onChange={e => setAgent2(a => ({ ...a, persona: e.target.value }))}
+                                            placeholder="Tính cách (VD: HR thân thiện, hay động viên ứng viên và đặt câu hỏi về văn hóa công ty)"
+                                            rows={4}
+                                            className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-indigo-500/20 focus:border-indigo-500/50 resize-none leading-relaxed"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2">Để trống để AI tự tạo nhân vật phù hợp với bối cảnh.</p>
+                        </div>
 
                         <div className="flex justify-center mb-6 z-10 w-full relative">
                             {!hasCreatedFirst ? (
@@ -293,26 +435,6 @@ export default function ContextBuilderPage() {
                             )}
                         </div>
 
-                        <div className="flex gap-4 mb-6 relative z-10 w-3/4 mx-auto justify-center">
-                            <button className="flex items-center gap-2 px-6 py-3 bg-[#0d9488] hover:bg-[#0f766e] text-white rounded-full font-medium transition-colors shadow-lg shadow-teal-500/20">
-                                <Mic className="w-5 h-5" />
-                                <span>Ghi âm</span>
-                            </button>
-                            <button className="flex items-center gap-2 px-6 py-3 bg-white text-slate-800 hover:bg-slate-50 rounded-full font-medium transition-colors shadow-lg shadow-black/5">
-                                <FileText className="w-5 h-5" />
-                                <span>Tài liệu</span>
-                            </button>
-                        </div>
-
-                        {/* Drop zone area */}
-                        <div className="flex-1 border-2 border-dashed border-slate-600/50 rounded-2xl flex flex-col items-center justify-center p-8 relative z-10 bg-slate-800/30 hover:bg-slate-800/50 transition-colors cursor-pointer group">
-                            <div className="text-center z-10 flex flex-col items-center">
-                                <UploadCloud className="w-8 h-8 text-teal-400 mb-3 group-hover:-translate-y-1 transition-transform" />
-                                <p className="text-slate-300 text-sm max-w-[250px] leading-relaxed">
-                                    Hoặc thả file Slide (PDF), ghi âm mẫu, hoặc note vào đây để Ni đọc
-                                </p>
-                            </div>
-                        </div>
 
                     </div>
                 </div>
@@ -325,44 +447,48 @@ export default function ContextBuilderPage() {
 
                         {/* Main Context Card */}
                         <div className="flex-1 bg-white rounded-3xl p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col text-[15px] leading-relaxed">
-                            <div className="flex justify-end mb-4">
-                                <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-medium transition-colors border border-slate-200">
-                                    <Sparkles className="w-4 h-4 text-teal-500" />
-                                    <span>Ni gợi ý tiếp</span>
-                                </button>
-                            </div>
-
                             <div className="space-y-5 text-slate-700 flex-1">
-                                {scenario ? (
-                                    <>
+                                {scenario ? (() => {
+                                    const s = (scenario.scenario || scenario) as any;
+                                    return (<>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1">Vai trò Đối phương (The Voice):</strong>
-                                            <span className="text-sm">{scenario.scenario?.interviewerPersona || (scenario as any).interviewerPersona}</span>
+                                            <strong className="text-slate-900 block mb-1.5">Tên kịch bản:</strong>
+                                            <p className="text-sm font-medium text-slate-800">{s.scenarioName || s.title || ''}</p>
+                                        </div>
+                                        {(s.topic || s.description) && (
+                                            <div>
+                                                <strong className="text-slate-900 block mb-1.5">Chủ đề:</strong>
+                                                <p className="text-sm text-slate-600 leading-relaxed">{s.topic || s.description}</p>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <strong className="text-slate-900 block mb-1.5">Bối cảnh & vai trò:</strong>
+                                            <p className="text-sm text-slate-600 leading-relaxed">{s.interviewerPersona || ''}</p>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1">Mục tiêu Đỉnh chóp để Đạt điểm Cao:</strong>
-                                            <ul className="list-disc pl-5 text-sm space-y-1">
-                                                {(scenario.scenario?.goals || (scenario as any).goals || []).map((goal: string, i: number) => <li key={i}>{goal}</li>)}
+                                            <strong className="text-slate-900 block mb-2">Mục tiêu luyện tập:</strong>
+                                            <ul className="list-disc pl-5 text-sm space-y-1.5 text-slate-600">
+                                                {(s.goals || []).map((goal: string, i: number) => <li key={i}>{goal}</li>)}
                                             </ul>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1">Khởi đầu (Câu chào mẫu The Voice):</strong>
-                                            <div className="text-sm italic bg-slate-50 p-2 rounded border border-slate-100">
-                                                {(scenario.scenario?.startingTurns || (scenario as any).startingTurns || [])[0]?.line}
+                                            <strong className="text-slate-900 block mb-1.5">Câu mở đầu:</strong>
+                                            <div className="text-sm italic bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600 leading-relaxed">
+                                                &ldquo;{(s.startingTurns || [])[0]?.line || ''}&rdquo;
                                             </div>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1">Danh mục Đánh giá (Analyst Agent sẽ soi):</strong>
-                                            <div className="flex flex-wrap gap-2 mt-1">
+                                            <strong className="text-slate-900 block mb-2">Tiêu chí đánh giá:</strong>
+                                            <div className="flex flex-wrap gap-2">
                                                 {(scenario.evalRules?.categories || []).map((cat: any, i: number) => (
-                                                    <span key={i} className="px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-medium border border-teal-100">
-                                                        {cat.category}
+                                                    <span key={i} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium border border-teal-100">
+                                                        {cat.category || cat.name}
                                                     </span>
                                                 ))}
                                             </div>
                                         </div>
-                                    </>
-                                ) : (
+                                    </>);
+                                })() : (
                                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                                         <Sparkles className="w-8 h-8 opacity-50" />
                                         <p className="text-center text-sm">Chưa có kịch bản.<br />Hãy điền thông tin bên trái và bấm <b>Phân Tích</b>.</p>
@@ -371,36 +497,67 @@ export default function ContextBuilderPage() {
                             </div>
                         </div>
 
-                        {/* Suggestions Sidebar — Dynamic based on current context */}
-                        <div className="w-[200px] shrink-0 flex flex-col relative">
-                            <div className="flex items-center justify-between pt-2 mb-4">
-                                <h3 className="text-sm font-bold text-slate-800">Gợi ý bổ sung</h3>
-                                {isLoadingSuggestions && (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-500" />
-                                )}
-                            </div>
-                            <div className="space-y-3">
-                                {suggestions.map((hint, idx) => (
-                                    <button
-                                        key={`${hint}-${idx}`}
-                                        onClick={() => handleSuggestionClick(hint)}
-                                        disabled={!scenario || isAdjusting}
-                                        className="w-full bg-white p-3 pr-10 rounded-xl shadow-sm border border-slate-200 text-left text-[13px] text-slate-600 hover:border-teal-300 hover:shadow-md transition-all relative group disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <span className="line-clamp-3 leading-snug">{hint}</span>
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-                                            {isAdjusting ? (
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            ) : (
-                                                <Plus className="w-4 h-4" />
-                                            )}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
+                        {/* Character Panel */}
+                        <div className="w-[240px] shrink-0 flex flex-col">
+                            <h3 className="text-sm font-bold text-slate-800 pt-2 mb-4 flex items-center gap-2">
+                                <Users className="w-4 h-4 text-teal-500" />
+                                Nhân vật AI
+                            </h3>
 
-                            {/* Decorative line connecting panels */}
-                            <div className="absolute top-[80px] -left-6 bottom-10 w-px bg-slate-200 hidden xl:block z-[-1]" />
+                            {scenario ? (() => {
+                                const scenarioData = scenario.scenario || scenario as any;
+                                const chars = scenarioData?.characters || [];
+                                const hasDual = chars.length >= 2;
+
+                                // Build display list: from characters array or fallback from interviewerPersona
+                                const displayChars = hasDual
+                                    ? chars
+                                    : [{ id: 'char_1', name: scenarioData?.interviewerPersona?.split(',')[0]?.trim() || 'Nhân vật AI', persona: scenarioData?.interviewerPersona || '', gender: 'male', color: 'teal' }];
+
+                                const current = displayChars[activeCharIndex] || displayChars[0];
+                                const colorTheme = activeCharIndex === 0
+                                    ? { bg: 'bg-teal-50', border: 'border-teal-200', dot: 'bg-teal-400', text: 'text-teal-700', badge: 'bg-teal-100 text-teal-600' }
+                                    : { bg: 'bg-indigo-50', border: 'border-indigo-200', dot: 'bg-indigo-400', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-600' };
+
+                                return (
+                                    <div className="space-y-3">
+                                        {/* Active character card */}
+                                        <div className={`${colorTheme.bg} ${colorTheme.border} border rounded-2xl p-5 shadow-sm`}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <div className={`w-2.5 h-2.5 rounded-full ${colorTheme.dot}`} />
+                                                <span className={`text-sm font-bold ${colorTheme.text}`}>{current.name}</span>
+                                            </div>
+                                            <div className="flex gap-2 mb-3">
+                                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${colorTheme.badge}`}>
+                                                    {current.gender === 'female' ? 'Nữ' : 'Nam'}
+                                                </span>
+                                                {hasDual && (
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                                                        {activeCharIndex + 1}/{displayChars.length}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-slate-600 leading-relaxed">{current.persona}</p>
+                                        </div>
+
+                                        {/* Toggle button for dual characters */}
+                                        {hasDual && (
+                                            <button
+                                                onClick={() => setActiveCharIndex(i => i === 0 ? 1 : 0)}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-all shadow-sm hover:shadow-md"
+                                            >
+                                                <RefreshCw className="w-3.5 h-3.5" />
+                                                <span>Chuyển nhân vật</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })() : (
+                                <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                                    <User className="w-6 h-6 opacity-40" />
+                                    <p className="text-xs text-center">Tạo kịch bản để xem<br />thông tin nhân vật</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

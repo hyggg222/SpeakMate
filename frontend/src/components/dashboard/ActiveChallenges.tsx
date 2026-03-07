@@ -1,146 +1,192 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Target, Clock, Mic, Square, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Target, Clock, Star, SkipForward, ArrowRight, Loader2, BookOpen } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 
 export default function ActiveChallenges() {
-    const [challenges, setChallenges] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { isRecording, startRecording, stopRecording } = useAudioRecorder();
-
-    const [reportingId, setReportingId] = useState<string | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<any>(null);
+    const router = useRouter()
+    const [challenges, setChallenges] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [skipping, setSkipping] = useState(false)
 
     useEffect(() => {
-        fetchChallenges();
-    }, []);
+        fetchChallenges()
+    }, [])
 
     const fetchChallenges = async () => {
-        setLoading(true);
+        setLoading(true)
         try {
-            const data = await apiClient.getUserChallenges();
-            // Lọc ra các challenge đang active (pending)
-            const active = data.filter(c => c.status === 'pending');
-            setChallenges(active);
+            const data = await apiClient.getUserChallenges()
+            const active = data.filter((c: any) => c.status === 'pending' || c.status === 'in_progress')
+            setChallenges(active)
         } catch (error) {
-            console.error('Lỗi khi fetch challenges:', error);
+            console.error('Error fetching challenges:', error)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
-    const handleStartRecord = (id: string) => {
-        setReportingId(id);
-        setAnalysisResult(null);
-        startRecording();
-    };
-
-    const handleStopRecord = async () => {
-        const audioBlob = await stopRecording();
-        if (!audioBlob || !reportingId) return;
-
-        setIsUploading(true);
+    const handleSkip = async (id: string) => {
+        setSkipping(true)
         try {
-            const res = await apiClient.reportChallenge(reportingId, audioBlob);
-            setAnalysisResult(res);
-            // Refresh list
-            fetchChallenges();
-        } catch (error) {
-            console.error('Lỗi upload báo cáo:', error);
-            alert("Báo cáo thất bại, thử lại sau!");
+            await apiClient.skipChallenge(id)
+            fetchChallenges()
+        } catch {
+            alert('Không thể bỏ qua thử thách')
         } finally {
-            setIsUploading(false);
-            setReportingId(null);
+            setSkipping(false)
         }
-    };
+    }
 
     if (loading && challenges.length === 0) {
         return (
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex justify-center text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="rounded-xl p-5 flex justify-center" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}>
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--muted-foreground)' }} />
             </div>
-        );
+        )
     }
 
     if (challenges.length === 0) {
         return (
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 border-dashed text-center text-slate-500 shadow-sm flex flex-col items-center">
-                <div className="bg-slate-50 p-3 rounded-full mb-3">
-                    <Target className="w-6 h-6 text-slate-400" />
+            <div className="rounded-xl p-5 text-center flex flex-col items-center border border-dashed" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+                <div className="p-3 rounded-full mb-3" style={{ backgroundColor: 'var(--muted)' }}>
+                    <Target className="w-6 h-6" style={{ color: 'var(--muted-foreground)' }} />
                 </div>
-                <h4 className="font-bold text-slate-700 text-[14px]">Chưa có thử thách</h4>
-                <p className="text-[12px] mt-1 leading-relaxed text-slate-500">
-                    Hãy hoàn thành một buổi luyện tập để Ni giao phó bài tập thực tế (Gamification Loop) cho bạn nha!
+                <h4 className="font-bold text-[14px]" style={{ color: 'var(--foreground)' }}>
+                    Chưa có nhiệm vụ thực tế
+                </h4>
+                <p className="text-[12px] mt-1 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                    Hoàn thành phiên luyện tập đầu tiên trong Phòng gym để nhận nhiệm vụ thực tế!
                 </p>
             </div>
-        );
+        )
     }
 
-    // Only show top 1 active
-    const challenge = challenges[0];
+    const challenge = challenges[0]
+    const difficulty = challenge.difficulty || 1
 
     const getDaysLeft = (deadline: string) => {
-        const diff = new Date(deadline).getTime() - new Date().getTime();
-        return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
-    };
+        if (!deadline) return null
+        const diff = new Date(deadline).getTime() - new Date().getTime()
+        const days = Math.ceil(diff / (1000 * 3600 * 24))
+        return days > 0 ? days : 0
+    }
+
+    const daysLeft = challenge.deadline ? getDaysLeft(challenge.deadline) : null
+    const isOverdue = daysLeft !== null && daysLeft <= 0
+    const isUrgent = daysLeft !== null && daysLeft <= 2 && !isOverdue
+
+    // Stories suggested for review
+    const suggestedStories: { id: string; title: string }[] = challenge.suggestedStories || challenge.suggested_stories || []
 
     return (
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200/50 shadow-sm relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 opacity-10">
-                <Target className="w-24 h-24 text-amber-600" />
+        <div
+            className="rounded-xl p-3 border relative overflow-hidden"
+            style={{
+                backgroundColor: 'var(--card)',
+                borderColor: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--border)',
+            }}
+        >
+            {/* Background decoration */}
+            <div className="absolute -right-3 -top-3 opacity-5">
+                <Target className="w-20 h-20" style={{ color: 'var(--teal)' }} />
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-                <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg border border-amber-200">
-                    <Target className="w-4 h-4" />
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'rgba(20, 184, 166, 0.1)' }}>
+                        <Target className="w-4 h-4" style={{ color: 'var(--teal)' }} />
+                    </div>
+                    <h3 className="font-bold text-sm tracking-tight" style={{ color: 'var(--foreground)' }}>
+                        Nhiệm vụ thực tế
+                    </h3>
                 </div>
-                <h3 className="font-bold text-slate-800 text-sm tracking-tight">Thử thách của bạn</h3>
+                {/* Difficulty stars */}
+                <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <Star
+                            key={i}
+                            size={11}
+                            className={i <= difficulty ? 'text-amber-400 fill-amber-400' : 'text-slate-600'}
+                        />
+                    ))}
+                </div>
             </div>
 
-            <div className="flex flex-col gap-3 relative z-10">
+            {/* Content */}
+            <div className="flex flex-col gap-2.5 relative z-10">
                 <div>
-                    <h4 className="font-bold text-slate-800 text-[15px] leading-tight">{challenge.title}</h4>
-                    <p className="text-[13px] text-slate-600 mt-1 line-clamp-2">{challenge.description}</p>
+                    <h4 className="font-bold text-[13px] leading-tight" style={{ color: 'var(--foreground)' }}>
+                        {challenge.title}
+                    </h4>
+                    <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'var(--muted-foreground)' }}>
+                        {challenge.description}
+                    </p>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-semibold text-rose-500">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Hạn chót: Còn {getDaysLeft(challenge.deadline)} ngày</span>
-                </div>
-
-                {isUploading ? (
-                    <div className="w-full bg-white rounded-xl py-3 flex items-center justify-center gap-2 text-amber-600 font-bold border border-amber-200">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Đang phân tích báo cáo...
-                    </div>
-                ) : analysisResult ? (
-                    <div className="w-full bg-emerald-50 rounded-xl p-3 border border-emerald-200 flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                            <CheckCircle2 className="w-4 h-4" /> Hoàn thành!
-                        </div>
-                        <p className="text-[12px] text-slate-600">{analysisResult.comment}</p>
-                        <div className="text-[12px] font-bold text-emerald-700">+{analysisResult.xpAwarded} XP</div>
-                    </div>
-                ) : isRecording && reportingId === challenge.id ? (
-                    <button
-                        onClick={handleStopRecord}
-                        className="w-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-xl py-3 font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2"
+                {/* Source weakness tag */}
+                {(challenge.sourceWeakness || challenge.source_weakness) && (
+                    <div
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium w-fit"
+                        style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706' }}
                     >
-                        <Square className="w-4 h-4 fill-white animate-pulse" />
-                        Gửi Báo Cáo
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => handleStartRecord(challenge.id)}
-                        className="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl py-3 font-bold text-sm shadow cursor-pointer transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Mic className="w-4 h-4" />
-                        Ghi âm Báo Cáo
-                    </button>
+                        Điểm yếu: {challenge.sourceWeakness || challenge.source_weakness}
+                    </div>
                 )}
+
+                {/* Suggested stories */}
+                {suggestedStories.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+                            Story nên ôn trước:
+                        </span>
+                        {suggestedStories.slice(0, 2).map((s, i) => (
+                            <button
+                                key={i}
+                                onClick={() => router.push(`/stories/${s.id}`)}
+                                className="flex items-center gap-1.5 text-[11px] font-medium hover:underline text-left"
+                                style={{ color: 'var(--teal)' }}
+                            >
+                                <BookOpen size={10} />
+                                {s.title}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Deadline */}
+                {daysLeft !== null && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold"
+                        style={{ color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--muted-foreground)' }}
+                    >
+                        <Clock className="w-3 h-3" />
+                        {isOverdue ? 'Đã quá hạn' : `Còn ${daysLeft} ngày`}
+                    </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex gap-2 mt-1">
+                    <button
+                        onClick={() => router.push(`/feedback/new?challengeId=${challenge.id}`)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-[12px] text-white transition-colors hover:opacity-90"
+                        style={{ backgroundColor: 'var(--teal)' }}
+                    >
+                        Chia sẻ
+                        <ArrowRight size={13} />
+                    </button>
+                    <button
+                        onClick={() => handleSkip(challenge.id)}
+                        disabled={skipping}
+                        className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-bold text-[12px] border transition-colors hover:opacity-80"
+                        style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
+                    >
+                        {skipping ? <Loader2 size={13} className="animate-spin" /> : <SkipForward size={13} />}
+                        Bỏ qua
+                    </button>
+                </div>
             </div>
         </div>
     )

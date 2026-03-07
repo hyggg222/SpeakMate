@@ -8,6 +8,11 @@ interface LiveKitSessionData {
     livekitUrl: string;
 }
 
+interface GeminiDirectSessionData {
+    token: string;
+    model: string;
+}
+
 interface ScenarioContextType {
     scenario: FullScenarioContext | null;
     setScenario: (scenario: FullScenarioContext | null) => void;
@@ -17,6 +22,10 @@ interface ScenarioContextType {
     setAudioFileKeys: (keys: string[]) => void;
     livekitSession: LiveKitSessionData | null;
     setLivekitSession: (session: LiveKitSessionData | null) => void;
+    geminiDirectSession: GeminiDirectSessionData | null;
+    setGeminiDirectSession: (session: GeminiDirectSessionData | null) => void;
+    selectedStoryIds: string[];
+    setSelectedStoryIds: (ids: string[]) => void;
 }
 
 const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
@@ -26,9 +35,11 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
     const [history, setHistory] = useState<any[]>([]);
     const [audioFileKeys, setAudioFileKeys] = useState<string[]>([]);
     const [livekitSession, setLivekitSession] = useState<LiveKitSessionData | null>(null);
+    const [geminiDirectSession, setGeminiDirectSession] = useState<GeminiDirectSessionData | null>(null);
+    const [selectedStoryIds, setSelectedStoryIds] = useState<string[]>([]);
 
     return (
-        <ScenarioContext.Provider value={{ scenario, setScenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession, setLivekitSession }}>
+        <ScenarioContext.Provider value={{ scenario, setScenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession, setLivekitSession, geminiDirectSession, setGeminiDirectSession, selectedStoryIds, setSelectedStoryIds }}>
             {children}
         </ScenarioContext.Provider>
     );

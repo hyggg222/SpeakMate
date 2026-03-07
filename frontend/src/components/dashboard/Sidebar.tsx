@@ -1,19 +1,23 @@
 "use client";
 
-import { Home, History, BookOpen, Trophy, Settings, LogOut } from "lucide-react";
+import { Home, History, BookOpen, FileText, MessageCircle, Settings, LogOut, Mic, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const navItems = [
-  { icon: Home, label: "Home", href: "/" },
-  { icon: History, label: "History", href: "/history" },
-  { icon: BookOpen, label: "Library", href: "/library" },
-  { icon: Trophy, label: "Thành tích", href: "/achievements" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: Home, label: "Trang chủ", href: "/" },
+  { icon: MessageCircle, label: "Mentor Ni", href: "/chat" },
+  { icon: Share2, label: "Chia sẻ", href: "/feedback/new" },
+  { icon: FileText, label: "Kho Chuyện", href: "/stories" },
+  { icon: Mic, label: "Phân tích", href: "/realworld" },
+  { icon: BookOpen, label: "Thư viện", href: "/library" },
+  { icon: History, label: "Lịch sử", href: "/history" },
+  { icon: Settings, label: "Cài đặt", href: "/settings" },
 ];
 
 export default function Sidebar() {
@@ -42,18 +46,21 @@ export default function Sidebar() {
     || "?";
 
   return (
-    <aside className="flex flex-col items-center w-16 min-h-screen py-4 gap-1"
+    <aside className="flex flex-col items-center w-20 min-h-screen py-4 gap-1"
       style={{ backgroundColor: "var(--navy)", borderRight: "1px solid var(--sidebar-border)" }}>
 
       {/* Logo */}
-      <div className="flex items-center justify-center w-10 h-10 mb-4 rounded-full overflow-hidden mt-2">
-        <div className="flex items-center justify-center w-10 h-10 bg-[#0f1b2d] border border-slate-700/50">
-          <svg viewBox="0 0 100 100" className="w-8 h-8" fill="none">
-            <text x="25" y="65" fontFamily="Georgia, serif" fontSize="48" fill="white" fontWeight="bold">N</text>
-            <path d="M 60,45 Q 68,30 75,45 T 90,45" stroke="#2dd4bf" strokeWidth="6" fill="none" strokeLinecap="round" />
-          </svg>
-        </div>
-      </div>
+      <Link href="/" className="flex items-center justify-center w-10 h-10 mb-4 rounded-lg overflow-hidden mt-2 border border-slate-700/50 bg-[#0f1b2d] hover:border-teal-500/50 transition-colors">
+        <Image
+          src="/brand-logo.png"
+          alt="SpeakMate"
+          width={40}
+          height={40}
+          style={{ width: '100%', height: '100%' }}
+          className="object-cover"
+          priority
+        />
+      </Link>
 
       {/* Nav Items */}
       <nav className="flex flex-col items-center gap-1 w-full px-1 flex-1">
@@ -102,7 +109,7 @@ export default function Sidebar() {
           title="Đăng xuất"
         >
           <LogOut size={18} className="text-white group-hover:text-red-400 transition-colors" />
-          <span className="text-[10px] font-medium leading-none">Logout</span>
+          <span className="text-[10px] font-medium leading-none">Đăng xuất</span>
         </button>
       </div>
     </aside>

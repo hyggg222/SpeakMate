@@ -145,8 +145,8 @@ export default function DetailedEvaluationPage() {
                         {/* Radar Chart Section */}
                         <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
                             <h3 className="text-lg font-bold text-slate-800 mb-2">Biểu đồ phân tích</h3>
-                            <div className="flex-1 min-h-[220px] flex items-center justify-center -ml-4">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div className="flex-1 w-full flex items-center justify-center -ml-4" style={{ minWidth: 0, minHeight: 0 }}>
+                                <ResponsiveContainer width="100%" height={220}>
                                     <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
                                         <PolarGrid stroke="#e2e8f0" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }} />

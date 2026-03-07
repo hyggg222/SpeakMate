@@ -20,8 +20,8 @@ export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
                     background: isSpeaking
                         ? 'radial-gradient(circle, rgba(20,184,166,0.25) 0%, transparent 68%)'
                         : isListening
-                        ? 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 68%)'
-                        : 'radial-gradient(circle, rgba(148,163,184,0.08) 0%, transparent 68%)',
+                            ? 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 68%)'
+                            : 'radial-gradient(circle, rgba(148,163,184,0.08) 0%, transparent 68%)',
                     scale: isSpeaking ? [1, 1.18, 1] : isListening ? [1, 1.1, 1] : [1, 1.04, 1],
                     opacity: isSpeaking ? [0.7, 1, 0.7] : isListening ? [0.5, 0.8, 0.5] : [0.3, 0.5, 0.3],
                 }}
@@ -40,8 +40,8 @@ export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
                     borderColor: isSpeaking
                         ? 'rgba(20,184,166,0.6)'
                         : isListening
-                        ? 'rgba(99,102,241,0.5)'
-                        : 'rgba(100,116,139,0.25)',
+                            ? 'rgba(99,102,241,0.5)'
+                            : 'rgba(100,116,139,0.25)',
                     scale: isSpeaking ? [1, 1.12, 1] : [1, 1.05, 1],
                     opacity: isSpeaking ? [0.8, 0.4, 0.8] : [0.4, 0.2, 0.4],
                 }}
@@ -59,8 +59,8 @@ export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
                     boxShadow: isSpeaking
                         ? '0 0 30px rgba(20,184,166,0.5), 0 0 60px rgba(20,184,166,0.2)'
                         : isListening
-                        ? '0 0 20px rgba(99,102,241,0.4)'
-                        : '0 0 20px rgba(0,0,0,0.5)',
+                            ? '0 0 20px rgba(99,102,241,0.4)'
+                            : '0 0 20px rgba(0,0,0,0.5)',
                 }}
                 animate={{
                     scale: isSpeaking ? [1, 1.045, 1] : [1, 1.012, 1],
@@ -78,17 +78,18 @@ export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
                         borderColor: isSpeaking
                             ? 'rgba(20,184,166,0.85)'
                             : isListening
-                            ? 'rgba(99,102,241,0.6)'
-                            : 'rgba(100,116,139,0.35)',
+                                ? 'rgba(99,102,241,0.6)'
+                                : 'rgba(100,116,139,0.35)',
                         transition: 'border-color 0.4s ease',
                     }}
                 />
                 <Image
-                    src="/ni-avatar.png"
+                    src={`/ni-avatar.png?v=${new Date().getHours()}_${Math.floor(new Date().getMinutes() / 5)}`}
                     alt="Mentor Ni"
                     fill
                     className="object-cover"
                     priority
+                    unoptimized
                 />
             </motion.div>
 

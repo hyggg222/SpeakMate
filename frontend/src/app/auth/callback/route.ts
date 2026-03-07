@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
 
+  console.log('[auth/callback] code:', code ? 'present' : 'missing');
+
   if (code) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -16,6 +18,7 @@ export async function GET(request: NextRequest) {
         cookies: {
           getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet) {
+            console.log('[auth/callback] setting cookies:', cookiesToSet.map(c => c.name));
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
@@ -25,6 +28,7 @@ export async function GET(request: NextRequest) {
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+    console.log('[auth/callback] exchangeCodeForSession:', error ? `ERROR: ${error.message}` : 'SUCCESS');
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
