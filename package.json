@@ -1,0 +1,9 @@
+{
+  "name": "speakmate",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "frontend",
+    "backend"
+  ]
+}

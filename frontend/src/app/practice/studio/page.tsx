@@ -96,7 +96,7 @@ export default function PresentationStudioPage() {
             const mergedBlob = new Blob(collectedBlobs.current, { type: mimeType })
 
             // Send the complete monologue to backend
-            const result = await apiClient.interactAudio(mergedBlob, scenario?.scenario, history)
+            const result = await apiClient.interactAudio(mergedBlob, scenario?.scenario || scenario as any, history)
 
             // Store the response in context
             const updatedHistory = [

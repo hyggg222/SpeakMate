@@ -18,21 +18,13 @@ function sanitizePlaceholders(text: string, userName?: string): string {
     return result;
 }
 
+import { PromptService } from '../services/prompt.service';
+
 export class VoiceAgent {
+    private promptService: PromptService;
 
-    private getSystemPrompt(scenario: any, userName?: string) {
-        const name = userName || 'bạn';
-        return `Bạn là đối tác hội thoại trong một kịch bản luyện tập giao tiếp.
-Nhân vật của bạn: ${scenario?.interviewerPersona || 'Người hướng dẫn'}
-Mục tiêu: ${(scenario?.goals || []).join(', ')}
-Tên người dùng: ${name}
-
-Tuân thủ nghiêm ngặt nhân vật. Không thoát vai.
-Trả lời cực kỳ ngắn gọn (tối đa 2 câu, dưới 20 từ).
-Hết sức tự nhiên như đang nói chuyện trực tiếp. Tránh giải thích dông dài.
-TUYỆT ĐỐI KHÔNG dùng dấu ngoặc vuông [] hoặc placeholder như [tên của bạn], [your name], [tên], [địa điểm]. Luôn dùng tên cụ thể "${name}" hoặc "bạn".
-
-Bối cảnh kịch bản: ${JSON.stringify(scenario?.startingTurns || [])}`;
+    constructor() {
+        this.promptService = new PromptService();
     }
 
     public async interactText(scenario: any, conversationHistory: any[], latestUserMessage: string, userName?: string): Promise<string> {
@@ -43,7 +35,7 @@ Bối cảnh kịch bản: ${JSON.stringify(scenario?.startingTurns || [])}`;
             }));
             messages.push({ role: 'user' as const, content: latestUserMessage });
 
-            const response = await llmService.chat(this.getSystemPrompt(scenario, userName), messages);
+            const response = await llmService.chat(this.promptService.buildConversationPrompt(scenario, userName), messages);
             return sanitizePlaceholders(response || '', userName);
         } catch (error) {
             console.error("[VoiceAgent] Text interaction failed:", error);

@@ -3,6 +3,11 @@
 import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { FullScenarioContext } from '../types/api.contracts';
 
+interface LiveKitSessionData {
+    token: string;
+    livekitUrl: string;
+}
+
 interface ScenarioContextType {
     scenario: FullScenarioContext | null;
     setScenario: (scenario: FullScenarioContext | null) => void;
@@ -10,6 +15,8 @@ interface ScenarioContextType {
     setHistory: Dispatch<SetStateAction<any[]>>;
     audioFileKeys: string[];
     setAudioFileKeys: (keys: string[]) => void;
+    livekitSession: LiveKitSessionData | null;
+    setLivekitSession: (session: LiveKitSessionData | null) => void;
 }
 
 const ScenarioContext = createContext<ScenarioContextType | undefined>(undefined);
@@ -18,9 +25,10 @@ export function ScenarioProvider({ children }: { children: ReactNode }) {
     const [scenario, setScenario] = useState<FullScenarioContext | null>(null);
     const [history, setHistory] = useState<any[]>([]);
     const [audioFileKeys, setAudioFileKeys] = useState<string[]>([]);
+    const [livekitSession, setLivekitSession] = useState<LiveKitSessionData | null>(null);
 
     return (
-        <ScenarioContext.Provider value={{ scenario, setScenario, history, setHistory, audioFileKeys, setAudioFileKeys }}>
+        <ScenarioContext.Provider value={{ scenario, setScenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession, setLivekitSession }}>
             {children}
         </ScenarioContext.Provider>
     );

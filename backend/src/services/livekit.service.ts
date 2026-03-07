@@ -2,26 +2,22 @@ import { AccessToken } from 'livekit-server-sdk';
 import { config } from '../config/env';
 
 export class LiveKitService {
-    public async generateToken(roomName: string, identity: string, userName: string, scenarioStr: string, conversationHistoryStr: string): Promise<string> {
+    /**
+     * Generate a LiveKit token with minimal metadata (session_id only).
+     * Worker fetches full context via GET /api/internal/sessions/:id/context.
+     */
+    public async generateToken(roomName: string, identity: string, sessionId: string): Promise<string> {
         const at = new AccessToken(config.livekitApiKey, config.livekitApiSecret, {
             identity: identity,
-            name: userName,
         });
 
         at.addGrant({ roomJoin: true, room: roomName });
 
-        let scenario = {};
-        let history = [];
-        try { scenario = JSON.parse(scenarioStr || '{}'); } catch (e) { }
-        try { history = JSON.parse(conversationHistoryStr || '[]'); } catch (e) { }
-
-        const metadata = JSON.stringify({
-            scenario,
-            history,
-            userName
+        // Minimal metadata — no scenario/history bloat
+        at.metadata = JSON.stringify({
+            v: 2,
+            session_id: sessionId,
         });
-
-        at.metadata = metadata;
 
         return await at.toJwt();
     }

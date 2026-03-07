@@ -43,7 +43,7 @@ export default function ContextBuilderPage() {
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    if (parsed.scenario) {
+                    if (parsed.scenario && parsed.scenario.scenario) {
                         setScenario(parsed.scenario);
                         setUserGoal(parsed.userGoal || '');
                         setHasCreatedFirst(true);
@@ -337,24 +337,24 @@ export default function ContextBuilderPage() {
                                     <>
                                         <div>
                                             <strong className="text-slate-900 block mb-1">Vai trò Đối phương (The Voice):</strong>
-                                            <span className="text-sm">{scenario.scenario.interviewerPersona}</span>
+                                            <span className="text-sm">{scenario.scenario?.interviewerPersona || (scenario as any).interviewerPersona}</span>
                                         </div>
                                         <div>
                                             <strong className="text-slate-900 block mb-1">Mục tiêu Đỉnh chóp để Đạt điểm Cao:</strong>
                                             <ul className="list-disc pl-5 text-sm space-y-1">
-                                                {scenario.scenario.goals.map((goal, i) => <li key={i}>{goal}</li>)}
+                                                {(scenario.scenario?.goals || (scenario as any).goals || []).map((goal: string, i: number) => <li key={i}>{goal}</li>)}
                                             </ul>
                                         </div>
                                         <div>
                                             <strong className="text-slate-900 block mb-1">Khởi đầu (Câu chào mẫu The Voice):</strong>
                                             <div className="text-sm italic bg-slate-50 p-2 rounded border border-slate-100">
-                                                {scenario.scenario.startingTurns[0]?.line}
+                                                {(scenario.scenario?.startingTurns || (scenario as any).startingTurns || [])[0]?.line}
                                             </div>
                                         </div>
                                         <div>
                                             <strong className="text-slate-900 block mb-1">Danh mục Đánh giá (Analyst Agent sẽ soi):</strong>
                                             <div className="flex flex-wrap gap-2 mt-1">
-                                                {scenario.evalRules.categories.map((cat, i) => (
+                                                {(scenario.evalRules?.categories || []).map((cat: any, i: number) => (
                                                     <span key={i} className="px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-medium border border-teal-100">
                                                         {cat.category}
                                                     </span>

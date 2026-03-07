@@ -174,6 +174,70 @@ export const apiClient = {
     },
 
     // ----------------------------------------------------------------
+    // Phase 3: Mentor & Gamification
+    // ----------------------------------------------------------------
+    async chatWithMentor(scenario: any, evaluationReport: any, userMessage: string, conversationHistory: any[]): Promise<any> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/mentor-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({ scenario, evaluationReport, userMessage, conversationHistory })
+        });
+        if (!res.ok) throw new Error("Mentor chat failed");
+        const json = await res.json();
+        return json.data;
+    },
+
+    async generateChallenge(sessionId: string): Promise<any> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/challenge/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({ sessionId })
+        });
+        if (!res.ok) throw new Error("Generate challenge failed");
+        const json = await res.json();
+        return json.data;
+    },
+
+    async getUserChallenges(): Promise<any[]> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/challenges`, {
+            headers: { ...authHeaders },
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json.data;
+    },
+
+    async setChallengeDeadline(challengeId: string, deadline: string): Promise<boolean> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/challenge/deadline`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({ challengeId, deadline })
+        });
+        return res.ok;
+    },
+
+    async reportChallenge(challengeId: string, audioBlob?: Blob): Promise<any> {
+        const authHeaders = await getAuthHeaders();
+        const formData = new FormData();
+        formData.append('challengeId', challengeId);
+        if (audioBlob) {
+            formData.append('audio', audioBlob, 'report.webm');
+        }
+
+        const res = await fetch(`${API_BASE_URL}/practice/challenge/report`, {
+            method: 'POST',
+            headers: { ...authHeaders },
+            body: formData
+        });
+        if (!res.ok) throw new Error("Challenge report failed");
+        return await res.json();
+    },
+
+    // ----------------------------------------------------------------
     // Dashboard / History endpoints (require auth)
     // ----------------------------------------------------------------
 

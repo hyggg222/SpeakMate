@@ -23,7 +23,7 @@ function sanitize(text: string): string {
 
 export default function ConversationStudioPage() {
     const router = useRouter()
-    const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys } = useScenario()
+    const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession } = useScenario()
     const { isRecording, startRecording, stopRecording } = useAudioRecorder()
 
     // Ref to always have latest history inside LiveKit callbacks (avoids stale closure)
@@ -36,15 +36,32 @@ export default function ConversationStudioPage() {
     // LiveKit integration
     const {
         isConnected,
+        isAgentReady,
         isAgentSpeaking,
         isUserSpeaking,
         isMicEnabled,
         connect: connectLiveKit,
         disconnect: disconnectLiveKit,
         toggleMic: toggleLiveKitMic
-    } = useLiveKitRoom(useCallback((turn: TurnData) => {
-        setHistory((prev: any[]) => [...prev, { speaker: turn.speaker, line: sanitize(turn.line) }])
-    }, [setHistory]))
+    } = useLiveKitRoom(
+        useCallback((turn: TurnData) => {
+            setHistory((prev: any[]) => {
+                // If this is an AI turn and it was interrupted (part of history truncated), 
+                // we should handle it. But transcripts coming from data channel are "new" turns.
+                return [...prev, {
+                    speaker: turn.speaker,
+                    line: sanitize(turn.line),
+                    turn_index: turn.turn_index,
+                    confirmed: turn.confirmed ?? false
+                }];
+            });
+        }, [setHistory]),
+        useCallback((turnIndex: number) => {
+            setHistory((prev: any[]) => prev.map(t =>
+                t.turn_index === turnIndex ? { ...t, confirmed: true } : t
+            ));
+        }, [setHistory])
+    )
 
     const isLiveKitMode = FEATURE_FLAGS.useLiveKit;
 
@@ -68,8 +85,14 @@ export default function ConversationStudioPage() {
             if (isLiveKitMode && !isConnected && !hasConnectedRef.current) {
                 hasConnectedRef.current = true;
                 try {
-                    const data = await apiClient.createLivekitSession(scenario.scenario, history);
-                    await connectLiveKit(data.token, data.livekitUrl);
+                    if (livekitSession) {
+                        // Use pre-created session from confirm page
+                        await connectLiveKit(livekitSession.token, livekitSession.livekitUrl);
+                    } else {
+                        // Fallback: create on-the-fly
+                        const data = await apiClient.createLivekitSession(scenario.scenario || scenario as any, history);
+                        await connectLiveKit(data.token, data.livekitUrl);
+                    }
                 } catch (e) {
                     console.error("LiveKit connect error:", e);
                     hasConnectedRef.current = false;
@@ -80,7 +103,7 @@ export default function ConversationStudioPage() {
 
         if (history.length === 0) {
             if (!isLiveKitMode) {
-                const firstTurn = sanitize(scenario.scenario.startingTurns[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.')
+                const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.')
                 setCurrentBotMsg(firstTurn)
                 setHistory([{ speaker: 'AI', line: firstTurn }])
             }
@@ -90,14 +113,14 @@ export default function ConversationStudioPage() {
         }
     }, [scenario, router, history, setHistory, isLiveKitMode, isConnected, connectLiveKit])
 
-    // LiveKit: auto-enable mic once connected
+    // LiveKit: auto-enable mic once agent is ready (not just connected)
     const hasAutoEnabledMic = useRef(false);
     useEffect(() => {
-        if (isLiveKitMode && isConnected && !isMicEnabled && !hasAutoEnabledMic.current) {
+        if (isLiveKitMode && isConnected && isAgentReady && !isMicEnabled && !hasAutoEnabledMic.current) {
             hasAutoEnabledMic.current = true;
             toggleLiveKitMic();
         }
-    }, [isLiveKitMode, isConnected, isMicEnabled, toggleLiveKitMic])
+    }, [isLiveKitMode, isConnected, isAgentReady, isMicEnabled, toggleLiveKitMic])
 
     const playAudioUrl = (url: string) => {
         const audio = new Audio(url);
@@ -129,7 +152,7 @@ export default function ConversationStudioPage() {
     const processUserAudio = async (blob: Blob) => {
         setIsProcessing(true)
         try {
-            const result = await apiClient.interactAudio(blob, scenario?.scenario, history)
+            const result = await apiClient.interactAudio(blob, scenario?.scenario || scenario as any, history)
 
             if (result.botAudioUrl) {
                 playAudioUrl(result.botAudioUrl);
@@ -169,7 +192,7 @@ export default function ConversationStudioPage() {
         setIsLoadingHints(true);
         setShowHints(true);
         try {
-            const result = await apiClient.getHints(scenario?.scenario, history);
+            const result = await apiClient.getHints(scenario?.scenario || scenario as any, history);
             setHints(result);
         } catch (error) {
             console.error('Hint error:', error);
@@ -179,16 +202,50 @@ export default function ConversationStudioPage() {
         }
     }
 
+    const handleEndSession = () => {
+        if (history.length < 2) return;
+        if (isLiveKitMode) {
+            disconnectLiveKit();
+        }
+        router.push('/evaluation/conversation');
+    }
+
     // Unified state
     const isListening = isRecording || (isLiveKitMode && isMicEnabled && isUserSpeaking);
     const isBotResponding = isProcessing || (isLiveKitMode && isAgentSpeaking);
     const isMicActive = isRecording || (isLiveKitMode && isMicEnabled);
 
     const userHasSpoken = history.some((msg: any) => msg.speaker === 'User');
-    const personaName = scenario?.scenario?.interviewerPersona?.split(' ')?.[0] || 'Ni'
+    const personaName = (scenario?.scenario || scenario as any)?.interviewerPersona?.split(' ')?.[0] || 'Ni'
 
     return (
         <div className="relative flex flex-col h-screen bg-[#0d1117] text-white font-sans overflow-hidden">
+
+            {/* Loading overlay — shown until agent is ready */}
+            {isLiveKitMode && !isAgentReady && (
+                <div className="absolute inset-0 z-50 bg-[#0d1117] flex flex-col items-center justify-center gap-5">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-teal-500/20 border-t-teal-400 animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Mic className="w-7 h-7 text-teal-400/60" />
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-slate-300 text-base font-medium mb-1">
+                            Đang chuẩn bị phòng luyện tập...
+                        </p>
+                        <p className="text-slate-600 text-sm">
+                            AI Agent đang tải, vui lòng chờ một chút
+                        </p>
+                    </div>
+                    {isConnected && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                            <span className="text-xs text-slate-500">Đã kết nối, đang chờ AI...</span>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Webcam PiP — absolute top-left */}
             <WebcamPreview />
@@ -336,12 +393,13 @@ export default function ConversationStudioPage() {
                 </button>
 
                 {/* End session */}
-                <Link
-                    href="/evaluation/conversation"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-medium rounded-full border border-slate-700/60 transition-all text-sm"
+                <button
+                    onClick={handleEndSession}
+                    disabled={history.length < 2 || isRecording || isProcessing}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-medium rounded-full border border-slate-700/60 transition-all text-sm disabled:opacity-20 disabled:cursor-not-allowed"
                 >
                     <span>Kết thúc</span>
-                </Link>
+                </button>
             </div>
         </div>
     )

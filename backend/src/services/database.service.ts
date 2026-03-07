@@ -181,6 +181,49 @@ export class DatabaseService {
     }
 
     /**
+     * Updates the AI response for an existing turn row (used by internal API when
+     * Python agent sends the AI turn after the User turn).
+     */
+    async updateTurnAiResponse(sessionId: string, turnNumber: number, aiResponse: string): Promise<void> {
+        try {
+            const { error } = await supabase
+                .from('conversation_turns')
+                .update({ ai_response: aiResponse })
+                .eq('session_id', sessionId)
+                .eq('turn_number', turnNumber);
+
+            if (error) {
+                console.error('[DatabaseService] updateTurnAiResponse error:', error);
+                throw error;
+            }
+        } catch (err) {
+            console.error('[DatabaseService] updateTurnAiResponse failed:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Marks a turn as interrupted and records how many characters were spoken.
+     */
+    async markTurnInterrupted(sessionId: string, turnNumber: number, deliveredChars: number): Promise<void> {
+        try {
+            const { error } = await supabase
+                .from('conversation_turns')
+                .update({ interrupted: true, delivered_chars: deliveredChars })
+                .eq('session_id', sessionId)
+                .eq('turn_number', turnNumber);
+
+            if (error) {
+                console.error('[DatabaseService] markTurnInterrupted error:', error);
+                throw error;
+            }
+        } catch (err) {
+            console.error('[DatabaseService] markTurnInterrupted failed:', err);
+            throw err;
+        }
+    }
+
+    /**
      * Returns all turns for a session, ordered by turn_number.
      */
     async getSessionTurns(sessionId: string): Promise<any[]> {
@@ -360,5 +403,89 @@ export class DatabaseService {
             }
         }
         return streak;
+    }
+
+    // ----------------------------------------------------------------
+    // Gamification (Challenges & EXP)
+    // ----------------------------------------------------------------
+    async createChallenge(userId: string, sessionId: string, challengeData: any): Promise<any> {
+        try {
+            const { data, error } = await supabase
+                .from('realworld_challenges')
+                .insert({
+                    user_id: userId,
+                    session_id: sessionId || null,
+                    title: challengeData.title,
+                    description: challengeData.description,
+                    opener_hints: challengeData.opener_hints || [],
+                    exp_reward: 50
+                })
+                .select('*')
+                .single();
+            if (error) {
+                if (this.isTableMissing(error)) {
+                    console.warn('[DatabaseService] gamification tables missing');
+                    return null;
+                }
+                throw error;
+            }
+            return data;
+        } catch (err) {
+            console.error('[DatabaseService] createChallenge failed:', err);
+            throw err;
+        }
+    }
+
+    async getUserChallenges(userId: string): Promise<any[]> {
+        try {
+            const { data, error } = await supabase
+                .from('realworld_challenges')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+            if (error) {
+                if (this.isTableMissing(error)) return [];
+                throw error;
+            }
+            return data || [];
+        } catch (err) {
+            console.error('[DatabaseService] getUserChallenges failed:', err);
+            throw err;
+        }
+    }
+
+    async setChallengeDeadline(challengeId: string, userId: string, deadline: string): Promise<void> {
+        try {
+            const { error } = await supabase
+                .from('realworld_challenges')
+                .update({ deadline })
+                .eq('id', challengeId)
+                .eq('user_id', userId);
+            if (error) throw error;
+        } catch (err) {
+            console.error('[DatabaseService] setChallengeDeadline failed:', err);
+            throw err;
+        }
+    }
+
+    async addExp(userId: string, amount: number, reason: string): Promise<void> {
+        try {
+            const { error: logErr } = await supabase.from('user_exp_logs')
+                .insert({ user_id: userId, amount, reason });
+            if (logErr) {
+                if (this.isTableMissing(logErr)) return;
+                throw logErr;
+            }
+
+            const { data: profile, error: readErr } = await supabase
+                .from('profiles').select('total_exp').eq('id', userId).single();
+            if (readErr) throw readErr;
+
+            const newExp = (profile.total_exp || 0) + amount;
+            await supabase.from('profiles').update({ total_exp: newExp }).eq('id', userId);
+        } catch (err) {
+            console.error('[DatabaseService] addExp failed:', err);
+            throw err;
+        }
     }
 }

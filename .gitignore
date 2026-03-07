@@ -36,3 +36,36 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+
+# Python
+__pycache__/
+venv/
+*.pyc
+
+# Large binary files
+*.gguf
+*.exe
+*.wav
+
+# Model files & cloned repos
+models/
+F5-tts/
+MiAI_VoiceClone_VoxCPM/
+dia2/
+valtec-tts-repo/
+Modelfile.*
+
+# Deprecated local services
+backend-stt/
+backend-tts/
+
+# Voice data & VAD output
+sample_voice/
+vad_segments/
+
+# Misc
+.cursorrules
+.kilorules
+GEMINI.md
+config.json

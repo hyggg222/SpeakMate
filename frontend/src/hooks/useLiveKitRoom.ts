@@ -4,19 +4,33 @@ import { Room, RoomEvent, Track, RemoteParticipant, Participant, DataPacket_Kind
 export interface TurnData {
     speaker: 'AI' | 'User';
     line: string;
+    turn_index?: number;
+    confirmed?: boolean;
 }
 
-export function useLiveKitRoom(onNewTurn: (turn: TurnData) => void) {
+export function useLiveKitRoom(
+    onNewTurn: (turn: TurnData) => void,
+    onTurnConfirmed?: (turnIndex: number) => void
+) {
     const [room, setRoom] = useState<Room | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isAgentReady, setIsAgentReady] = useState(false);
     const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
     const [isUserSpeaking, setIsUserSpeaking] = useState(false);
     const [isMicEnabled, setIsMicEnabled] = useState(false);
+    const userSpeakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const onNewTurnRef = useRef(onNewTurn);
+    const onTurnConfirmedRef = useRef(onTurnConfirmed);
+
     useEffect(() => {
         onNewTurnRef.current = onNewTurn;
-    }, [onNewTurn]);
+        onTurnConfirmedRef.current = onTurnConfirmed;
+    }, [onNewTurn, onTurnConfirmed]);
+
+    // This part should be passed from the page to update the optimistic state
+    // We'll expose it as a return value if needed, but for now we follow the pattern
+    // where the page provides the callback.
 
     const connect = useCallback(async (token: string, url: string) => {
         const newRoom = new Room({
@@ -32,8 +46,23 @@ export function useLiveKitRoom(onNewTurn: (turn: TurnData) => void) {
                 const decoder = new TextDecoder();
                 const text = decoder.decode(payload);
                 const msg = JSON.parse(text);
+
                 if (msg.type === 'transcript') {
-                    onNewTurnRef.current({ speaker: msg.speaker, line: msg.line });
+                    onNewTurnRef.current({
+                        speaker: msg.speaker,
+                        line: msg.line,
+                        turn_index: msg.turn_index,
+                        confirmed: msg.confirmed ?? false
+                    });
+                }
+                if (msg.type === 'agent_ready') {
+                    setIsAgentReady(true);
+                }
+                if (msg.type === 'ai_interrupted') {
+                    setIsAgentSpeaking(false);
+                }
+                if (msg.type === 'turn_confirmed') {
+                    onTurnConfirmedRef.current?.(msg.turn_index);
                 }
             } catch (e) {
                 console.error("Failed to parse data message", e);
@@ -53,11 +82,29 @@ export function useLiveKitRoom(onNewTurn: (turn: TurnData) => void) {
             track.detach();
         });
 
+
         newRoom.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
             const isAgentActive = speakers.some(p => !p.isLocal);
             const isUserActive = speakers.some(p => p.isLocal);
+
             setIsAgentSpeaking(isAgentActive);
-            setIsUserSpeaking(isUserActive);
+
+            if (isUserActive) {
+                // User is speaking, clear any pending timeout and set local state immediately
+                if (userSpeakingTimeoutRef.current) {
+                    clearTimeout(userSpeakingTimeoutRef.current);
+                    userSpeakingTimeoutRef.current = null;
+                }
+                setIsUserSpeaking(true);
+            } else {
+                // User stopped speaking, wait before updating UI state
+                if (!userSpeakingTimeoutRef.current) {
+                    userSpeakingTimeoutRef.current = setTimeout(() => {
+                        setIsUserSpeaking(false);
+                        userSpeakingTimeoutRef.current = null;
+                    }, 1500); // 1.5s delay to match backend pause tolerance
+                }
+            }
         });
 
         await newRoom.connect(url, token);
@@ -65,7 +112,7 @@ export function useLiveKitRoom(onNewTurn: (turn: TurnData) => void) {
         setRoom(newRoom);
         setIsConnected(true);
         setIsMicEnabled(false);
-    }, []);
+    }, [isUserSpeaking]);
 
     const disconnect = useCallback(() => {
         if (room) {
@@ -93,6 +140,7 @@ export function useLiveKitRoom(onNewTurn: (turn: TurnData) => void) {
 
     return {
         isConnected,
+        isAgentReady,
         isAgentSpeaking,
         isUserSpeaking,
         isMicEnabled,

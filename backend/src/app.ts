@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config/env';
 import multer from 'multer';
 import practiceRoutes from './routes/practice.routes';
+import internalRoutes from './routes/internal.routes';
 import dns from 'dns';
 import { Agent, setGlobalDispatcher } from 'undici';
 
@@ -34,6 +35,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Routes
 app.use('/api/practice', practiceRoutes);
+app.use('/api/internal', internalRoutes);
 
 // Start Server
 app.listen(port, () => {
