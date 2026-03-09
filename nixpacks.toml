@@ -6,3 +6,4 @@ cmds = ["npm install", "npm run build --workspace=@speakmate/contracts", "npm ru
 
 [start]
 cmd = "cd backend && node --dns-result-order=ipv4first dist/app.js"
+# cache-bust: 1776892517
