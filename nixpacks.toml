@@ -1,9 +1,0 @@
-[phases.setup]
-nixPkgs = ["ffmpeg", "nodejs_20"]
-
-[phases.build]
-cmds = ["npm install", "npm run build --workspace=@speakmate/contracts", "npm run build --workspace=backend"]
-
-[start]
-cmd = "cd backend && node --dns-result-order=ipv4first dist/app.js"
-# cache-bust: 1776892517
