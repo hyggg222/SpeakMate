@@ -9,8 +9,9 @@ import {
     Trash2, FileAudio
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { getPreviousRealworldMetrics } from '@/lib/seedDemoData'
 import FeedbackResults from '@/components/challenge/FeedbackResults'
-import type { FeedbackAnalysis } from '@/types/api.contracts'
+import type { RealWorldEvaluation } from '@/types/api.contracts'
 
 const EMOTION_BEFORE = [
     { value: 'anxious', label: 'Lo lắng' },
@@ -89,7 +90,7 @@ function FeedbackPageInner() {
     })
 
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [analysis, setAnalysis] = useState<FeedbackAnalysis | null>(null)
+    const [analysis, setAnalysis] = useState<RealWorldEvaluation | null>(null)
 
     useEffect(() => {
         setLoadingChallenges(true)
@@ -138,48 +139,52 @@ function FeedbackPageInner() {
     const hasAnyData = voiceBlob !== null || uploadedFile !== null ||
         Object.values(formData).some(v => v.trim() !== '')
 
-    // Submit — send everything together
+    // Submit — always use /feedback/free which returns RealWorldEvaluation
     const handleSubmit = async () => {
         if (!hasAnyData) return
         setIsSubmitting(true)
         try {
             const fd = new FormData()
-
-            // Audio files (optional)
             if (voiceBlob) fd.append('voiceBlob', voiceBlob, 'voice.webm')
             if (uploadedFile) fd.append('audioFile', uploadedFile, uploadedFile.name)
-
-            // Text fields (optional)
             Object.entries(formData).forEach(([k, v]) => { if (v.trim()) fd.append(k, v.trim()) })
             if (completed !== null) fd.append('completed', String(completed))
             if (linkedChallengeId) fd.append('challengeId', linkedChallengeId)
 
-            // Route based on whether challenge is linked
-            let result: any
-            if (linkedChallengeId) {
-                // Use challenge feedback endpoint (voice if audio present, else form)
-                if (voiceBlob || uploadedFile) {
-                    const audioFile = voiceBlob || uploadedFile!
-                    result = await apiClient.submitFeedbackVoice(linkedChallengeId, completed ?? false, audioFile)
-                } else {
-                    result = await apiClient.submitFeedbackForm(linkedChallengeId, {
-                        completed: completed ?? false,
-                        ...formData,
-                    })
-                }
-            } else {
-                // Free share — send FormData with everything
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/feedback/free`, {
-                    method: 'POST',
-                    body: fd,
-                    credentials: 'include',
-                })
-                const json = await res.json()
-                result = json.data
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/feedback/free`, {
+                method: 'POST',
+                body: fd,
+            })
+            if (!res.ok) {
+                const errText = await res.text()
+                console.error('[feedback/new] API error:', res.status, errText)
+                throw new Error(`API ${res.status}`)
             }
-
-            setAnalysis(result?.analysis || result)
-        } catch {
+            const json = await res.json()
+            const data = json.data
+            console.log('[feedback/new] API response:', JSON.stringify(data?.analysis)?.slice(0, 200))
+            if (!data?.analysis) throw new Error('no analysis in response')
+            // Merge transcript into analysis so FeedbackResults can show it
+            if (data.transcript) {
+                data.analysis.transcript = data.transcript
+                data.analysis.hasAudio = true
+            }
+            // If backend didn't include previousExpression (guest), use localStorage seed
+            if (!data.analysis.previousExpression) {
+                const localPrev = getPreviousRealworldMetrics()
+                if (localPrev) data.analysis.previousExpression = localPrev
+            }
+            // Save this session's expression to localStorage history
+            if (data.analysis.expression) {
+                try {
+                    const stored = JSON.parse(localStorage.getItem('speakmate_realworld_history') || '[]')
+                    stored.push({ ...data.analysis.expression, created_at: new Date().toISOString() })
+                    localStorage.setItem('speakmate_realworld_history', JSON.stringify(stored.slice(-20)))
+                } catch { /* ignore */ }
+            }
+            setAnalysis(data.analysis)
+        } catch (err) {
+            console.error('[feedback/new] Submit failed:', err)
             setAnalysis(getFallback(completed ?? false))
         } finally {
             setIsSubmitting(false)
@@ -465,10 +470,13 @@ function FeedbackPageInner() {
     )
 }
 
-function getFallback(completed: boolean): FeedbackAnalysis {
+function getFallback(completed: boolean): RealWorldEvaluation {
     return {
-        comparisonWithGym: 'Cảm ơn bạn đã chia sẻ — mỗi trải nghiệm thực tế là bài học quý!',
-        progressNote: '',
+        hasAudio: false,
+        sourceType: 'realworld',
+        psychology: { trend: 'unknown', trendNote: '' },
+        strengths: ['Bạn đã dám chia sẻ trải nghiệm thực tế'],
+        improvements: ['Tiếp tục luyện tập để cải thiện'],
         newStoryCandidate: completed,
         nextDifficulty: 3,
         nextChallengeHint: 'Tiếp tục luyện tập để cải thiện nhé!',

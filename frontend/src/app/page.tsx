@@ -41,7 +41,7 @@ export default function Home() {
 
         {/* Right panel */}
         <aside
-          className="w-80 flex-shrink-0 overflow-hidden px-3 pt-2 pb-10 flex flex-col gap-2 hide-scrollbar sticky top-0 h-full"
+          className="w-80 flex-shrink-0 overflow-y-auto px-3 pt-2 pb-10 flex flex-col gap-2 hide-scrollbar sticky top-0 h-full"
           style={{ borderLeft: "1px solid var(--border)", backgroundColor: "rgba(10, 15, 25, 0.3)" }}
         >
           <ProgressCard />

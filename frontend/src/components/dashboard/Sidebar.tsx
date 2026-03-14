@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, History, BookOpen, FileText, MessageCircle, Settings, LogOut, Mic, Share2 } from "lucide-react";
+import { History, BookOpen, FileText, MessageCircle, Settings, LogOut, Mic, Share2, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,9 +10,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const navItems = [
-  { icon: Home, label: "Trang chủ", href: "/" },
   { icon: MessageCircle, label: "Mentor Ni", href: "/chat" },
   { icon: Share2, label: "Chia sẻ", href: "/feedback/new" },
+  { icon: Target, label: "Thử thách", href: "/challenges" },
   { icon: FileText, label: "Kho Chuyện", href: "/stories" },
   { icon: Mic, label: "Phân tích", href: "/realworld" },
   { icon: BookOpen, label: "Thư viện", href: "/library" },

@@ -20,9 +20,18 @@ export default function ActiveChallenges() {
         try {
             const data = await apiClient.getUserChallenges()
             const active = data.filter((c: any) => c.status === 'pending' || c.status === 'in_progress')
-            setChallenges(active)
-        } catch (error) {
-            console.error('Error fetching challenges:', error)
+            if (active.length > 0) {
+                setChallenges(active)
+            } else {
+                // Fallback: read from localStorage (guest users / before DB sync)
+                const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+                const localActive = stored.filter((c: any) => c.status === 'pending' || c.status === 'in_progress')
+                setChallenges(localActive)
+            }
+        } catch {
+            // Network error — try localStorage
+            const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+            setChallenges(stored.filter((c: any) => c.status === 'pending' || c.status === 'in_progress'))
         } finally {
             setLoading(false)
         }
@@ -32,12 +41,15 @@ export default function ActiveChallenges() {
         setSkipping(true)
         try {
             await apiClient.skipChallenge(id)
-            fetchChallenges()
-        } catch {
-            alert('Không thể bỏ qua thử thách')
-        } finally {
-            setSkipping(false)
-        }
+        } catch { /* OK for guests */ }
+        // Update localStorage
+        try {
+            const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+            const updated = stored.map((c: any) => c.id === id ? { ...c, status: 'skipped' } : c)
+            localStorage.setItem('speakmate_challenges', JSON.stringify(updated))
+        } catch { /* ignore */ }
+        setSkipping(false)
+        fetchChallenges()
     }
 
     if (loading && challenges.length === 0) {

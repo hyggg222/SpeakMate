@@ -186,9 +186,10 @@ export default function ConversationStudioPage() {
         if (!firstLine) return;
 
         // Determine which character speaks first
-        const firstCharId = firstStartingTurn.characterId || scenarioData?.characters?.[0]?.id;
-        const charIdx = scenarioData.characters.findIndex((c: any) => c.id === firstCharId);
-        const firstChar = scenarioData.characters[charIdx >= 0 ? charIdx : 0];
+        const chars: any[] = scenarioData.characters || [];
+        const firstCharId = firstStartingTurn.characterId || chars[0]?.id;
+        const charIdx = chars.findIndex((c: any) => c.id === firstCharId);
+        const firstChar = chars[charIdx >= 0 ? charIdx : 0];
 
         // Show text immediately
         setHistory([{

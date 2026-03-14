@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { ScenarioProvider } from '@/context/ScenarioContext'
+import DemoDataSeeder from '@/components/DemoDataSeeder'
 
 export const metadata: Metadata = {
   title: 'SpeakMate',
@@ -26,6 +27,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased overflow-x-hidden">
         <ScenarioProvider>
+          <DemoDataSeeder />
           {children}
           <Analytics />
         </ScenarioProvider>
