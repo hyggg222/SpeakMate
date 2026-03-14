@@ -104,12 +104,12 @@ export default function ProgressCard() {
             <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
             {/* ── Stats row ── */}
-            <div className="grid grid-cols-3 divide-x" style={{ divideColor: 'rgba(255,255,255,0.06)' }}>
-                <div className="px-3 py-2.5 text-center">
+            <div className="grid grid-cols-3">
+                <div className="px-3 py-2.5 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
                     <p className="text-[11px] font-bold text-white">{progress.total_sessions || 0}</p>
                     <p className="text-[9px] text-slate-500 mt-0.5">Phiên</p>
                 </div>
-                <div className="px-3 py-2.5 text-center">
+                <div className="px-3 py-2.5 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
                     <p className="text-[11px] font-bold text-white">{(progress.avg_coherence || 0).toFixed(0)}</p>
                     <p className="text-[9px] text-slate-500 mt-0.5">Mạch lạc</p>
                 </div>
