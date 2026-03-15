@@ -2,7 +2,10 @@ import { FullScenarioContext, EvaluationRubric } from '../types/api.contracts';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+    || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+        ? 'https://speakmate-k26b.onrender.com/api'
+        : 'http://localhost:3001/api');
 
 /**
  * Module-level singleton Supabase client + cached token.
