@@ -151,7 +151,7 @@ function FeedbackPageInner() {
             if (completed !== null) fd.append('completed', String(completed))
             if (linkedChallengeId) fd.append('challengeId', linkedChallengeId)
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/feedback/free`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://speakmate-k26b.onrender.com/api'}/practice/feedback/free`, {
                 method: 'POST',
                 body: fd,
             })

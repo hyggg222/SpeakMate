@@ -419,7 +419,7 @@ export default function ConversationStudioPage() {
                 }
             } else {
                 // Single-char HTTP fallback
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/interact-text`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://speakmate-k26b.onrender.com/api'}/practice/interact-text`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
