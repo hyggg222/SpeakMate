@@ -15,7 +15,6 @@ import { useSileroVAD } from '@/hooks/useSileroVAD'
 import { FEATURE_FLAGS } from '@/lib/featureFlags'
 import { RobotAvatar } from '@/components/practice/RobotAvatar'
 import { FloatingTranscripts } from '@/components/practice/FloatingTranscripts'
-import { WaveformVisualizer } from '@/components/practice/WaveformVisualizer'
 
 /** Strip bracketed placeholders like [tên của bạn], [name], [địa điểm] from text */
 function sanitize(text: string): string {
@@ -547,9 +546,6 @@ export default function ConversationStudioPage() {
                     <RobotAvatar isSpeaking={isBotResponding} isListening={isListening} />
 
 
-                    <div className="h-16 flex items-center justify-center w-full max-w-[200px]">
-                        <WaveformVisualizer isActive={isListening && !isBotResponding} />
-                    </div>
                 </div>
 
                 {/* Panel Phải: Chat Log */}
