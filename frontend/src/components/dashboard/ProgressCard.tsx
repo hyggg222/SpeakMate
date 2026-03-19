@@ -41,15 +41,15 @@ export default function ProgressCard() {
 
     if (!progress) {
         return (
-            <div className="rounded-2xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-                    <Target className="w-3 h-3" /> Tiến trình
+            <div className="rounded-2xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <p className="text-[11px] font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Target className="w-3 h-3 text-teal-400" /> Tiến trình
                 </p>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
+                <p className="text-[11px] text-slate-400 leading-relaxed">
                     Hoàn thành phiên luyện đầu tiên để bắt đầu theo dõi tiến bộ.
                 </p>
-                <Link href="/setup" className="mt-3 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-teal-400 transition-colors"
-                    style={{ backgroundColor: 'rgba(20,184,166,0.08)' }}>
+                <Link href="/setup" className="mt-3 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-teal-400 hover:text-teal-300 transition-colors"
+                    style={{ backgroundColor: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.2)' }}>
                     Luyện tập ngay <ChevronRight className="w-3 h-3" />
                 </Link>
             </div>
