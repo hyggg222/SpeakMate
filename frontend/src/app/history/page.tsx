@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+import AuthGate from "@/components/AuthGate";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -40,7 +41,7 @@ export default function HistoryPage() {
             <main className="flex flex-col flex-1 overflow-hidden">
                 {/* We use Topbar directly here since practice pages don't have sidebar but have topbar */}
                 <Topbar />
-
+                <AuthGate feature="Lịch sử">
                 <section className="flex-1 overflow-y-auto px-[10%] xl:px-[20%] py-16 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-12">
 
@@ -138,6 +139,7 @@ export default function HistoryPage() {
 
                     </div>
                 </section>
+                </AuthGate>
             </main>
         </div>
     );

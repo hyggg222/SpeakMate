@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import AuthGate from '@/components/AuthGate'
 import { ArrowLeft, Target, Clock, CheckCircle2, XCircle, Loader2, Plus, Zap } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DifficultyStars from '@/components/challenge/DifficultyStars'
@@ -112,6 +113,7 @@ export default function ChallengesPage() {
             </div>
 
             <main className="px-6 pb-10 max-w-2xl mx-auto">
+                <AuthGate feature="Thử thách">
                 {loading ? (
                     <div className="flex justify-center py-16">
                         <Loader2 size={28} className="animate-spin text-teal-500" />
@@ -214,6 +216,7 @@ export default function ChallengesPage() {
                         })}
                     </div>
                 )}
+                </AuthGate>
             </main>
         </div>
     )

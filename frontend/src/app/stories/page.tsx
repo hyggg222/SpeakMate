@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+import AuthGate from "@/components/AuthGate";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -45,14 +46,25 @@ export default function StoriesPage() {
 
     const fetchStories = useCallback(async () => {
         setLoading(true);
+        // Retry up to 3 times with backoff (Render cold start can take 30-50s)
+        let result: any = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                result = await apiClient.listStories({
+                    search: search || undefined,
+                    status: statusFilter || undefined,
+                    tags: activeTagFilters.length > 0 ? activeTagFilters.join(',') : undefined,
+                    limit: PAGE_SIZE,
+                    offset: (page - 1) * PAGE_SIZE,
+                });
+                break; // success
+            } catch (err) {
+                console.warn(`[stories] fetch attempt ${attempt}/3 failed:`, (err as any)?.message);
+                if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 3000));
+                else { setLoading(false); return; }
+            }
+        }
         try {
-            let result = await apiClient.listStories({
-                search: search || undefined,
-                status: statusFilter || undefined,
-                tags: activeTagFilters.length > 0 ? activeTagFilters.join(',') : undefined,
-                limit: PAGE_SIZE,
-                offset: (page - 1) * PAGE_SIZE,
-            });
 
             // Client-side framework filter (API may not support it)
             let filtered = result.data;
@@ -85,6 +97,7 @@ export default function StoriesPage() {
         } finally {
             setLoading(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search, statusFilter, frameworkFilter, sortBy, activeTagFilters, page]);
 
     useEffect(() => { fetchStories(); }, [fetchStories]);
@@ -108,6 +121,7 @@ export default function StoriesPage() {
             <Sidebar />
             <main className="flex flex-col flex-1 overflow-hidden">
                 <Topbar />
+                <AuthGate feature="Kho Chuyện">
                 <section className="flex-1 overflow-y-auto px-[5%] xl:px-[12%] py-10 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-8">
 
@@ -266,6 +280,7 @@ export default function StoriesPage() {
                         )}
                     </div>
                 </section>
+                </AuthGate>
             </main>
         </div>
     );
