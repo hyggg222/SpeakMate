@@ -84,14 +84,6 @@ export default function LoginPage() {
           <p className="text-slate-400 text-[15px] leading-relaxed max-w-sm">
             Hành trình luyện tập của bạn vẫn đang chờ. Tiếp tục cùng Mentor Ni nhé.
           </p>
-          <div className="flex gap-4 pt-2">
-            {[{ value: '2.4k+', label: 'Người dùng' }, { value: '18k+', label: 'Phiên luyện tập' }, { value: '4.9★', label: 'Đánh giá' }].map((s, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center">
-                <div className="text-teal-300 font-bold text-lg">{s.value}</div>
-                <div className="text-slate-500 text-xs mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
