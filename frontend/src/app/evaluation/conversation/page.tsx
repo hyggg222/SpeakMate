@@ -111,6 +111,15 @@ function ConversationContent() {
 
                 const evalReport = await apiClient.evaluateSession(rubric, audioFileKeys, fullTranscript)
                 setReport(evalReport)
+                if (evalReport?.sessionMetrics) {
+                    const m = evalReport.sessionMetrics;
+                    localStorage.setItem('speakmate_previous_metrics', JSON.stringify({
+                        coherence_score: m.coherenceScore,
+                        jargon_count: m.jargonCount,
+                        filler_per_minute: m.fillerPerMinute,
+                        avg_response_time: m.avgResponseTime ?? 0,
+                    }));
+                }
             } catch (err) {
                 console.error('[Evaluation] API call failed:', err)
                 setEvalError('Không thể phân tích. Đang hiển thị kết quả mẫu.')
@@ -147,7 +156,7 @@ function ConversationContent() {
     return (
         <div className="flex flex-1 max-w-[1500px] mx-auto w-full p-4 md:p-6 gap-6 relative">
             {/* 1. Left Sidebar */}
-            <aside className="w-[260px] shrink-0 flex flex-col gap-6">
+            <aside className="hidden lg:flex w-[260px] shrink-0 flex-col gap-6">
                 <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">Lượt hội thoại</h3>
                 <nav className="flex flex-col gap-3">
                     <div className="bg-[#0b1325] text-white px-5 py-3.5 rounded-xl text-sm font-medium shadow-md">
@@ -313,7 +322,7 @@ function ConversationContent() {
             </main>
 
             {/* 3. Right Sidebar Timeline */}
-            <aside className="w-[340px] shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col h-full self-start sticky top-24">
+            <aside className="hidden xl:flex w-[340px] shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-col h-full self-start sticky top-24">
                 <h3 className="text-[15px] font-bold text-slate-800 mb-6 text-center border-b border-slate-100 pb-3">Dòng thời gian hội thoại</h3>
 
                 <div className="flex flex-col gap-6 relative">

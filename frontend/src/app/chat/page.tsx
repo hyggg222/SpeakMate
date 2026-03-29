@@ -9,6 +9,7 @@ import { useMentorChat } from "@/hooks/useMentorChat";
 import NavigationButton from "@/components/mentorchat/NavigationButton";
 import StoryDataCard from "@/components/mentorchat/StoryDataCard";
 import ChallengeDataCard from "@/components/mentorchat/ChallengeDataCard";
+import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import type { ChatMessage } from "@/hooks/useMentorChat";
 
 export default function MentorNiChatPage() {
@@ -102,7 +103,7 @@ export default function MentorNiChatPage() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="px-4 sm:px-8 lg:px-12 pb-4 pt-2 bg-[#f8fafc]">
+                        <div className="px-4 sm:px-8 lg:px-12 pb-20 md:pb-4 pt-2 bg-[#f8fafc]">
                             <div className="max-w-2xl mx-auto flex items-end gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-2 shadow-sm focus-within:border-[var(--teal)] focus-within:ring-2 focus-within:ring-[var(--teal)]/20 transition-all">
                                 <textarea
                                     ref={inputRef}
@@ -128,7 +129,7 @@ export default function MentorNiChatPage() {
                         </div>
                     </div>
 
-                    {/* Right Sidebar — Chat History */}
+                    {/* Right Sidebar — Chat History (desktop only) */}
                     <aside className="hidden lg:flex w-[280px] flex-col bg-white border-l border-slate-200 shrink-0">
                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -172,6 +173,7 @@ export default function MentorNiChatPage() {
                     </aside>
                 </div>
             </main>
+            <MobileBottomNav />
         </div>
     );
 }
