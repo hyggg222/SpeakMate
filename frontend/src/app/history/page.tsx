@@ -3,7 +3,6 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import AuthGate from "@/components/AuthGate";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -43,7 +42,7 @@ export default function HistoryPage() {
                 {/* We use Topbar directly here since practice pages don't have sidebar but have topbar */}
                 <Topbar />
                 <AuthGate feature="Lịch sử">
-                <section className="flex-1 overflow-y-auto px-4 sm:px-[10%] xl:px-[20%] py-10 md:py-16 pb-24 md:pb-10 bg-[#f8fafc]">
+                <section className="flex-1 overflow-y-auto px-4 sm:px-[10%] xl:px-[20%] py-10 md:py-16 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-12">
 
                         {/* Header section with Stats */}
@@ -142,7 +141,6 @@ export default function HistoryPage() {
                 </section>
                 </AuthGate>
             </main>
-            <MobileBottomNav />
         </div>
     );
 }
