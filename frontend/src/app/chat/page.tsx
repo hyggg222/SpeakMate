@@ -56,12 +56,12 @@ export default function MentorNiChatPage() {
         <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: "var(--background)" }}>
             <Sidebar />
 
-            <main className="flex flex-col flex-1 overflow-hidden">
+            <main className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <Topbar />
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 min-h-0 flex overflow-hidden">
                     {/* Chat Container */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-[#f8fafc]">
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#f8fafc]">
 
                         {/* Chat Header */}
                         <div className="flex items-center gap-3 px-6 py-3 bg-white border-b shadow-sm">

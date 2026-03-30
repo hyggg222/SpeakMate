@@ -119,10 +119,10 @@ export default function StoriesPage() {
     return (
         <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: "var(--background)" }}>
             <Sidebar />
-            <main className="flex flex-col flex-1 overflow-hidden">
+            <main className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <Topbar />
                 <AuthGate feature="Kho Chuyện">
-                <section className="flex-1 overflow-y-auto px-4 sm:px-[5%] xl:px-[12%] py-8 bg-[#f8fafc]">
+                <section className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-[5%] xl:px-[12%] py-8 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-8">
 
                         {/* Header */}

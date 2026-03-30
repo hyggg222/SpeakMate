@@ -33,9 +33,9 @@ export default function Home() {
       <Sidebar />
 
       {/* Main content */}
-      <main className="flex flex-1 overflow-hidden">
+      <main className="flex flex-1 min-h-0 overflow-hidden">
         {/* Center panel */}
-        <section className="flex-1 overflow-y-auto px-4 md:px-6 pt-16 md:pt-3 pb-8 flex flex-col hide-scrollbar">
+        <section className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pt-16 md:pt-3 pb-8 flex flex-col hide-scrollbar">
           <div className="max-w-[1400px] mx-auto w-full">
             <WelcomeBanner />
 
