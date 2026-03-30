@@ -203,27 +203,37 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {/* User info + logout */}
+          {/* User info + login/logout */}
           <div className="p-3 border-t border-slate-700/40 space-y-1">
-            {user && (
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-800/40">
-                <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold border border-teal-400/40 shrink-0">
-                  {avatarLetter}
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-800/40">
+                  <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold border border-teal-400/40 shrink-0">
+                    {avatarLetter}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-white truncate">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-white truncate">
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-                  </p>
-                  <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-                </div>
-              </div>
+                <button
+                  onClick={() => { setDrawerOpen(false); handleLogout(); }}
+                  className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                >
+                  <LogOut size={18} /> Đăng xuất
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-medium text-teal-400 hover:bg-teal-500/10 border border-teal-500/20 transition-all"
+              >
+                <LogOut size={18} className="rotate-180" /> Đăng nhập
+              </Link>
             )}
-            <button
-              onClick={() => { setDrawerOpen(false); handleLogout(); }}
-              className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
-            >
-              <LogOut size={18} /> Đăng xuất
-            </button>
           </div>
         </div>
       </div>
