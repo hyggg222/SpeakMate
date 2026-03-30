@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { X, MessageCircle } from 'lucide-react'
 
 const GOAL_LABELS: Record<string, string> = {
-    interview: 'phỏng vấn',
-    business: 'giao tiếp công việc',
-    daily: 'hội thoại hằng ngày',
-    academic: 'tiếng Anh học thuật',
+    interview: 'kỹ năng phỏng vấn',
+    presentation: 'kỹ năng thuyết trình',
+    meeting: 'giao tiếp trong cuộc họp',
+    debate: 'kỹ năng tranh luận',
 }
 
 export default function WelcomeBanner() {
