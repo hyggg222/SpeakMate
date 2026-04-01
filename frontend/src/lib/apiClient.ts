@@ -75,4 +75,24 @@ export const apiClient = {
         const json = await res.json();
         return json.evaluationReport;
     },
+
+    /**
+     * Scaffolding Hints — "Ni ơi, cứu!"
+     * Gọi BrainAgent để tạo 3 gợi ý từ khóa khi user bí.
+     */
+    async getHints(scenario: any, conversationHistory: any[]): Promise<string[]> {
+        const res = await fetch(`${API_BASE_URL}/practice/hints`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                scenarioStr: JSON.stringify(scenario),
+                conversationHistoryStr: JSON.stringify(conversationHistory),
+            }),
+        });
+        if (!res.ok) {
+            return ["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"];
+        }
+        const json = await res.json();
+        return json.hints;
+    },
 };
