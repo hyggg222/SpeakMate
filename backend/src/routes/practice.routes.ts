@@ -17,4 +17,7 @@ router.post('/interact', upload.single('audio'), (req, res) => practiceControlle
 // 3. Evaluate the entire session using "The Analyst" (Gemini 1.5 Pro)
 router.post('/analyze', (req, res) => practiceController.evaluateSession(req, res));
 
+// 4. Generate scaffolding hints ("Ni ơi, cứu!") using "The Brain"
+router.post('/hints', (req, res) => practiceController.generateHints(req, res));
+
 export default router;

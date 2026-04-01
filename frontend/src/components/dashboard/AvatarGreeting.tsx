@@ -1,13 +1,40 @@
+'use client';
+
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 export default function AvatarGreeting() {
+  const [greeting, setGreeting] = useState('');
+  const [userName, setUserName] = useState('bạn');
+
+  useEffect(() => {
+    // Dynamic greeting based on time of day
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Chào buổi sáng');
+    else if (hour < 18) setGreeting('Chào buổi chiều');
+    else setGreeting('Chào buổi tối');
+
+    // Load user name from localStorage (or default)
+    const savedName = localStorage.getItem('speakmate_username');
+    if (savedName) setUserName(savedName);
+  }, []);
+
+  // Motivational messages rotate
+  const messages = [
+    'Hôm nay luyện tập chút nhé? 💪',
+    'Mỗi ngày một bước, bạn sẽ tự tin hơn!',
+    'Ni sẵn sàng đồng hành cùng bạn rồi!',
+    'Thử nói vài câu hôm nay nhé? 🎤',
+  ];
+  const [message] = useState(() => messages[Math.floor(Math.random() * messages.length)]);
+
   return (
     <div className="flex items-end gap-4 -mt-2">
       {/* Avatar Image */}
       <div className="relative flex-shrink-0 w-28 h-[140px]">
         <Image
           src="/ni-avatar.png"
-          alt="AI Assistant"
+          alt="Mentor Ni"
           fill
           className="object-contain object-bottom drop-shadow-md"
           priority
@@ -21,7 +48,7 @@ export default function AvatarGreeting() {
           style={{ backgroundColor: "#e6f7f5", border: "1.5px solid var(--teal-light)", color: "var(--foreground)" }}
         >
           <p className="font-medium text-[13px] leading-relaxed" style={{ color: "var(--foreground)" }}>
-            Chào buổi tối, <span className="font-bold" style={{ color: "var(--teal)" }}>[Tên User]</span>. Mai có bài thuyết trình Văn phải không? Tập dượt chút nhé?
+            {greeting}, <span className="font-bold" style={{ color: "var(--teal)" }}>{userName}</span>. {message}
           </p>
         </div>
         {/* Triangle pointer */}
