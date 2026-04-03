@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import Sidebar from "@/components/dashboard/Sidebar";
 import AvatarGreeting from "@/components/dashboard/AvatarGreeting";
 import RecentScenario from "@/components/dashboard/RecentScenario";
@@ -19,12 +20,17 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const onboarding = localStorage.getItem('speakmate_onboarding');
-      if (!onboarding) router.push('/onboarding');
-    } catch {
-      // localStorage unavailable (private mode) — skip redirect
-    }
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
+      // Logged-in users skip onboarding — they already have an account
+      if (data.user) return;
+      try {
+        const onboarding = localStorage.getItem('speakmate_onboarding');
+        if (!onboarding) router.push('/onboarding');
+      } catch {
+        // localStorage unavailable (private mode) — skip redirect
+      }
+    });
   }, [router]);
 
   return (
