@@ -342,7 +342,8 @@ export const apiClient = {
     async evaluateSession(
         rubric: EvaluationRubric,
         audioFileKeys: string[],
-        fullTranscript: string
+        fullTranscript: string,
+        sessionId?: string
     ): Promise<any> {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/analyze`, {
@@ -352,6 +353,7 @@ export const apiClient = {
                 rubricStr: JSON.stringify(rubric),
                 audioFileKeys,
                 fullTranscript,
+                sessionId,
             }),
         });
         if (!res.ok) {
@@ -512,7 +514,7 @@ export const apiClient = {
         });
         if (!res.ok) return [];
         const json = await res.json();
-        return json.data;
+        return json.data || [];
     },
 
     async setChallengeDeadline(challengeId: string, deadline: string): Promise<boolean> {
@@ -683,6 +685,16 @@ export const apiClient = {
     async getProgressDetail(): Promise<{ userProgress: any; gymHistory: any[]; realworldHistory: any[] } | null> {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/progress/detail`, {
+            headers: { ...authHeaders },
+        });
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.data;
+    },
+
+    async getPreviousMetrics(sessionId: string): Promise<any | null> {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/practice/previous-metrics?sessionId=${encodeURIComponent(sessionId)}`, {
             headers: { ...authHeaders },
         });
         if (!res.ok) return null;

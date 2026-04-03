@@ -76,10 +76,10 @@ export default function ProgressCard() {
         );
     }
 
-    const level = progress.communication_level || 1;
-    const xp = progress.total_xp || 0;
-    const streak = progress.current_streak || 0;
-    const badges: string[] = progress.badges || [];
+    const level = Number(progress.communication_level) || 1;
+    const xp = Number(progress.total_xp) || 0;
+    const streak = Number(progress.current_streak) || 0;
+    const badges: string[] = Array.isArray(progress.badges) ? progress.badges : [];
     const xpForNextLevel = level * 100;
     const xpInLevel = xp % xpForNextLevel;
     const xpPct = Math.min(xpInLevel / xpForNextLevel * 100, 100);
@@ -135,7 +135,7 @@ export default function ProgressCard() {
                     <p className="text-[10px] text-slate-400 mt-0.5">Phiên</p>
                 </div>
                 <div className="px-3 py-3 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-                    <p className="text-[12px] font-bold text-white">{(progress.avg_coherence || 0).toFixed(0)}</p>
+                    <p className="text-[12px] font-bold text-white">{Number(progress.avg_coherence || 0).toFixed(0)}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">Mạch lạc</p>
                 </div>
                 <div className="px-3 py-3 text-center">
