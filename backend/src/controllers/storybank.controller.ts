@@ -18,7 +18,7 @@ export class StoryBankController {
     public async chatForStory(req: Request, res: Response): Promise<void> {
         try {
             const { framework, initialInput, inputMethod, chatMessages } = req.body;
-            const result = await mentorAgent.chatForStory(framework, initialInput, chatMessages, inputMethod);
+            const result = await mentorAgent.chatForStory(framework, initialInput, chatMessages, inputMethod, req.language);
             res.status(200).json({ data: result });
         } catch (err: any) {
             console.error('[StoryBankController] chatForStory failed:', err);
@@ -34,7 +34,7 @@ export class StoryBankController {
     public async structureStory(req: Request, res: Response): Promise<void> {
         try {
             const { rawInput, inputMethod, followUpAnswers, chatHistory, framework } = req.body;
-            const result = await storyBankAgent.structureStory(rawInput, inputMethod, followUpAnswers, chatHistory, framework);
+            const result = await storyBankAgent.structureStory(rawInput, inputMethod, followUpAnswers, chatHistory, framework, req.language);
             res.status(200).json({ data: result });
         } catch (err: any) {
             console.error('[StoryBankController] structureStory failed:', err);

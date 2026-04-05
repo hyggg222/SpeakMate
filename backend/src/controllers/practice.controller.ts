@@ -47,7 +47,7 @@ export class PracticeController {
                 return;
             }
 
-            const scenarioContext: FullScenarioContext = await brainAgent.generateScenario(userGoal);
+            const scenarioContext: FullScenarioContext = await brainAgent.generateScenario(userGoal, req.language);
             res.status(200).json({ data: scenarioContext });
         } catch (err: any) {
             console.error("[PracticeController] Setup scenario failed:", err);
@@ -243,7 +243,7 @@ export class PracticeController {
             const history = JSON.parse(conversationHistoryStr || '[]');
             const userName = req.user?.email?.split('@')[0] || undefined;
 
-            const response = await voiceAgent.interactText(scenario, history, userMessage, userName);
+            const response = await voiceAgent.interactText(scenario, history, userMessage, userName, req.language);
             res.status(200).json({ botResponse: response });
         } catch (err) {
             console.error("[PracticeController] Text interaction failed:", err);
@@ -408,7 +408,7 @@ export class PracticeController {
                 (audioFileKeys || []).map((k: string) => storageService.getSignedUrl(k))
             );
 
-            const report = await analystAgent.evaluateSession(rubric, signedUrls[0] || '', fullTranscript);
+            const report = await analystAgent.evaluateSession(rubric, signedUrls[0] || '', fullTranscript, req.language);
 
             // Compute avgResponseTime synchronously so it can be included in response
             let avgResponseTime = 0;
@@ -459,7 +459,7 @@ export class PracticeController {
             const scenario = JSON.parse(scenarioStr || '{}');
             const history = JSON.parse(conversationHistoryStr || '[]');
 
-            const hints = await brainAgent.generateHints(scenario, history);
+            const hints = await brainAgent.generateHints(scenario, history, req.language);
             res.status(200).json({ hints });
         } catch (err) {
             console.error("[PracticeController] Hint generation failed:", err);
@@ -476,7 +476,7 @@ export class PracticeController {
                 return;
             }
 
-            const adjustedScenario = await brainAgent.adjustScenario(currentScenario, adjustmentText);
+            const adjustedScenario = await brainAgent.adjustScenario(currentScenario, adjustmentText, req.language);
             res.status(200).json({ data: adjustedScenario });
         } catch (err: any) {
             console.error("[PracticeController] Adjust scenario failed:", err);
@@ -493,7 +493,7 @@ export class PracticeController {
                 return;
             }
 
-            const suggestions = await brainAgent.generateSuggestions(currentScenario);
+            const suggestions = await brainAgent.generateSuggestions(currentScenario, req.language);
             res.status(200).json({ suggestions });
         } catch (err) {
             console.error("[PracticeController] Suggestion generation failed:", err);
@@ -510,7 +510,7 @@ export class PracticeController {
                 return;
             }
 
-            const response = await mentorAgent.chat(scenario, evaluationReport, userMessage, conversationHistory || []);
+            const response = await mentorAgent.chat(scenario, evaluationReport, userMessage, conversationHistory || [], req.language);
             res.status(200).json({ data: response });
         } catch (err: any) {
             console.error("[PracticeController] Mentor chat failed:", err);
@@ -526,7 +526,7 @@ export class PracticeController {
                 res.status(400).json({ error: 'evalReport is required' });
                 return;
             }
-            const comment = await mentorAgent.generateEvalComment(evalReport, storyCoverage, streak, previousScore);
+            const comment = await mentorAgent.generateEvalComment(evalReport, storyCoverage, streak, previousScore, req.language);
             res.status(200).json({ data: { comment } });
         } catch (err: any) {
             console.error("[PracticeController] Eval comment failed:", err);
@@ -566,7 +566,7 @@ export class PracticeController {
                 return;
             }
 
-            const challengeData = await brainAgent.generateChallenge(scenarioData || {}, evaluationData || {});
+            const challengeData = await brainAgent.generateChallenge(scenarioData || {}, evaluationData || {}, req.language);
 
             // Save to DB only if user is authenticated
             let challenge = { ...challengeData, id: `local_${Date.now()}` };
@@ -617,7 +617,8 @@ export class PracticeController {
                 },
                 userRequest,
                 session?.scenario || {},
-                evaluation || {}
+                evaluation || {},
+                req.language
             );
 
             // Update in DB
@@ -827,7 +828,8 @@ export class PracticeController {
                 challenge ? { title: challenge.title, description: challenge.description, difficulty: challenge.difficulty || 3, sourceWeakness: challenge.source_weakness } : null,
                 feedbackData,
                 voiceTranscript,
-                prevMetrics
+                prevMetrics,
+                req.language
             );
             console.log('[submitFeedbackFree] analyzeFeedbackFull done in', Date.now() - tStart, 'ms | niComment:', analysis.niComment?.slice(0, 60));
 

@@ -8,23 +8,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
-
-const navItems = [
-  { icon: MessageCircle, label: "Mentor Ni", href: "/chat" },
-  { icon: Share2, label: "Chia sẻ", href: "/feedback/new" },
-  { icon: Target, label: "Thử thách", href: "/challenges" },
-  { icon: FileText, label: "Kho Chuyện", href: "/stories" },
-  { icon: Headphones, label: "Thực tế", href: "/realworld" },
-  { icon: History, label: "Lịch sử", href: "/history" },
-  { icon: Settings, label: "Cài đặt", href: "/settings" },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const navItems = [
+    { icon: MessageCircle, label: t('nav.mentorNi'), href: "/chat" },
+    { icon: Share2, label: t('nav.share'), href: "/feedback/new" },
+    { icon: Target, label: t('nav.challenges'), href: "/challenges" },
+    { icon: FileText, label: t('nav.stories'), href: "/stories" },
+    { icon: Headphones, label: t('nav.realworld'), href: "/realworld" },
+    { icon: History, label: t('nav.history'), href: "/history" },
+    { icon: Settings, label: t('nav.settings'), href: "/settings" },
+  ];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => setUser(data.user));
@@ -72,7 +74,7 @@ export default function Sidebar() {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
                 className={cn(
                   "relative flex flex-col items-center justify-center w-full py-2.5 my-0.5 gap-1 transition-all group",
@@ -104,10 +106,10 @@ export default function Sidebar() {
           <button
             onClick={handleLogout}
             className="flex flex-col items-center justify-center w-full py-2 gap-1 text-white opacity-50 hover:opacity-100 transition-all group"
-            title="Đăng xuất"
+            title={t('nav.logout')}
           >
             <LogOut size={18} className="text-white group-hover:text-red-400 transition-colors" />
-            <span className="text-[10px] font-medium leading-none">Đăng xuất</span>
+            <span className="text-[10px] font-medium leading-none">{t('nav.logout')}</span>
           </button>
         </div>
       </aside>
@@ -119,7 +121,7 @@ export default function Sidebar() {
           onClick={() => setDrawerOpen(true)}
           className="fixed top-3.5 left-3.5 z-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border border-slate-700/60"
           style={{ backgroundColor: "var(--navy)" }}
-          aria-label="Mở menu"
+          aria-label={t('nav.home')}
         >
           <Menu size={20} className="text-white" />
         </button>
@@ -168,7 +170,7 @@ export default function Sidebar() {
                   : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
               )}
             >
-              <span className="text-base">🏠</span> Trang chủ
+              <span className="text-base">🏠</span> {t('nav.home')}
             </Link>
             <Link
               href="/setup"
@@ -180,14 +182,14 @@ export default function Sidebar() {
                   : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
               )}
             >
-              <span className="text-base">🎤</span> Luyện tập
+              <span className="text-base">🎤</span> {t('nav.practice')}
             </Link>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link
-                  key={item.label}
+                  key={item.href}
                   href={item.href}
                   onClick={() => setDrawerOpen(false)}
                   className={cn(
@@ -223,7 +225,7 @@ export default function Sidebar() {
                   onClick={() => { setDrawerOpen(false); handleLogout(); }}
                   className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                 >
-                  <LogOut size={18} /> Đăng xuất
+                  <LogOut size={18} /> {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -232,7 +234,7 @@ export default function Sidebar() {
                 onClick={() => setDrawerOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-[14px] font-medium text-teal-400 hover:bg-teal-500/10 border border-teal-500/20 transition-all"
               >
-                <LogOut size={18} className="rotate-180" /> Đăng nhập
+                <LogOut size={18} className="rotate-180" /> {t('auth.login')}
               </Link>
             )}
           </div>

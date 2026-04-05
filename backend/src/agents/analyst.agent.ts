@@ -63,9 +63,12 @@ ${transcript}
         throw lastError;
     }
 
-    public async evaluateSession(rubric: EvaluationRubric, sessionAudioPath: string, transcript: string): Promise<EvaluationReport> {
+    public async evaluateSession(rubric: EvaluationRubric, sessionAudioPath: string, transcript: string, language = 'vi'): Promise<EvaluationReport> {
         const maxAttempts = 3;
         let lastError: unknown;
+        const langInstr = language === 'en'
+            ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+            : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
@@ -80,7 +83,7 @@ Rubric categories: ${JSON.stringify(rubric.categories || [])}
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: promptText }] }],
                     config: {
-                        systemInstruction: this.promptService.getEvaluationSystemPrompt(),
+                        systemInstruction: this.promptService.getEvaluationSystemPrompt() + langInstr,
                         responseMimeType: 'application/json',
                         temperature: 0.2,
                         safetySettings: SAFETY_SETTINGS,

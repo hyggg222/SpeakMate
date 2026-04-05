@@ -31,7 +31,7 @@ export class VoiceAgent {
         this.transcriptionService = new TranscriptionService();
     }
 
-    public async interactText(scenario: any, conversationHistory: any[], latestUserMessage: string, userName?: string): Promise<string> {
+    public async interactText(scenario: any, conversationHistory: any[], latestUserMessage: string, userName?: string, language = 'vi'): Promise<string> {
         try {
             const messages = conversationHistory.map((h: any) => ({
                 role: h.speaker === 'AI' ? 'assistant' as const : 'user' as const,
@@ -39,7 +39,11 @@ export class VoiceAgent {
             }));
             messages.push({ role: 'user' as const, content: latestUserMessage });
 
-            const response = await llmService.chat(this.promptService.buildConversationPrompt(scenario, userName), messages);
+            const langInstr = language === 'en'
+                ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+            const systemPrompt = this.promptService.buildConversationPrompt(scenario, userName) + langInstr;
+            const response = await llmService.chat(systemPrompt, messages);
             return sanitizePlaceholders(response || '', userName);
         } catch (error) {
             console.error("[VoiceAgent] Text interaction failed:", error);

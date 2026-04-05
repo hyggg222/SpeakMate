@@ -47,10 +47,14 @@ export class MentorAgent {
         scenario: any,
         evaluationReport: any,
         userMessage: string,
-        conversationHistory: { role: string, content: string }[]
+        conversationHistory: { role: string, content: string }[],
+        language = 'vi'
     ): Promise<MentorChatResponse> {
         try {
-            const systemPrompt = this.promptService.getMentorSystemPrompt();
+            const langInstr = language === 'en'
+                ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+            const systemPrompt = this.promptService.getMentorSystemPrompt() + langInstr;
             const context = `
 Context:
 Scenario: ${JSON.stringify(scenario)}
@@ -93,7 +97,8 @@ User Message: "${userMessage}"
         evalReport: any,
         storyCoverage?: any[],
         streak?: number,
-        previousScore?: number
+        previousScore?: number,
+        language = 'vi'
     ): Promise<string> {
         const maxAttempts = 2;
         let lastError: unknown;
@@ -117,11 +122,14 @@ Streak hiện tại: ${streak ?? 0} tuần
 ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây là phiên đầu tiên.'}
 `;
 
+                const langInstr = language === 'en'
+                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: context }] }],
                     config: {
-                        systemInstruction: this.promptService.getEvalCommentPrompt(),
+                        systemInstruction: this.promptService.getEvalCommentPrompt() + langInstr,
                         temperature: 0.8,
                         safetySettings: SAFETY_SETTINGS,
                     }
@@ -147,14 +155,18 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
         framework: string,
         initialInput: string,
         chatMessages: StoryChatMessage[],
-        inputMethod: string
+        inputMethod: string,
+        language = 'vi'
     ): Promise<StoryChatResponse> {
         const maxAttempts = 3;
         let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const systemPrompt = this.promptService.getStoryChatSystemPrompt(framework, initialInput);
+                const langInstr = language === 'en'
+                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+                const systemPrompt = this.promptService.getStoryChatSystemPrompt(framework, initialInput) + langInstr;
 
                 // Build multi-turn conversation
                 const messages: { role: string; parts: { text: string }[] }[] = [];
@@ -226,7 +238,8 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
             whatStuck?: string;
         },
         voiceTranscript?: string | null,
-        prevWeakness?: string | null
+        prevWeakness?: string | null,
+        language = 'vi'
     ): Promise<FeedbackAnalysis> {
         const maxAttempts = 2;
         let lastError: unknown;
@@ -252,7 +265,10 @@ Feedback từ user:
 ${voiceTranscript ? `\nVoice transcript: ${voiceTranscript}` : ''}
 ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
 `;
-                const systemPrompt = this.promptService.getFeedbackAnalysisPrompt();
+                const langInstr = language === 'en'
+                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+                const systemPrompt = this.promptService.getFeedbackAnalysisPrompt() + langInstr;
 
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
@@ -331,7 +347,8 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
             whatStuck?: string;
         },
         transcript: string | null,
-        previousMetrics?: RealWorldMetrics | null
+        previousMetrics?: RealWorldMetrics | null,
+        language = 'vi'
     ): Promise<RealWorldEvaluation> {
         const maxAttempts = 2;
         let lastError: unknown;
@@ -354,11 +371,14 @@ ${previousMetrics ? `5 lượt thực tế gần nhất:\n- coherenceScore trung
 
 completed: ${feedbackData.completed}
 `;
+                const langInstrFull = language === 'en'
+                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: context }] }],
                     config: {
-                        systemInstruction: this.promptService.getRealWorldFeedbackPrompt(),
+                        systemInstruction: this.promptService.getRealWorldFeedbackPrompt() + langInstrFull,
                         responseMimeType: 'application/json',
                         temperature: 0.7,
                         safetySettings: SAFETY_SETTINGS,
@@ -434,14 +454,18 @@ completed: ${feedbackData.completed}
     public async generalChat(
         userMessage: string,
         conversationHistory: { role: string; content: string }[],
-        userContext: string
+        userContext: string,
+        language = 'vi'
     ): Promise<GeneralChatResponse> {
         const maxAttempts = 3;
         let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const systemPrompt = this.promptService.getMentorChatSystemPrompt(userContext);
+                const langInstrGeneral = language === 'en'
+                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+                const systemPrompt = this.promptService.getMentorChatSystemPrompt(userContext) + langInstrGeneral;
 
                 const messages = [
                     ...conversationHistory.map(m => ({
