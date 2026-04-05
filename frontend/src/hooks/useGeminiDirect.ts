@@ -66,7 +66,6 @@ export function useGeminiDirect(
     const userTextBuffer = useRef('');
     const aiTextBuffer = useRef('');
     const turnCounter = useRef(0);
-    const aiTurnCounter = useRef(0); // counts only AI turns (for accurate fallback modulo)
     const charactersRef = useRef<{ id: string; name: string }[]>([]);
 
     // Debug: accumulate mic PCM chunks only during user speech for VAD inspection
@@ -130,15 +129,13 @@ export function useGeminiDirect(
             }
             playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
 
-            const isDual = (characters?.length || 0) >= 2;
-
             // Connect to Gemini Live
             const session = await ai.live.connect({
                 model,
                 config: {
-                    responseModalities: isDual ? ['TEXT' as any] : ['AUDIO' as any],
+                    responseModalities: ['AUDIO' as any],
                     inputAudioTranscription: {},
-                    outputAudioTranscription: isDual ? undefined : {},
+                    outputAudioTranscription: {},
                 },
                 callbacks: {
                     onopen: () => {
@@ -167,9 +164,6 @@ export function useGeminiDirect(
                                         bytes = new Uint8Array(rawData);
                                     }
                                     enqueueAudio(bytes);
-                                } else if (part.text) {
-                                    // TEXT mode (dual character): accumulate text
-                                    aiTextBuffer.current += part.text;
                                 }
                             }
                         }
@@ -230,50 +224,14 @@ export function useGeminiDirect(
                                 });
                             }
                             if (aiText) {
-                                let character_id: string | undefined;
-                                let character_name: string | undefined;
-                                let character_gender: 'male' | 'female' | undefined;
-                                let cleanLine = aiText;
-                                const isDual = charactersRef.current.length >= 2;
-
-                                if (isDual) {
-                                    for (let ci = 0; ci < charactersRef.current.length; ci++) {
-                                        const ch = charactersRef.current[ci] as any;
-                                        if (aiText.startsWith(ch.name + ':') || aiText.startsWith(ch.name + ': ')) {
-                                            character_id = ch.id;
-                                            character_name = ch.name;
-                                            character_gender = ch.gender;
-                                            cleanLine = aiText.slice(ch.name.length + 1).trim();
-                                            break;
-                                        }
-                                    }
-                                    if (!character_id) {
-                                        // Fallback: use AI-turn counter (not total turn counter) for correct modulo
-                                        const fallbackIdx = aiTurnCounter.current % charactersRef.current.length;
-                                        character_id = charactersRef.current[fallbackIdx].id;
-                                        character_name = charactersRef.current[fallbackIdx].name;
-                                        character_gender = (charactersRef.current[fallbackIdx] as any).gender;
-                                    }
-                                    aiTurnCounter.current++;
-
-                                    // In TEXT mode, browser TTS handles audio for all characters
-                                    if (browserTTSRef.current && cleanLine) {
-                                        browserTTSRef.current.speak(cleanLine, character_gender);
-                                        setIsAgentSpeaking(true);
-                                    }
-                                } else {
-                                    // Single agent scenario: fallback logic
-                                    if (charactersRef.current.length === 1) {
-                                        character_id = charactersRef.current[0].id;
-                                        character_name = charactersRef.current[0].name;
-                                    }
-                                }
+                                const character_id = charactersRef.current[0]?.id;
+                                const character_name = charactersRef.current[0]?.name;
 
                                 onNewTurnRef.current({
                                     speaker: 'AI',
                                     character_id,
                                     character_name,
-                                    line: cleanLine,
+                                    line: aiText,
                                     turn_index: turnCounter.current++,
                                     confirmed: true
                                 });
