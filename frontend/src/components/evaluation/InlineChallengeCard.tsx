@@ -65,36 +65,33 @@ export default function InlineChallengeCard({ sessionId, isVisible, onAccepted, 
         }
     }, [isVisible, loading, challenge])
 
-    const handleAccept = async () => {
+    const handleAccept = () => {
         if (!challenge) return
         setAccepting(true)
+        // Save to localStorage only (no DB)
         try {
             const d = new Date()
             d.setDate(d.getDate() + parseInt(deadline))
-            await apiClient.setChallengeDeadline(challenge.id, d.toISOString())
-        } catch {
-            // OK if no auth / DB not ready
-        }
-        // Save to localStorage so sidebar shows it even for guests
-        try {
             const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
-            const exists = stored.find((c: any) => c.id === challenge.id)
-            if (!exists) {
-                const d = new Date()
-                d.setDate(d.getDate() + parseInt(deadline))
-                stored.unshift({ ...challenge, status: 'pending', deadline: d.toISOString(), accepted_at: new Date().toISOString() })
-                localStorage.setItem('speakmate_challenges', JSON.stringify(stored.slice(0, 20)))
-            }
+            const filtered = stored.filter((c: any) => c.id !== challenge.id)
+            filtered.unshift({ ...challenge, status: 'pending', deadline: d.toISOString(), accepted_at: new Date().toISOString() })
+            localStorage.setItem('speakmate_challenges', JSON.stringify(filtered.slice(0, 20)))
         } catch { /* ignore */ }
         setAccepting(false)
         onAccepted()
-        router.push('/')
+        // Navigate to share page pre-linked to this challenge
+        router.push(`/feedback/new?challengeId=${encodeURIComponent(challenge.id)}`)
     }
 
-    const handleSkip = async () => {
+    const handleSkip = () => {
+        // Update status in localStorage
         try {
-            if (challenge?.id) await apiClient.skipChallenge(challenge.id)
-        } catch { /* OK */ }
+            if (challenge?.id) {
+                const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+                const updated = stored.map((c: any) => c.id === challenge.id ? { ...c, status: 'skipped' } : c)
+                localStorage.setItem('speakmate_challenges', JSON.stringify(updated))
+            }
+        } catch { /* ignore */ }
         setChallenge(null)
         onSkipped()
     }

@@ -1,32 +1,6 @@
 import { EvaluationRubric, EvaluationReport } from '../contracts/data.contracts';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
-
-/**
- * Strips bracketed placeholders from LLM output.
- */
-function sanitizeText(text: string): string {
-    let result = text.replace(/\[(?:tên của bạn|tên bạn|your name|tên|name|họ tên)\]/gi, 'bạn');
-    result = result.replace(/\[[^\]]{1,30}\]/g, '');
-    return result.replace(/\s{2,}/g, ' ').trim();
-}
-
-function sanitizeObj(obj: any): any {
-    if (typeof obj === 'string') return sanitizeText(obj);
-    if (Array.isArray(obj)) return obj.map(sanitizeObj);
-    if (obj && typeof obj === 'object') {
-        const result: any = {};
-        for (const key of Object.keys(obj)) {
-            result[key] = sanitizeObj(obj[key]);
-        }
-        return result;
-    }
-    return obj;
-}
-
-/**
- * AnalystAgent evaluates the user's performance after a practice session concludes.
- * It uses the Gemini 2.0 Flash model to produce structured multimodal analysis.
- */
+import { sanitizeObj } from '../utils/sanitize';
 import { PromptService } from '../services/prompt.service';
 
 export class AnalystAgent {

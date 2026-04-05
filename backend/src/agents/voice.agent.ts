@@ -3,20 +3,9 @@ import { TranscriptionService } from '../services/transcription.service';
 import { PromptService } from '../services/prompt.service';
 import { getGenAI, SAFETY_SETTINGS } from '../config/genai';
 import { config } from '../config/env';
+import { sanitizePlaceholders } from '../utils/sanitize';
 
 const llmService = new LlmService();
-
-/**
- * Strips bracketed placeholders like [tên của bạn], [your name], [địa điểm] from LLM output.
- * Replaces them with the user's name or removes them entirely.
- */
-function sanitizePlaceholders(text: string, userName?: string): string {
-    const name = userName || 'bạn';
-    let result = text.replace(/\[(?:tên của bạn|tên bạn|tên người dùng|your name|tên|name|họ tên|user name|người dùng)[^\]]*\]/gi, name);
-    result = result.replace(/\[[^\]]{1,40}\]/g, '');
-    result = result.replace(/\s{2,}/g, ' ').trim();
-    return result;
-}
 
 /**
  * Returns true if the STT output looks like a hallucinated instruction text

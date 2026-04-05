@@ -93,12 +93,18 @@ function FeedbackPageInner() {
     const [analysis, setAnalysis] = useState<RealWorldEvaluation | null>(null)
 
     useEffect(() => {
-        setLoadingChallenges(true)
-        apiClient.getUserChallenges()
-            .then(data => setActiveChallenges((data || []).filter((c: any) => c.status === 'pending' || c.status === 'in_progress')))
-            .catch(() => {})
-            .finally(() => setLoadingChallenges(false))
-    }, [])
+        // Read challenges from localStorage (no DB needed)
+        try {
+            const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+            const active = stored.filter((c: any) => c.status === 'pending' || c.status === 'in_progress')
+            setActiveChallenges(active)
+            // Auto-expand challenge panel if pre-selected
+            if (preselectedChallengeId && active.some((c: any) => c.id === preselectedChallengeId)) {
+                setChallengeLinkOpen(true)
+            }
+        } catch { /* ignore */ }
+        setLoadingChallenges(false)
+    }, [preselectedChallengeId])
 
     const linkedChallenge = activeChallenges.find(c => c.id === linkedChallengeId) || null
 
@@ -180,6 +186,18 @@ function FeedbackPageInner() {
                     const stored = JSON.parse(localStorage.getItem('speakmate_realworld_history') || '[]')
                     stored.push({ ...data.analysis.expression, created_at: new Date().toISOString() })
                     localStorage.setItem('speakmate_realworld_history', JSON.stringify(stored.slice(-20)))
+                } catch { /* ignore */ }
+            }
+            // Update challenge status in localStorage
+            if (linkedChallengeId) {
+                try {
+                    const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+                    const updated = stored.map((c: any) =>
+                        c.id === linkedChallengeId
+                            ? { ...c, status: completed ? 'completed' : 'in_progress', reported_at: new Date().toISOString() }
+                            : c
+                    )
+                    localStorage.setItem('speakmate_challenges', JSON.stringify(updated))
                 } catch { /* ignore */ }
             }
             setAnalysis(data.analysis)

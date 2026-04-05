@@ -33,8 +33,8 @@ export class StoryBankController {
      */
     public async structureStory(req: Request, res: Response): Promise<void> {
         try {
-            const { rawInput, inputMethod, followUpAnswers, chatHistory } = req.body;
-            const result = await storyBankAgent.structureStory(rawInput, inputMethod, followUpAnswers, chatHistory);
+            const { rawInput, inputMethod, followUpAnswers, chatHistory, framework } = req.body;
+            const result = await storyBankAgent.structureStory(rawInput, inputMethod, followUpAnswers, chatHistory, framework);
             res.status(200).json({ data: result });
         } catch (err: any) {
             console.error('[StoryBankController] structureStory failed:', err);
