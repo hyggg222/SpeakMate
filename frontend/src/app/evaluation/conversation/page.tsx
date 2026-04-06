@@ -14,7 +14,7 @@ import NiCommentSection from '@/components/evaluation/NiCommentSection'
 import EvalCTASection from '@/components/evaluation/EvalCTASection'
 import InlineChallengeCard from '@/components/evaluation/InlineChallengeCard'
 import { Suspense } from 'react'
-import type { EvaluationReport } from '@speakmate/contracts'
+import type { EvaluationReport } from '@/types/api.contracts'
 
 // ============================================================
 // MOCK DATA for demo mode
