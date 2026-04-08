@@ -15,8 +15,10 @@ import ActiveChallenges from "@/components/dashboard/ActiveChallenges";
 import ProgressCard from "@/components/dashboard/ProgressCard";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Home() {
+  const { t } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function Home() {
             <WelcomeBanner />
 
             <h1 className="text-[22px] md:text-[24px] font-bold mb-2 text-balance leading-tight" style={{ color: "var(--foreground)" }}>
-              Trung tâm Luyện tập
+              {t('home.practiceCenter')}
             </h1>
 
             {/* Desktop greeting row — hidden on mobile to prevent overflow */}
@@ -65,8 +67,8 @@ export default function Home() {
                 style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)' }}
               >
                 <div>
-                  <p className="font-bold text-[15px]">Bắt đầu luyện tập 🎤</p>
-                  <p className="text-[12px] opacity-80 mt-0.5">Chọn chủ đề và luyện ngay</p>
+                  <p className="font-bold text-[15px]">{t('home.startPractice')}</p>
+                  <p className="text-[12px] opacity-80 mt-0.5">{t('home.startPractice.sub')}</p>
                 </div>
                 <span className="text-2xl">→</span>
               </Link>

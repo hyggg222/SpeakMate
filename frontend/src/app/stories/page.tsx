@@ -8,11 +8,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { Plus, Search, Clock, Target, Zap, BookOpen, X, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 import { STATUS_LABELS, FRAMEWORK_COLORS } from "@/lib/storybank-constants";
 
 const PAGE_SIZE = 12;
 
 export default function StoriesPage() {
+    const { t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -128,13 +130,13 @@ export default function StoriesPage() {
                         {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold font-serif" style={{ color: "var(--foreground)" }}>Kho Chuyện</h1>
-                                <p className="text-slate-500 mt-1 text-sm">Ngân hàng câu chuyện cá nhân của bạn</p>
+                                <h1 className="text-3xl font-bold font-serif" style={{ color: "var(--foreground)" }}>{t('stories.title')}</h1>
+                                <p className="text-slate-500 mt-1 text-sm">{t('stories.subtitle')}</p>
                             </div>
                             <Link href="/stories/create"
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium shadow-md hover:shadow-lg transition-all self-start"
                                 style={{ backgroundColor: "var(--teal)" }}>
-                                <Plus size={18} /> Tạo mới
+                                <Plus size={18} /> {t('stories.createNew')}
                             </Link>
                         </div>
 
@@ -142,18 +144,18 @@ export default function StoriesPage() {
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="bg-white border px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
                                 <BookOpen size={16} className="text-slate-400" />
-                                <span className="text-sm text-slate-600">{total} chuyện</span>
+                                <span className="text-sm text-slate-600">{total} {t('stories.count')}</span>
                             </div>
                             <div className="bg-white border px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
                                 <Target size={16} className="text-emerald-500" />
                                 <span className="text-sm text-slate-600">
-                                    {stories.filter(s => s.status === 'ready' || s.status === 'battle-tested').length} sẵn sàng
+                                    {stories.filter(s => s.status === 'ready' || s.status === 'battle-tested').length} {t('stories.ready')}
                                 </span>
                             </div>
                             <div className="bg-white border px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
                                 <Zap size={16} className="text-amber-500" />
                                 <span className="text-sm text-slate-600">
-                                    {stories.filter(s => s.status === 'battle-tested').length} thực chiến
+                                    {stories.filter(s => s.status === 'battle-tested').length} {t('stories.battleTested')}
                                 </span>
                             </div>
                         </div>
@@ -166,7 +168,7 @@ export default function StoriesPage() {
                                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="text"
-                                        placeholder="Tìm kiếm theo tiêu đề..."
+                                        placeholder={t('stories.searchPlaceholder')}
                                         value={search}
                                         onChange={e => { setSearch(e.target.value); setPage(1); }}
                                         className="w-full pl-9 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[var(--teal)]/30 bg-white"
@@ -176,7 +178,7 @@ export default function StoriesPage() {
                                 {/* Status filter */}
                                 <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
                                     className="border rounded-xl px-4 py-2 text-sm outline-none bg-white cursor-pointer">
-                                    <option value="">Tất cả trạng thái</option>
+                                    <option value="">{t('stories.allStatus')}</option>
                                     <option value="draft">Bản nháp</option>
                                     <option value="ready">Sẵn sàng</option>
                                     <option value="battle-tested">Thực chiến</option>
@@ -241,7 +243,7 @@ export default function StoriesPage() {
                                     <BookOpen size={28} className="text-slate-400" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                                    {search || statusFilter || activeTagFilters.length ? "Không tìm thấy kết quả" : "Chưa có câu chuyện nào"}
+                                    {search || statusFilter || activeTagFilters.length ? t('common.error') : t('stories.empty')}
                                 </h3>
                                 <p className="text-slate-500 mb-6 max-w-md mx-auto text-sm">
                                     {search || statusFilter || activeTagFilters.length

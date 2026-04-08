@@ -227,6 +227,71 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.done': 'Hoàn thành',
     'common.skip': 'Bỏ qua',
     'common.online': 'Trực tuyến',
+
+    // ── Greeting ─────────────────────────────────────────────────────────
+    'greeting.morning': 'Chào buổi sáng',
+    'greeting.afternoon': 'Chào buổi chiều',
+    'greeting.evening': 'Chào buổi tối',
+    'greeting.you': 'bạn',
+    'greeting.msg1': 'Hôm nay luyện tập chút nhé? 💪',
+    'greeting.msg2': 'Mỗi ngày một bước, bạn sẽ tự tin hơn!',
+    'greeting.msg3': 'Ni sẵn sàng đồng hành cùng bạn rồi!',
+    'greeting.msg4': 'Thử nói vài câu hôm nay nhé? 🎤',
+
+    // ── Daily Task ────────────────────────────────────────────────────────
+    'daily.title': 'Nhiệm vụ hôm nay',
+    'daily.done': '🎉 Hoàn thành xuất sắc!',
+    'daily.encourage': 'Nói nhiều mới tiến bộ á :)',
+
+    // ── Streak Card ───────────────────────────────────────────────────────
+    'streak.great': 'Tuyệt vời! Tiếp tục duy trì nhé! 🔥',
+    'streak.start': 'Hoàn thành nhiệm vụ để bắt đầu streak nè :)',
+    'streak.label': 'ngày streak',
+    'streak.footer': 'Streak hiện tại:',
+
+    // ── Progress Card ─────────────────────────────────────────────────────
+    'progress.coherence': 'Mạch lạc',
+    'progress.practiceNow': 'Luyện tập ngay',
+    'progress.viewDetail': 'Xem chi tiết tiến trình',
+    'progress.emptyDesc': 'Hoàn thành phiên luyện tập đầu tiên để bắt đầu theo dõi và phân tích sự tiến bộ của bạn.',
+
+    // ── Challenges (extra) ────────────────────────────────────────────────
+    'challenges.store': 'Kho Thử thách',
+    'challenges.newPractice': 'Luyện tập mới',
+    'challenges.statusPending': 'Đang chờ',
+    'challenges.statusDoing': 'Đang làm',
+    'challenges.statusCompleted': 'Hoàn thành',
+    'challenges.statusSkipped': 'Đã bỏ qua',
+    'challenges.statusExpired': 'Hết hạn',
+    'challenges.openerHints': 'Gợi ý mở đầu',
+    'challenges.reportResult': 'Báo cáo kết quả',
+    'challenges.overdue': 'Đã quá hạn',
+    'challenges.tabAll': 'Tất cả',
+    'challenges.pendingCount': 'đang chờ',
+    'challenges.completedCount': 'hoàn thành',
+    'challenges.emptyActive': 'Chưa có thử thách nào đang chờ',
+    'challenges.startPractice': 'Bắt đầu luyện tập',
+
+    // ── History (extra) ───────────────────────────────────────────────────
+    'history.total': 'Tổng số buổi',
+    'history.avgScore': 'Điểm trung bình',
+    'history.period': 'Khoảng thời gian',
+    'history.allTime': '📅 Tất cả',
+    'history.thisWeek': 'Tuần này',
+    'history.thisMonth': 'Tháng này',
+    'history.noPractice': 'Bạn chưa có phiên luyện tập nào được lưu trữ.',
+    'history.prevPage': 'Trang trước',
+    'history.nextPage': 'Trang sau',
+    'history.topic': 'Chủ đề:',
+
+    // ── Stories (extra) ───────────────────────────────────────────────────
+    'stories.subtitle': 'Ngân hàng câu chuyện cá nhân của bạn',
+    'stories.createNew': 'Tạo mới',
+    'stories.count': 'chuyện',
+    'stories.ready': 'sẵn sàng',
+    'stories.battleTested': 'thực chiến',
+    'stories.searchPlaceholder': 'Tìm kiếm theo tiêu đề...',
+    'stories.allStatus': 'Tất cả trạng thái',
   },
 
   en: {
@@ -455,5 +520,70 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.done': 'Done',
     'common.skip': 'Skip',
     'common.online': 'Online',
+
+    // ── Greeting ─────────────────────────────────────────────────────────
+    'greeting.morning': 'Good morning',
+    'greeting.afternoon': 'Good afternoon',
+    'greeting.evening': 'Good evening',
+    'greeting.you': 'you',
+    'greeting.msg1': 'Ready to practice today? 💪',
+    'greeting.msg2': 'One step a day makes you more confident!',
+    'greeting.msg3': 'Ni is ready to guide you!',
+    'greeting.msg4': 'Try saying a few sentences today! 🎤',
+
+    // ── Daily Task ────────────────────────────────────────────────────────
+    'daily.title': "Today's task",
+    'daily.done': '🎉 Excellent work!',
+    'daily.encourage': 'The more you speak, the better! :)',
+
+    // ── Streak Card ───────────────────────────────────────────────────────
+    'streak.great': 'Awesome! Keep it up! 🔥',
+    'streak.start': 'Complete a task to start your streak :)',
+    'streak.label': 'day streak',
+    'streak.footer': 'Current streak:',
+
+    // ── Progress Card ─────────────────────────────────────────────────────
+    'progress.coherence': 'Coherence',
+    'progress.practiceNow': 'Start practicing',
+    'progress.viewDetail': 'View progress details',
+    'progress.emptyDesc': 'Complete your first practice session to start tracking and analyzing your progress.',
+
+    // ── Challenges (extra) ────────────────────────────────────────────────
+    'challenges.store': 'Challenges',
+    'challenges.newPractice': 'New practice',
+    'challenges.statusPending': 'Pending',
+    'challenges.statusDoing': 'In progress',
+    'challenges.statusCompleted': 'Completed',
+    'challenges.statusSkipped': 'Skipped',
+    'challenges.statusExpired': 'Expired',
+    'challenges.openerHints': 'Opening hints',
+    'challenges.reportResult': 'Report result',
+    'challenges.overdue': 'Overdue',
+    'challenges.tabAll': 'All',
+    'challenges.pendingCount': 'pending',
+    'challenges.completedCount': 'completed',
+    'challenges.emptyActive': 'No pending challenges',
+    'challenges.startPractice': 'Start practicing',
+
+    // ── History (extra) ───────────────────────────────────────────────────
+    'history.total': 'Total sessions',
+    'history.avgScore': 'Average score',
+    'history.period': 'Time period',
+    'history.allTime': '📅 All time',
+    'history.thisWeek': 'This week',
+    'history.thisMonth': 'This month',
+    'history.noPractice': 'You have no practice sessions saved yet.',
+    'history.prevPage': 'Previous',
+    'history.nextPage': 'Next',
+    'history.topic': 'Topic:',
+
+    // ── Stories (extra) ───────────────────────────────────────────────────
+    'stories.subtitle': 'Your personal story bank',
+    'stories.createNew': 'Create new',
+    'stories.count': 'stories',
+    'stories.ready': 'ready',
+    'stories.battleTested': 'battle-tested',
+    'stories.searchPlaceholder': 'Search by title...',
+    'stories.allStatus': 'All status',
   },
 }

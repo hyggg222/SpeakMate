@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/apiClient";
 import { Flame, ChevronRight, Zap, Target } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
-const LEVEL_NAMES: Record<number, string> = {
-    1: "Bắt đầu", 2: "Tập sự", 3: "Quen dần", 4: "Tự tin hơn", 5: "Khá ổn",
-    6: "Vững vàng", 7: "Thành thạo", 8: "Xuất sắc", 9: "Chuyên gia", 10: "Bậc thầy",
+const LEVEL_NAMES: Record<string, Record<number, string>> = {
+    vi: { 1: "Bắt đầu", 2: "Tập sự", 3: "Quen dần", 4: "Tự tin hơn", 5: "Khá ổn", 6: "Vững vàng", 7: "Thành thạo", 8: "Xuất sắc", 9: "Chuyên gia", 10: "Bậc thầy" },
+    en: { 1: "Beginner", 2: "Trainee", 3: "Getting used", 4: "More confident", 5: "Decent", 6: "Steady", 7: "Proficient", 8: "Excellent", 9: "Expert", 10: "Master" },
 };
 
 const BADGE_ICONS: Record<string, string> = {
@@ -15,6 +16,7 @@ const BADGE_ICONS: Record<string, string> = {
 };
 
 export default function ProgressCard() {
+    const { t, lang } = useLanguage();
     const [progress, setProgress] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -56,12 +58,12 @@ export default function ProgressCard() {
                         <Target className="w-4 h-4 text-teal-400" />
                     </div>
                     <p className="text-[13px] font-bold text-white tracking-wide">
-                        Tiến trình
+                        {t('progress.title')}
                     </p>
                 </div>
 
                 <p className="text-[12px] text-slate-300 leading-relaxed mb-5">
-                    Hoàn thành phiên luyện tập đầu tiên để bắt đầu theo dõi và phân tích sự tiến bộ của bạn.
+                    {t('progress.emptyDesc')}
                 </p>
 
                 <Link href="/setup"
@@ -70,7 +72,7 @@ export default function ProgressCard() {
                         background: "linear-gradient(135deg, oklch(0.6 0.18 185), oklch(0.5 0.18 185))",
                         border: "1px solid rgba(255, 255, 255, 0.1)"
                     }}>
-                    Luyện tập ngay <ChevronRight className="w-3.5 h-3.5" />
+                    {t('progress.practiceNow')} <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
             </div>
         );
@@ -106,7 +108,7 @@ export default function ProgressCard() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-baseline justify-between mb-1.5">
                             <span className="text-[14px] font-bold text-white truncate">
-                                {LEVEL_NAMES[level] || `Level ${level}`}
+                                {LEVEL_NAMES[lang]?.[level] || `Level ${level}`}
                             </span>
                             <span className="text-[10px] text-slate-500 shrink-0 ml-2">{xp} XP</span>
                         </div>
@@ -132,11 +134,11 @@ export default function ProgressCard() {
             <div className="grid grid-cols-3">
                 <div className="px-3 py-3 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                     <p className="text-[12px] font-bold text-white">{progress.total_sessions || 0}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Phiên</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{t('progress.sessions')}</p>
                 </div>
                 <div className="px-3 py-3 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                     <p className="text-[12px] font-bold text-white">{Number(progress.avg_coherence || 0).toFixed(0)}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Mạch lạc</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{t('progress.coherence')}</p>
                 </div>
                 <div className="px-3 py-3 text-center">
                     {streak > 0 ? (
@@ -144,7 +146,7 @@ export default function ProgressCard() {
                             <p className="text-[12px] font-bold text-orange-400 flex items-center justify-center gap-0.5">
                                 <Flame className="w-3 h-3" />{streak}
                             </p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Tuần</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{t('progress.streak')}</p>
                         </>
                     ) : (
                         <>
@@ -176,7 +178,7 @@ export default function ProgressCard() {
             <Link href="/progress"
                 className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-teal-400 hover:text-teal-300 transition-all hover:bg-teal-500/5"
             >
-                <Zap className="w-3.5 h-3.5" /> Xem chi tiết tiến trình <ChevronRight className="w-3.5 h-3.5" />
+                <Zap className="w-3.5 h-3.5" /> {t('progress.viewDetail')} <ChevronRight className="w-3.5 h-3.5" />
             </Link>
         </div>
     );
