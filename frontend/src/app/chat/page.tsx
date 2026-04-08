@@ -10,8 +10,10 @@ import NavigationButton from "@/components/mentorchat/NavigationButton";
 import StoryDataCard from "@/components/mentorchat/StoryDataCard";
 import ChallengeDataCard from "@/components/mentorchat/ChallengeDataCard";
 import type { ChatMessage } from "@/hooks/useMentorChat";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function MentorNiChatPage() {
+    const { t } = useLanguage();
     const { messages, loading, sendMessage, clearHistory, scrollRef } = useMentorChat();
     const [input, setInput] = useState('');
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -70,11 +72,11 @@ export default function MentorNiChatPage() {
                             </div>
                             <div>
                                 <h2 className="text-base font-semibold text-slate-800">Mentor Ni</h2>
-                                <p className="text-[11px] text-slate-400">Trung tâm đồng hành cá nhân</p>
+                                <p className="text-[11px] text-slate-400">{t('chat.subtitle')}</p>
                             </div>
                             <div className="ml-auto flex items-center gap-1.5">
                                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                <span className="text-[11px] text-slate-400">Online</span>
+                                <span className="text-[11px] text-slate-400">{t('chat.online')}</span>
                             </div>
                         </div>
 
@@ -109,7 +111,7 @@ export default function MentorNiChatPage() {
                                     value={input}
                                     onChange={handleInputChange}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Nhắn tin cho Ni..."
+                                    placeholder={t('chat.inputPlaceholder')}
                                     rows={1}
                                     className="flex-1 resize-none outline-none text-sm leading-relaxed max-h-[120px] py-1.5"
                                 />
@@ -133,7 +135,7 @@ export default function MentorNiChatPage() {
                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                                 <MessageSquare size={14} className="text-slate-400" />
-                                Lịch sử trò chuyện
+                                {t('chat.history')}
                             </h3>
                             {historySummary.length > 0 && (
                                 <button
@@ -149,7 +151,7 @@ export default function MentorNiChatPage() {
                             {historySummary.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center px-4">
                                     <MessageSquare size={28} className="text-slate-200 mb-2" />
-                                    <p className="text-xs text-slate-400">Chưa có tin nhắn nào</p>
+                                    <p className="text-xs text-slate-400">{t('chat.historyEmpty')}</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col py-2">
