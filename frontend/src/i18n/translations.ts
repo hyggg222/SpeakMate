@@ -114,6 +114,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.historyEmpty': 'Chưa có cuộc trò chuyện nào',
     'chat.loading': 'Ni đang suy nghĩ...',
     'chat.greeting': 'Xin chào! Tôi là Mentor Ni 👋\nTôi có thể giúp bạn luyện tập, phân tích kỹ năng giao tiếp, hoặc trả lời các câu hỏi của bạn.',
+    'chat.disclaimer': 'Ni trả lời dựa trên dữ liệu thật của bạn. Không roleplay, không chấm điểm.',
+    'chat.clearConfirm': 'Xóa toàn bộ lịch sử trò chuyện?',
+    'chat.clearAllTitle': 'Xóa toàn bộ',
+    'chat.intent.query': 'Truy vấn dữ liệu',
+    'chat.intent.action': 'Hành động',
+    'chat.intent.support': 'Hỗ trợ tâm lý',
+    'chat.progress.sessionsPerWeek': 'Phiên/tuần',
+    'chat.progress.avgScore': 'Điểm TB',
+    'chat.progress.vsPrev': 'So tuần trước',
 
     // ── Practice / Conversation ──────────────────────────────────────────
     'practice.endSession': 'Kết thúc',
@@ -647,6 +656,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'chat.historyEmpty': 'No conversations yet',
     'chat.loading': 'Ni is thinking...',
     'chat.greeting': 'Hi! I\'m Mentor Ni 👋\nI can help you practice, analyze your communication skills, or answer your questions.',
+    'chat.disclaimer': 'Ni responds based on your real data. No roleplay, no scoring.',
+    'chat.clearConfirm': 'Delete all conversation history?',
+    'chat.clearAllTitle': 'Delete all',
+    'chat.intent.query': 'Data query',
+    'chat.intent.action': 'Action',
+    'chat.intent.support': 'Emotional support',
+    'chat.progress.sessionsPerWeek': 'Sessions/wk',
+    'chat.progress.avgScore': 'Avg score',
+    'chat.progress.vsPrev': 'vs. last week',
 
     // ── Practice / Conversation ──────────────────────────────────────────
     'practice.endSession': 'End session',

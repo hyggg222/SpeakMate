@@ -125,7 +125,7 @@ export default function MentorNiChatPage() {
                                 </button>
                             </div>
                             <p className="text-center text-[10px] text-slate-400 mt-2">
-                                Ni trả lời dựa trên dữ liệu thật của bạn. Không roleplay, không chấm điểm.
+                                {t('chat.disclaimer')}
                             </p>
                         </div>
                     </div>
@@ -139,9 +139,9 @@ export default function MentorNiChatPage() {
                             </h3>
                             {historySummary.length > 0 && (
                                 <button
-                                    onClick={() => { if (confirm('Xóa toàn bộ lịch sử trò chuyện?')) clearHistory(); }}
+                                    onClick={() => { if (confirm(t('chat.clearConfirm'))) clearHistory(); }}
                                     className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                                    title="Xóa toàn bộ"
+                                    title={t('chat.clearAllTitle')}
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -180,6 +180,7 @@ export default function MentorNiChatPage() {
 
 /** Chat bubble component */
 function ChatBubble({ message }: { message: ChatMessage }) {
+    const { t } = useLanguage();
     const isUser = message.role === 'user';
 
     return (
@@ -208,8 +209,8 @@ function ChatBubble({ message }: { message: ChatMessage }) {
                         message.intent === 'action' ? 'bg-amber-50 text-amber-600' :
                         'bg-purple-50 text-purple-500'
                     }`}>
-                        {message.intent === 'query' ? 'Truy vấn dữ liệu' :
-                         message.intent === 'action' ? 'Hành động' : 'Hỗ trợ tâm lý'}
+                        {message.intent === 'query' ? t('chat.intent.query') :
+                         message.intent === 'action' ? t('chat.intent.action') : t('chat.intent.support')}
                     </span>
                 )}
 
@@ -242,16 +243,17 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 /** Inline progress card */
 function ProgressCard({ progress }: { progress: any }) {
+    const { t } = useLanguage();
     return (
         <div className="flex items-center gap-4 px-4 py-3 rounded-xl border border-slate-200 bg-white mt-2 w-full">
             <div className="text-center">
                 <p className="text-lg font-bold" style={{ color: 'var(--teal)' }}>{progress.sessionsThisWeek}</p>
-                <p className="text-[9px] text-slate-400">Phiên/tuần</p>
+                <p className="text-[9px] text-slate-400">{t('chat.progress.sessionsPerWeek')}</p>
             </div>
             <div className="h-8 w-px bg-slate-200" />
             <div className="text-center">
                 <p className="text-lg font-bold text-slate-800">{progress.averageScore}</p>
-                <p className="text-[9px] text-slate-400">Điểm TB</p>
+                <p className="text-[9px] text-slate-400">{t('chat.progress.avgScore')}</p>
             </div>
             <div className="h-8 w-px bg-slate-200" />
             <div className="text-center">
@@ -261,7 +263,7 @@ function ProgressCard({ progress }: { progress: any }) {
             <div className="h-8 w-px bg-slate-200" />
             <div className="text-center">
                 <p className="text-sm font-bold text-emerald-500">{progress.improvement}</p>
-                <p className="text-[9px] text-slate-400">So tuần trước</p>
+                <p className="text-[9px] text-slate-400">{t('chat.progress.vsPrev')}</p>
             </div>
         </div>
     );
