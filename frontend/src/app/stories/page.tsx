@@ -179,15 +179,15 @@ export default function StoriesPage() {
                                 <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
                                     className="border rounded-xl px-4 py-2 text-sm outline-none bg-white cursor-pointer">
                                     <option value="">{t('stories.allStatus')}</option>
-                                    <option value="draft">Bản nháp</option>
-                                    <option value="ready">Sẵn sàng</option>
-                                    <option value="battle-tested">Thực chiến</option>
+                                    <option value="draft">{t('confirm.status.draft')}</option>
+                                    <option value="ready">{t('confirm.status.ready')}</option>
+                                    <option value="battle-tested">{t('confirm.status.battleTested')}</option>
                                 </select>
 
                                 {/* Framework filter */}
                                 <select value={frameworkFilter} onChange={e => { setFrameworkFilter(e.target.value); setPage(1); }}
                                     className="border rounded-xl px-4 py-2 text-sm outline-none bg-white cursor-pointer">
-                                    <option value="">Tất cả framework</option>
+                                    <option value="">{t('stories.allFrameworks')}</option>
                                     <option value="STAR">STAR</option>
                                     <option value="PREP">PREP</option>
                                     <option value="CAR">CAR</option>
@@ -196,10 +196,10 @@ export default function StoriesPage() {
                                 {/* Sort */}
                                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}
                                     className="border rounded-xl px-4 py-2 text-sm outline-none bg-white cursor-pointer">
-                                    <option value="newest">Mới nhất</option>
-                                    <option value="most-practiced">Luyện nhiều nhất</option>
-                                    <option value="highest-score">Điểm cao nhất</option>
-                                    <option value="shortest">Ngắn nhất</option>
+                                    <option value="newest">{t('stories.sort.newest')}</option>
+                                    <option value="most-practiced">{t('stories.sort.mostPracticed')}</option>
+                                    <option value="highest-score">{t('stories.sort.highestScore')}</option>
+                                    <option value="shortest">{t('stories.sort.shortest')}</option>
                                 </select>
                             </div>
 
@@ -247,14 +247,14 @@ export default function StoriesPage() {
                                 </h3>
                                 <p className="text-slate-500 mb-6 max-w-md mx-auto text-sm">
                                     {search || statusFilter || activeTagFilters.length
-                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm."
-                                        : "Bắt đầu bằng cách nhập trải nghiệm của bạn. Ni sẽ giúp bạn đóng gói thành mẫu chuyện có cấu trúc."}
+                                        ? t('stories.filterEmpty')
+                                        : t('stories.empty.desc2')}
                                 </p>
                                 {!search && !statusFilter && activeTagFilters.length === 0 && (
                                     <Link href="/stories/create"
                                         className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium"
                                         style={{ backgroundColor: "var(--teal)" }}>
-                                        <Plus size={18} /> Tạo chuyện đầu tiên
+                                        <Plus size={18} /> {t('stories.createFirst')}
                                     </Link>
                                 )}
                             </div>
@@ -271,12 +271,12 @@ export default function StoriesPage() {
                             <div className="flex items-center justify-center gap-4 pt-4">
                                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
                                     className="flex items-center gap-1 px-4 py-2 border rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed bg-white shadow-sm">
-                                    <ChevronLeft size={16} /> Trước
+                                    <ChevronLeft size={16} /> {t('stories.prev')}
                                 </button>
                                 <span className="text-sm text-slate-500">{page} / {totalPages}</span>
                                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
                                     className="flex items-center gap-1 px-4 py-2 border rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed bg-white shadow-sm">
-                                    Sau <ChevronRight size={16} />
+                                    {t('stories.next')} <ChevronRight size={16} />
                                 </button>
                             </div>
                         )}
@@ -289,7 +289,9 @@ export default function StoriesPage() {
 }
 
 function StoryCard({ story, onTagClick }: { story: any; onTagClick: (tag: string) => void }) {
-    const statusInfo = STATUS_LABELS[story.status] || STATUS_LABELS.draft;
+    const { t } = useLanguage();
+    const statusColor = (STATUS_LABELS[story.status] || STATUS_LABELS.draft).color;
+    const statusLabel = { draft: t('confirm.status.draft'), ready: t('confirm.status.ready'), 'battle-tested': t('confirm.status.battleTested') }[story.status as string] ?? t('confirm.status.draft');
     const frameworkColor = FRAMEWORK_COLORS[story.framework] || "#6b7280";
 
     return (
@@ -324,8 +326,8 @@ function StoryCard({ story, onTagClick }: { story: any; onTagClick: (tag: string
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${statusInfo.color}15`, color: statusInfo.color }}>
-                            {statusInfo.label}
+                            style={{ backgroundColor: `${statusColor}15`, color: statusColor }}>
+                            {statusLabel}
                         </span>
                         <span className="text-[11px] text-slate-400 flex items-center gap-1">
                             <Clock size={11} /> ~{story.estimated_duration || 30}s
