@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
 import { useScenario } from '@/context/ScenarioContext'
+import { useLanguage } from '@/context/LanguageContext'
 import { Loader2 } from 'lucide-react'
 import MentorChatModal from '@/components/practice/MentorChatModal'
 import NiCommentSection from '@/components/evaluation/NiCommentSection'
@@ -69,6 +70,7 @@ const MOCK_REPORT = {
 }
 
 function ConversationContent() {
+    const { t } = useLanguage();
     const router = useRouter()
     const searchParams = useSearchParams()
     const isDemo = searchParams.get('demo') === 'true'
@@ -157,10 +159,10 @@ function ConversationContent() {
         <div className="flex flex-1 max-w-[1500px] mx-auto w-full p-4 md:p-6 gap-6 relative">
             {/* 1. Left Sidebar */}
             <aside className="hidden lg:flex w-[260px] shrink-0 flex-col gap-6">
-                <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">Lượt hội thoại</h3>
+                <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">{t('eval.conversation.turns')}</h3>
                 <nav className="flex flex-col gap-3">
                     <div className="bg-[#0b1325] text-white px-5 py-3.5 rounded-xl text-sm font-medium shadow-md">
-                        Đánh giá tổng
+                        {t('eval.sidebar.overview')}
                     </div>
 
                     {(() => {
@@ -173,12 +175,12 @@ function ConversationContent() {
                         return turnWeaknesses.length > 0 ? (
                             turnWeaknesses.map((w: any, index: number) => (
                                 <button key={index} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3.5 rounded-xl text-sm font-medium shadow-sm transition-colors text-left flex flex-col gap-1">
-                                    <span className="font-bold text-slate-800">Lượt {w.turn}</span>
+                                    <span className="font-bold text-slate-800">{t('eval.conversation.turn')} {w.turn}</span>
                                     <span className="text-xs text-slate-500 font-normal">{w.issue}</span>
                                 </button>
                             ))
                         ) : (
-                            <div className="text-sm text-slate-400 italic px-2">Chưa có dữ liệu lượt thoại</div>
+                            <div className="text-sm text-slate-400 italic px-2">{t('eval.conversation.noTurns')}</div>
                         );
                     })()}
                 </nav>
@@ -186,12 +188,12 @@ function ConversationContent() {
 
             {/* 2. Middle Stats Area */}
             <main className="flex-1 flex flex-col min-w-0">
-                <h1 className="text-[1.7rem] font-bold text-slate-800 mb-5 font-serif">Đánh giá hội thoại</h1>
+                <h1 className="text-[1.7rem] font-bold text-slate-800 mb-5 font-serif">{t('eval.conversation.title')}</h1>
 
                 {isEvaluating ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-4 mt-10">
                         <Loader2 className="w-10 h-10 animate-spin text-teal-500" />
-                        <p className="font-medium text-lg">AI đang phân tích hội thoại...</p>
+                        <p className="font-medium text-lg">{t('eval.conversation.analyzing')}</p>
                     </div>
                 ) : (
                     <>
@@ -225,10 +227,10 @@ function ConversationContent() {
                         <div className="grid grid-cols-2 gap-5 mb-5 items-stretch">
                             {/* Stage Scores */}
                             <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col gap-5">
-                                <h3 className="text-[15px] font-bold text-slate-800">Đánh giá Đa tầng</h3>
+                                <h3 className="text-[15px] font-bold text-slate-800">{t('eval.multilayer')}</h3>
                                 <div className="flex flex-col gap-1 w-full">
                                     <div className="flex justify-between items-center text-[13px] font-bold text-slate-700">
-                                        <span>Ngôn ngữ (Từ vựng, Ngữ pháp)</span>
+                                        <span>{t('eval.lang.label')}</span>
                                         <span>{report?.language?.score || 0}/100</span>
                                     </div>
                                     <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -237,7 +239,7 @@ function ConversationContent() {
                                 </div>
                                 <div className="flex flex-col gap-1 w-full">
                                     <div className="flex justify-between items-center text-[13px] font-bold text-slate-700">
-                                        <span>Nội dung (Logic, Xử lý tình huống)</span>
+                                        <span>{t('eval.content.label')}</span>
                                         <span>{report?.content?.score || 0}/100</span>
                                     </div>
                                     <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -246,7 +248,7 @@ function ConversationContent() {
                                 </div>
                                 <div className="flex flex-col gap-1 w-full">
                                     <div className="flex justify-between items-center text-[13px] font-bold text-slate-700">
-                                        <span>Cảm xúc (Ngữ điệu, Tự tin)</span>
+                                        <span>{t('eval.emotion.label')}</span>
                                         <span>{report?.emotion?.score || 0}/100</span>
                                     </div>
                                     <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -257,7 +259,7 @@ function ConversationContent() {
 
                             {/* Strengths */}
                             <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col">
-                                <h3 className="text-[15px] font-bold text-slate-800 mb-4">Điểm mạnh</h3>
+                                <h3 className="text-[15px] font-bold text-slate-800 mb-4">{t('eval.strengths')}</h3>
                                 <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-[220px]">
                                     {allStrengths.length > 0 ? allStrengths.slice(0, 6).map((s: string, idx: number) => (
                                         <div key={idx} className="flex items-start gap-2">
@@ -265,7 +267,7 @@ function ConversationContent() {
                                             <span className="text-[13px] text-slate-600 font-medium">{s}</span>
                                         </div>
                                     )) : (
-                                        <p className="text-sm text-slate-400 italic">Chưa có dữ liệu</p>
+                                        <p className="text-sm text-slate-400 italic">{t('eval.noDataYet')}</p>
                                     )}
                                 </div>
                             </section>
@@ -273,7 +275,7 @@ function ConversationContent() {
 
                         {/* Weaknesses / Improvements */}
                         <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mb-5">
-                            <h3 className="text-[15px] font-bold text-slate-800 mb-3">Cần cải thiện</h3>
+                            <h3 className="text-[15px] font-bold text-slate-800 mb-3">{t('eval.improvements')}</h3>
                             <ul className="flex flex-col gap-2">
                                 {allWeaknesses.length > 0 ? allWeaknesses.slice(0, 6).map((imp: string, idx: number) => (
                                     <li key={idx} className="flex items-start gap-2">
@@ -281,7 +283,7 @@ function ConversationContent() {
                                         <span className="text-[13px] text-slate-600 font-medium">{imp}</span>
                                     </li>
                                 )) : (
-                                    <li className="text-sm text-slate-400 italic">Chưa có dữ liệu</li>
+                                    <li className="text-sm text-slate-400 italic">{t('eval.noDataYet')}</li>
                                 )}
                             </ul>
                         </section>
@@ -323,16 +325,16 @@ function ConversationContent() {
 
             {/* 3. Right Sidebar Timeline */}
             <aside className="hidden xl:flex w-[340px] shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-col h-full self-start sticky top-24">
-                <h3 className="text-[15px] font-bold text-slate-800 mb-6 text-center border-b border-slate-100 pb-3">Dòng thời gian hội thoại</h3>
+                <h3 className="text-[15px] font-bold text-slate-800 mb-6 text-center border-b border-slate-100 pb-3">{t('eval.conversation.timeline')}</h3>
 
                 <div className="flex flex-col gap-6 relative">
                     <div className="absolute left-[15px] top-6 bottom-6 w-0.5 bg-slate-200" />
 
                     {history.length === 0 ? (
-                        <p className="text-center text-slate-400 text-sm py-10">Không có dữ liệu hội thoại.</p>
+                        <p className="text-center text-slate-400 text-sm py-10">{t('eval.conversation.noHistory')}</p>
                     ) : history.map((turn: any, idx: number) => {
                         const isAI = turn.speaker === 'AI'
-                        const speakerLabel = isAI ? (turn.character_name || 'Đối phương') : 'Bạn'
+                        const speakerLabel = isAI ? (turn.character_name || t('eval.conversation.opponent')) : t('eval.conversation.you')
                         return (
                             <div key={idx} className="relative pl-10 flex flex-col gap-2">
                                 <div className={`absolute left-0 top-1 w-8 h-8 rounded-full border flex items-center justify-center -ml-0.5 text-xs font-bold shadow-sm z-10 ${isAI ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-teal-500 border-teal-400 text-white'}`}>
@@ -360,6 +362,7 @@ function ConversationContent() {
 }
 
 export default function ConversationEvaluationPage() {
+    const { t } = useLanguage();
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Topbar */}
@@ -367,11 +370,11 @@ export default function ConversationEvaluationPage() {
                 <div className="flex items-center gap-6">
                     <button onClick={() => window.history.back()} className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-300 hover:text-white">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Quay lại</span>
+                        <span className="text-sm font-medium">{t('nav.back')}</span>
                     </button>
                     <Link href="/" className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-300 hover:text-white">
                         <Home className="w-4 h-4" />
-                        <span className="text-sm font-medium">Trang chủ</span>
+                        <span className="text-sm font-medium">{t('nav.home')}</span>
                     </Link>
                 </div>
 
@@ -388,7 +391,7 @@ export default function ConversationEvaluationPage() {
                 </div>
             </header>
 
-            <Suspense fallback={<div className="flex-1 flex justify-center items-center text-slate-400 mt-20">Đang tải...</div>}>
+            <Suspense fallback={<div className="flex-1 flex justify-center items-center text-slate-400 mt-20">{t('common.loading')}</div>}>
                 <ConversationContent />
             </Suspense>
         </div>

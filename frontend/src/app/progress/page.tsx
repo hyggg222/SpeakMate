@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Flame, Star, TrendingUp, BookOpen, Swords, Calendar } from 'lucide-react'
+import { useLanguage } from '@/context/LanguageContext'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { apiClient } from '@/lib/apiClient'
 import { getLocalProgressDetail } from '@/lib/seedDemoData'
 
-const LEVEL_NAMES: Record<number, string> = {
-    1: 'Bắt đầu', 2: 'Tập sự', 3: 'Quen dần', 4: 'Tự tin hơn', 5: 'Khá ổn',
-    6: 'Vững vàng', 7: 'Thành thạo', 8: 'Xuất sắc', 9: 'Chuyên gia', 10: 'Bậc thầy',
+const LEVEL_NAMES: Record<string, Record<number, string>> = {
+    vi: { 1: 'Bắt đầu', 2: 'Tập sự', 3: 'Quen dần', 4: 'Tự tin hơn', 5: 'Khá ổn',
+          6: 'Vững vàng', 7: 'Thành thạo', 8: 'Xuất sắc', 9: 'Chuyên gia', 10: 'Bậc thầy' },
+    en: { 1: 'Beginner', 2: 'Trainee', 3: 'Getting Comfortable', 4: 'More Confident', 5: 'Pretty Good',
+          6: 'Steady', 7: 'Proficient', 8: 'Excellent', 9: 'Expert', 10: 'Master' },
 }
 
 const BADGES = [
@@ -48,6 +51,7 @@ function StatBox({ icon, label, value, sub }: { icon: React.ReactNode; label: st
 type ProgressTab = 'gym' | 'realworld'
 
 export default function ProgressPage() {
+    const { lang, t } = useLanguage();
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [userProgress, setUserProgress] = useState<any>(null)
@@ -114,7 +118,7 @@ export default function ProgressPage() {
                 <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
                     <ArrowLeft size={20} className="text-slate-600" />
                 </button>
-                <h1 className="text-lg font-bold text-[#0b1325]">Tiến trình của bạn</h1>
+                <h1 className="text-lg font-bold text-[#0b1325]">{t('progress.yourProgress')}</h1>
             </header>
 
             <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
@@ -126,8 +130,8 @@ export default function ProgressPage() {
                             {level}
                         </div>
                         <div className="flex-1">
-                            <p className="text-lg font-bold text-[#0b1325]">{LEVEL_NAMES[level] || `Level ${level}`}</p>
-                            <p className="text-sm text-slate-500">{xp} XP tích lũy</p>
+                            <p className="text-lg font-bold text-[#0b1325]">{LEVEL_NAMES[lang]?.[level] || `Level ${level}`}</p>
+                            <p className="text-sm text-slate-500">{xp} XP {lang === 'en' ? 'accumulated' : 'tích lũy'}</p>
                         </div>
                         {streak > 0 && (
                             <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-100 border border-orange-200">
@@ -137,7 +141,7 @@ export default function ProgressPage() {
                         )}
                     </div>
                     <div className="mb-1 flex justify-between text-xs text-slate-400">
-                        <span>XP hiện tại</span>
+                        <span>{t('progress.xpCurrent')}</span>
                         <span>{xp % xpForNextLevel} / {xpForNextLevel} → Level {level + 1}</span>
                     </div>
                     <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -153,11 +157,11 @@ export default function ProgressPage() {
                     <div className="flex border-b border-slate-100">
                         <button onClick={() => setActiveTab('gym')}
                             className={`flex-1 py-3 text-[13px] font-bold transition-colors border-b-2 ${activeTab === 'gym' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                            🏋️ Phòng ảo
+                            {t('progress.gymTab')}
                         </button>
                         <button onClick={() => setActiveTab('realworld')}
                             className={`flex-1 py-3 text-[13px] font-bold transition-colors border-b-2 ${activeTab === 'realworld' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                            🌍 Thực tế
+                            {t('progress.realworldTab')}
                         </button>
                     </div>
 
@@ -166,8 +170,8 @@ export default function ProgressPage() {
                             <TrendingUp size={18} className="text-teal-500" />
                             <h2 className="font-bold text-[15px] text-[#0b1325]">
                                 {activeTab === 'gym'
-                                    ? `Chỉ số phòng gym (${gymChartData.length} phiên gần nhất)`
-                                    : `Chỉ số thực tế (${realworldChartData.length} lượt gần nhất)`
+                                    ? `${t('progress.gymChart')} (${gymChartData.length} ${lang === 'en' ? 'recent sessions' : 'phiên gần nhất'})`
+                                    : `${t('progress.realworldChart')} (${realworldChartData.length} ${lang === 'en' ? 'recent entries' : 'lượt gần nhất'})`
                                 }
                             </h2>
                         </div>
@@ -189,7 +193,7 @@ export default function ProgressPage() {
                             </ResponsiveContainer>
                         )}
                         {activeTab === 'gym' && gymChartData.length === 0 && (
-                            <p className="text-[13px] text-slate-400 text-center py-8">Chưa có dữ liệu phòng gym. Hoàn thành 1 phiên luyện tập để xem biểu đồ!</p>
+                            <p className="text-[13px] text-slate-400 text-center py-8">{t('progress.gymEmpty')}</p>
                         )}
 
                         {activeTab === 'realworld' && realworldChartData.length > 0 && (
@@ -211,7 +215,7 @@ export default function ProgressPage() {
                                 {/* Fluency notes timeline */}
                                 {realworldHistory.some((r: any) => r.fluency_note) && (
                                     <div className="mt-4">
-                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Nhận xét lưu loát</p>
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">{t('progress.fluencyNotes')}</p>
                                         <div className="space-y-2">
                                             {realworldHistory.filter((r: any) => r.fluency_note).map((r: any, i: number) => (
                                                 <div key={i} className="flex gap-2 text-[12px]">
@@ -225,7 +229,7 @@ export default function ProgressPage() {
                             </>
                         )}
                         {activeTab === 'realworld' && realworldChartData.length === 0 && (
-                            <p className="text-[13px] text-slate-400 text-center py-8">Chưa có dữ liệu thực tế. Chia sẻ trải nghiệm qua "Chia sẻ" để xem biểu đồ!</p>
+                            <p className="text-[13px] text-slate-400 text-center py-8">{t('progress.realworldEmpty')}</p>
                         )}
                     </div>
                 </div>
@@ -235,16 +239,16 @@ export default function ProgressPage() {
                     <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                             <BookOpen size={18} className="text-teal-500" />
-                            <h2 className="font-bold text-[15px] text-[#0b1325]">Story Bank</h2>
+                            <h2 className="font-bold text-[15px] text-[#0b1325]">{t('progress.storyBankTitle')}</h2>
                         </div>
                         <div className="grid grid-cols-3 gap-3">
-                            <StatBox icon={null} label="Tổng stories" value={storyStats.total || 0} />
-                            <StatBox icon={null} label="Sẵn sàng thực chiến" value={storyStats.battle_ready || 0} />
-                            <StatBox icon={null} label="Từ thực chiến" value={storyStats.from_practice || 0} />
+                            <StatBox icon={null} label={t('progress.storyTotal')} value={storyStats.total || 0} />
+                            <StatBox icon={null} label={t('progress.storyReady')} value={storyStats.battle_ready || 0} />
+                            <StatBox icon={null} label={t('progress.storyFromPractice')} value={storyStats.from_practice || 0} />
                         </div>
                         {storyStats.total === 0 && (
                             <Link href="/stories/create" className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-teal-600 border border-teal-200 bg-teal-50 hover:bg-teal-100 transition-colors">
-                                <BookOpen size={15} /> Tạo story đầu tiên
+                                <BookOpen size={15} /> {t('progress.createFirstStory')}
                             </Link>
                         )}
                     </div>
@@ -254,16 +258,16 @@ export default function ProgressPage() {
                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <Swords size={18} className="text-teal-500" />
-                        <h2 className="font-bold text-[15px] text-[#0b1325]">Thực chiến</h2>
+                        <h2 className="font-bold text-[15px] text-[#0b1325]">{t('progress.combat')}</h2>
                     </div>
                     <div className="grid grid-cols-3 gap-3 mb-4">
-                        <StatBox icon={null} label="Đã hoàn thành" value={`${challengeStats.completed || 0}/${challengeStats.total || 0}`} />
-                        <StatBox icon={null} label="Độ khó cao nhất" value={`Lv${challengeStats.highest_difficulty || 1}`} />
-                        <StatBox icon={null} label="Tỷ lệ" value={`${Math.round((challengeStats.completion_rate || 0) * 100)}%`} />
+                        <StatBox icon={null} label={t('progress.completedChallenges')} value={`${challengeStats.completed || 0}/${challengeStats.total || 0}`} />
+                        <StatBox icon={null} label={t('progress.highestDifficulty')} value={`Lv${challengeStats.highest_difficulty || 1}`} />
+                        <StatBox icon={null} label={t('progress.completionRate')} value={`${Math.round((challengeStats.completion_rate || 0) * 100)}%`} />
                     </div>
                     {emotionTrend.length > 0 && (
                         <div>
-                            <p className="text-[12px] font-semibold text-slate-500 mb-2">Xu hướng cảm xúc ({emotionTrend.length} thử thách gần nhất)</p>
+                            <p className="text-[12px] font-semibold text-slate-500 mb-2">{t('progress.emotionTrend')} ({emotionTrend.length} {lang === 'en' ? 'recent challenges' : 'thử thách gần nhất'})</p>
                             <div className="flex flex-col gap-1.5">
                                 {emotionTrend.slice(0, 5).map((e, i) => (
                                     <div key={i} className="flex items-center gap-2 text-[12px]">
@@ -282,7 +286,7 @@ export default function ProgressPage() {
                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <Calendar size={18} className="text-teal-500" />
-                        <h2 className="font-bold text-[15px] text-[#0b1325]">Streak — {streak} tuần liên tiếp</h2>
+                        <h2 className="font-bold text-[15px] text-[#0b1325]">Streak — {streak} {t('progress.streakWeeks')}</h2>
                     </div>
                     <div className="flex gap-1 flex-wrap">
                         {Array.from({ length: 16 }).map((_, i) => {
@@ -301,14 +305,14 @@ export default function ProgressPage() {
                             )
                         })}
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-2">Mỗi ô = 1 tuần có hoạt động luyện tập</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{t('progress.streakGrid')}</p>
                 </div>
 
                 {/* Section 5 — Badges */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <Star size={18} className="text-amber-500" />
-                        <h2 className="font-bold text-[15px] text-[#0b1325]">Huy hiệu</h2>
+                        <h2 className="font-bold text-[15px] text-[#0b1325]">{t('progress.badges')}</h2>
                     </div>
                     <div className="flex flex-col gap-3">
                         {BADGES.map(badge => {
@@ -325,7 +329,7 @@ export default function ProgressPage() {
                                         </p>
                                         <p className="text-[11px] text-slate-400">{badge.desc}</p>
                                     </div>
-                                    {earned && <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">Đạt được</span>}
+                                    {earned && <span className="text-[11px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">{t('progress.earned')}</span>}
                                 </div>
                             )
                         })}

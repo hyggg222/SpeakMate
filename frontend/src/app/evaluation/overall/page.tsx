@@ -13,6 +13,7 @@ import NiCommentSection from '@/components/evaluation/NiCommentSection'
 import EvalCTASection from '@/components/evaluation/EvalCTASection'
 import InlineChallengeCard from '@/components/evaluation/InlineChallengeCard'
 import { useScenario } from '@/context/ScenarioContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 function ProgressBar({ label, score, colorClass }: { label: string, score: number, colorClass: string }) {
     return (
@@ -40,18 +41,6 @@ function SubScoreBar({ label, score, color }: { label: string, score: number, co
     )
 }
 
-const SUB_SCORE_LABELS: Record<string, string> = {
-    vocabularyRange: 'Từ vựng',
-    grammarAccuracy: 'Ngữ pháp',
-    honorificUsage: 'Xưng hô',
-    persuasion: 'Thuyết phục',
-    clarity: 'Rõ ràng',
-    professionalism: 'Chuyên nghiệp',
-    empathy: 'Đồng cảm',
-    confidence: 'Tự tin',
-    toneControl: 'Giọng điệu',
-}
-
 function ProficiencyBadge({ level }: { level?: string }) {
     if (!level) return null;
     const colors: Record<string, string> = {
@@ -70,9 +59,10 @@ function ProficiencyBadge({ level }: { level?: string }) {
 }
 
 function ComparisonArrow({ current, previous, unit, inverse }: { current: number, previous?: number, unit?: string, inverse?: boolean }) {
-    if (previous == null) return <span className="text-[11px] text-slate-400 italic">Điểm xuất phát</span>
+    const { t } = useLanguage();
+    if (previous == null) return <span className="text-[11px] text-slate-400 italic">{t('eval.comparison.start')}</span>
     const diff = current - previous
-    if (Math.abs(diff) < 0.5) return <span className="text-[11px] text-slate-400 flex items-center gap-1"><Minus className="w-3 h-3" />Giữ nguyên</span>
+    if (Math.abs(diff) < 0.5) return <span className="text-[11px] text-slate-400 flex items-center gap-1"><Minus className="w-3 h-3" />{t('eval.comparison.same')}</span>
     const isGood = inverse ? diff < 0 : diff > 0
     const Icon = isGood ? TrendingUp : TrendingDown
     const color = isGood ? 'text-emerald-600' : 'text-rose-500'
@@ -100,6 +90,8 @@ function MetricCard({ label, value, unit, previous, icon, inverse }: { label: st
 }
 
 function OverallContent() {
+    const { t } = useLanguage();
+    const subScoreLabel = (key: string) => t(`eval.subscore.${key}`) || key;
     const searchParams = useSearchParams();
     const sessionId = searchParams.get('sessionId');
     const [loading, setLoading] = useState(true);
@@ -253,11 +245,11 @@ function OverallContent() {
     }, [evalReport, selectedStoryIds, fullSession, sessionId]);
 
     if (loading) {
-        return <div className="flex-1 flex justify-center items-center text-slate-400">Đang tóm tắt kết quả...</div>
+        return <div className="flex-1 flex justify-center items-center text-slate-400">{t('eval.loading')}</div>
     }
 
     if (!evalReport) {
-        return <div className="flex-1 flex justify-center items-center text-red-400">Không tìm thấy báo cáo đánh giá.</div>
+        return <div className="flex-1 flex justify-center items-center text-red-400">{t('eval.notFound')}</div>
     }
 
     // Lấy Strength gộp chung lại cho hiển thị nổi bật
@@ -276,7 +268,7 @@ function OverallContent() {
 
     return (
         <main className="flex-1 flex flex-col bg-transparent relative">
-            <h1 className="text-2xl font-bold text-slate-800 mb-6 font-serif">Đánh giá chung buổi luyện tập</h1>
+            <h1 className="text-2xl font-bold text-slate-800 mb-6 font-serif">{t('eval.overall')}</h1>
 
             {/* Score and Comment Box */}
             <div className="flex items-center gap-8 mb-6">
@@ -334,33 +326,33 @@ function OverallContent() {
             {(evalReport as any).sessionMetrics && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <MetricCard
-                        label="Độ mạch lạc"
+                        label={t('eval.metric.coherence')}
                         icon="🎯"
                         value={(evalReport as any).sessionMetrics.coherenceScore}
                         unit="/100"
                         previous={previousMetrics?.coherence_score}
                     />
                     <MetricCard
-                        label="Từ CM thừa"
+                        label={t('eval.metric.jargon')}
                         icon="📝"
                         value={(evalReport as any).sessionMetrics.jargonCount}
-                        unit="từ"
+                        unit={t('eval.unit.words')}
                         previous={previousMetrics?.jargon_count}
                         inverse
                     />
                     <MetricCard
-                        label="Tốc độ phản xạ"
+                        label={t('eval.metric.reflex')}
                         icon="⚡"
                         value={(evalReport as any).sessionMetrics.avgResponseTime ?? 0}
-                        unit="giây"
+                        unit={t('eval.unit.seconds')}
                         previous={previousMetrics?.avg_response_time}
                         inverse
                     />
                     <MetricCard
-                        label="Từ đệm"
+                        label={t('eval.metric.filler')}
                         icon="💬"
                         value={(evalReport as any).sessionMetrics.fillerPerMinute}
-                        unit="/phút"
+                        unit={t('eval.unit.perMin')}
                         previous={previousMetrics?.filler_per_minute}
                         inverse
                     />
@@ -368,7 +360,7 @@ function OverallContent() {
             )}
             {previousMetrics && (evalReport as any).sessionMetrics && (
                 <p className="text-[11px] text-center -mt-4 mb-2" style={{ color: 'var(--muted-foreground)' }}>
-                    Mũi tên so sánh với <span className="font-semibold">phiên luyện trước</span>
+                    {t('eval.comparison.tip')}
                 </p>
             )}
 
@@ -376,7 +368,7 @@ function OverallContent() {
             {(evalReport as any).sessionMetrics?.jargonList?.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                     <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                        <h4 className="text-xs font-bold text-slate-600 mb-2">📝 Từ chuyên môn có thể thay thế</h4>
+                        <h4 className="text-xs font-bold text-slate-600 mb-2">📝 {t('eval.jargon.title')}</h4>
                         <div className="space-y-1.5">
                             {(evalReport as any).sessionMetrics.jargonList.map((j: any, i: number) => (
                                 <div key={i} className="flex items-center gap-2 text-[12px]">
@@ -389,7 +381,7 @@ function OverallContent() {
                     </div>
                     {(evalReport as any).sessionMetrics?.fillerList?.length > 0 && (
                         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                            <h4 className="text-xs font-bold text-slate-600 mb-2">💬 Từ đệm đã dùng</h4>
+                            <h4 className="text-xs font-bold text-slate-600 mb-2">💬 {t('eval.filler.title')}</h4>
                             <div className="flex flex-wrap gap-2">
                                 {(evalReport as any).sessionMetrics.fillerList.map((f: any, i: number) => (
                                     <span key={i} className="px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-[12px] text-amber-700 font-medium">
@@ -406,31 +398,31 @@ function OverallContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                 {/* Left Column: Progress Bars */}
                 <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col gap-6">
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">Đánh giá Đa tầng</h3>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">{t('eval.title')}</h3>
 
-                    <ProgressBar label="Ngôn ngữ (Từ vựng, Ngữ pháp)" score={evalReport.language?.score || 0} colorClass="bg-blue-500" />
+                    <ProgressBar label={t('eval.lang.label')} score={evalReport.language?.score || 0} colorClass="bg-blue-500" />
                     {evalReport.language?.subScores && (
                         <div className="flex flex-col gap-1 pl-2 -mt-3">
                             {Object.entries(evalReport.language.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={SUB_SCORE_LABELS[key] || key} score={val as number} color="#3b82f6" />
+                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#3b82f6" />
                             ))}
                         </div>
                     )}
 
-                    <ProgressBar label="Nội dung (Logic, Xử lý tình huống)" score={evalReport.content?.score || 0} colorClass="bg-amber-500" />
+                    <ProgressBar label={t('eval.content.label')} score={evalReport.content?.score || 0} colorClass="bg-amber-500" />
                     {evalReport.content?.subScores && (
                         <div className="flex flex-col gap-1 pl-2 -mt-3">
                             {Object.entries(evalReport.content.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={SUB_SCORE_LABELS[key] || key} score={val as number} color="#f59e0b" />
+                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#f59e0b" />
                             ))}
                         </div>
                     )}
 
-                    <ProgressBar label="Cảm xúc (Ngữ điệu, Tự tin)" score={evalReport.emotion?.score || 0} colorClass="bg-red-400" />
+                    <ProgressBar label={t('eval.emotion.label')} score={evalReport.emotion?.score || 0} colorClass="bg-red-400" />
                     {evalReport.emotion?.subScores && (
                         <div className="flex flex-col gap-1 pl-2 -mt-3">
                             {Object.entries(evalReport.emotion.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={SUB_SCORE_LABELS[key] || key} score={val as number} color="#f87171" />
+                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#f87171" />
                             ))}
                         </div>
                     )}
@@ -438,7 +430,7 @@ function OverallContent() {
                     <div className="mt-4">
                         <button onClick={() => setIsMentorOpen(true)} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
                             <MessageCircle className="w-4 h-4" />
-                            Hỏi Ni thêm
+                            {t('eval.askNi')}
                         </button>
                     </div>
                 </section>
@@ -447,21 +439,21 @@ function OverallContent() {
                 <section className="flex flex-col gap-6">
                     {/* Strengths */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
-                        <h3 className="text-base font-bold text-teal-600 mb-3">🔥 Điểm sáng của bạn</h3>
+                        <h3 className="text-base font-bold text-teal-600 mb-3">🔥 {t('eval.strengths')}</h3>
                         <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-teal-400">
                             {allStrengths.length > 0 ? allStrengths.slice(0, 4).map((s, i) => (
                                 <li key={i}>{s}</li>
-                            )) : <li>Không có dữ liệu</li>}
+                            )) : <li>{t('eval.noData')}</li>}
                         </ul>
                     </div>
 
                     {/* Weaknesses */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
-                        <h3 className="text-base font-bold text-rose-500 mb-3">📈 Vấn đề cần cải thiện</h3>
+                        <h3 className="text-base font-bold text-rose-500 mb-3">📈 {t('eval.improvements.label')}</h3>
                         <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-rose-400">
                             {allWeaknesses.length > 0 ? allWeaknesses.slice(0, 4).map((w, i) => (
                                 <li key={i}>{w}</li>
-                            )) : <li>Không có dữ liệu</li>}
+                            )) : <li>{t('eval.noData')}</li>}
                         </ul>
                     </div>
                 </section>
@@ -475,7 +467,7 @@ function OverallContent() {
                         Story Bank Coverage
                     </h3>
                     {coverageLoading ? (
-                        <p className="text-sm text-slate-400 animate-pulse">Đang so sánh với Story Bank...</p>
+                        <p className="text-sm text-slate-400 animate-pulse">{t('eval.storyCoverage.comparing')}</p>
                     ) : (
                         <div className="space-y-4">
                             {storyCoverage.map((result, i) => (
@@ -500,7 +492,7 @@ function OverallContent() {
                                     {/* Missed Parts */}
                                     {result.missedParts?.length > 0 && (
                                         <div>
-                                            <p className="text-xs font-semibold text-rose-500 mb-1">Phần bỏ sót:</p>
+                                            <p className="text-xs font-semibold text-rose-500 mb-1">{t('eval.storyCoverage.missed')}</p>
                                             <ul className="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-rose-300">
                                                 {result.missedParts.map((p: string, j: number) => <li key={j}>{p}</li>)}
                                             </ul>
@@ -510,7 +502,7 @@ function OverallContent() {
                                     {/* Added Parts */}
                                     {result.addedParts?.length > 0 && (
                                         <div>
-                                            <p className="text-xs font-semibold text-emerald-500 mb-1">Nội dung hay thêm:</p>
+                                            <p className="text-xs font-semibold text-emerald-500 mb-1">{t('eval.storyCoverage.added')}</p>
                                             <ul className="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-emerald-300">
                                                 {result.addedParts.map((p: string, j: number) => <li key={j}>{p}</li>)}
                                             </ul>
@@ -566,6 +558,7 @@ function OverallContent() {
 }
 
 export default function OverallEvaluationPage() {
+    const { t } = useLanguage();
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Topbar */}
@@ -573,11 +566,11 @@ export default function OverallEvaluationPage() {
                 <div className="flex items-center gap-6">
                     <button onClick={() => window.history.back()} className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-300 hover:text-white">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Quay lại</span>
+                        <span className="text-sm font-medium">{t('nav.back')}</span>
                     </button>
                     <Link href="/" className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-300 hover:text-white">
                         <Home className="w-4 h-4" />
-                        <span className="text-sm font-medium">Trang chủ</span>
+                        <span className="text-sm font-medium">{t('nav.home')}</span>
                     </Link>
                 </div>
 
@@ -596,19 +589,19 @@ export default function OverallEvaluationPage() {
             <div className="flex flex-col lg:flex-row flex-1 max-w-[1400px] mx-auto w-full p-4 md:p-6 lg:p-8 gap-6 lg:gap-8">
                 {/* Fixed Sidebar for Navigation — hidden on mobile */}
                 <aside className="hidden lg:flex w-64 shrink-0 flex-col gap-6">
-                    <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">Hồi tưởng kết quả</h3>
+                    <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">{t('eval.sidebar.title')}</h3>
                     <nav className="flex flex-col gap-2">
                         <div className="bg-[#0b1325] text-white px-4 py-3 rounded-full text-sm font-medium shadow-md w-full text-center">
-                            Đánh giá tổng hợp
+                            {t('eval.sidebar.overview')}
                         </div>
                         <div className="bg-white text-slate-400 px-4 py-3 rounded-full text-sm font-medium shadow-sm border border-slate-200 text-center cursor-not-allowed">
-                            Lịch sử hội thoại
+                            {t('eval.sidebar.history')}
                         </div>
                     </nav>
                 </aside>
 
                 {/* Main Content inside Suspense for useSearchParams */}
-                <Suspense fallback={<div className="flex-1 flex justify-center text-slate-400 mt-20">Đang tải biểu đồ đánh giá...</div>}>
+                <Suspense fallback={<div className="flex-1 flex justify-center text-slate-400 mt-20">{t('eval.loadingChart')}</div>}>
                     <OverallContent />
                 </Suspense>
             </div>
