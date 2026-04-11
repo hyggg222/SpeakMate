@@ -1,9 +1,14 @@
 import { LlmService } from '../services/llm.service';
 import { TranscriptionService } from '../services/transcription.service';
-import { PromptService } from '../services/prompt.service';
+import { PromptService, Lang } from '../services/prompt.service';
 import { getGenAI, SAFETY_SETTINGS } from '../config/genai';
 import { config } from '../config/env';
 import { sanitizePlaceholders } from '../utils/sanitize';
+
+type LangParam = Lang | string;
+function toLang(language?: LangParam): Lang {
+    return language === 'en' ? 'en' : 'vi';
+}
 
 const llmService = new LlmService();
 
@@ -31,7 +36,8 @@ export class VoiceAgent {
         this.transcriptionService = new TranscriptionService();
     }
 
-    public async interactText(scenario: any, conversationHistory: any[], latestUserMessage: string, userName?: string, language = 'vi'): Promise<string> {
+    public async interactText(scenario: any, conversationHistory: any[], latestUserMessage: string, userName?: string, language: LangParam = 'vi'): Promise<string> {
+        const lang = toLang(language);
         try {
             const messages = conversationHistory.map((h: any) => ({
                 role: h.speaker === 'AI' ? 'assistant' as const : 'user' as const,
@@ -39,10 +45,7 @@ export class VoiceAgent {
             }));
             messages.push({ role: 'user' as const, content: latestUserMessage });
 
-            const langInstr = language === 'en'
-                ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
-            const systemPrompt = this.promptService.buildConversationPrompt(scenario, userName) + langInstr;
+            const systemPrompt = this.promptService.buildConversationPrompt(scenario, userName, lang);
             const response = await llmService.chat(systemPrompt, messages);
             return sanitizePlaceholders(response || '', userName);
         } catch (error) {
@@ -54,9 +57,11 @@ export class VoiceAgent {
     public async interactAudioStream(scenario: any, conversationHistory: any[], pcmBuffer: Buffer, userName?: string): Promise<{ userTranscript: string; aiResponse: string; botAudioUrl?: string }> {
         try {
             const audio_base64 = pcmBuffer.toString('base64');
-            const INTERACT_URL = config.modalInteractUrl;
+            const INTERACT_URL = config.voicePipelineProvider === 'runpod' && config.runpodInteractUrl
+                ? config.runpodInteractUrl
+                : config.modalInteractUrl;
 
-            console.log("[VoiceAgent] Sending to Unified Cloud Pipeline...");
+            console.log(`[VoiceAgent] Sending to ${config.voicePipelineProvider.toUpperCase()} pipeline...`);
             const response = await fetch(INTERACT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -96,7 +101,8 @@ export class VoiceAgent {
         conversationHistory: any[],
         audioBuffer: Buffer,
         mimeType: string,
-        userName?: string
+        userName?: string,
+        language: LangParam = 'vi'
     ): Promise<{
         userTranscript: string;
         aiResponse: string;
@@ -119,7 +125,7 @@ export class VoiceAgent {
         console.log(`[DualChar] STT: "${rawTranscript.slice(0, 80)}"`);
 
         // Steps 2-4: Score + respond
-        const responded = await this._dualCharRespond(scenario, characters, conversationHistory, rawTranscript, userName);
+        const responded = await this._dualCharRespond(scenario, characters, conversationHistory, rawTranscript, userName, language);
         return { userTranscript: rawTranscript, ...responded };
     }
 
@@ -132,7 +138,8 @@ export class VoiceAgent {
         characters: any[],
         conversationHistory: any[],
         userMessage: string,
-        userName?: string
+        userName?: string,
+        language: LangParam = 'vi'
     ): Promise<{
         userTranscript: string;
         aiResponse: string;
@@ -146,7 +153,7 @@ export class VoiceAgent {
             return { userTranscript: '', aiResponse: '', characterId: char1.id, characterName: char1.name };
         }
 
-        const responded = await this._dualCharRespond(scenario, characters, conversationHistory, userMessage, userName);
+        const responded = await this._dualCharRespond(scenario, characters, conversationHistory, userMessage, userName, language);
         return { userTranscript: userMessage, ...responded };
     }
 
@@ -158,7 +165,8 @@ export class VoiceAgent {
         characters: any[],
         conversationHistory: any[],
         userMessage: string,
-        userName?: string
+        userName?: string,
+        language: LangParam = 'vi'
     ): Promise<{
         aiResponse: string;
         characterId: string;
@@ -166,6 +174,7 @@ export class VoiceAgent {
         audioBase64?: string;
         audioMimeType?: string;
     }> {
+        const lang = toLang(language);
         const char1 = characters[0];
         const char2 = characters[1];
         const goals = (scenario.goals || []).join(', ');
@@ -176,8 +185,8 @@ export class VoiceAgent {
 
         // Parallel scoring
         const [result1, result2] = await Promise.all([
-            this.scoreCharacter(char1, char2, goals, recentHistory, userMessage),
-            this.scoreCharacter(char2, char1, goals, recentHistory, userMessage),
+            this.scoreCharacter(char1, char2, goals, recentHistory, userMessage, lang),
+            this.scoreCharacter(char2, char1, goals, recentHistory, userMessage, lang),
         ]);
 
         console.log(`[DualChar] ${char1.name} score=${result1.score}, ${char2.name} score=${result2.score}`);
@@ -209,10 +218,11 @@ export class VoiceAgent {
         otherChar: any,
         goals: string,
         recentHistory: string,
-        userMessage: string
+        userMessage: string,
+        language: Lang = 'vi'
     ): Promise<{ score: number; response: string }> {
         const prompt = this.promptService.buildCharacterScoringPrompt(
-            char, otherChar, goals, recentHistory, userMessage
+            char, otherChar, goals, recentHistory, userMessage, language
         );
 
         try {
@@ -236,7 +246,10 @@ export class VoiceAgent {
             };
         } catch (err) {
             console.warn(`[DualChar] Score call failed for ${char.name}:`, (err as any)?.message);
-            return { score: 50, response: 'Xin lỗi, bạn có thể nói lại không?' };
+            const fallback = language === 'en'
+                ? "Sorry, could you say that again?"
+                : 'Xin lỗi, bạn có thể nói lại không?';
+            return { score: 50, response: fallback };
         }
     }
 
@@ -246,10 +259,17 @@ export class VoiceAgent {
     }
 
     private async generateTTS(text: string, charIdx: number): Promise<{ data: string; mimeType: string }> {
-        // Route to the dedicated always-on container for this character's voice
-        const url = charIdx === 0 ? config.modalTtsUrlChar1 : config.modalTtsUrlChar2;
+        // RunPod consolidates both characters into one Pod (only char1 voice for now);
+        // Modal keeps separate always-on containers per character.
+        const useRunpod = config.voicePipelineProvider === 'runpod' && config.runpodTtsUrlChar1;
+        const url = useRunpod
+            ? config.runpodTtsUrlChar1   // RunPod: single TTS endpoint
+            : (charIdx === 0 ? config.modalTtsUrlChar1 : config.modalTtsUrlChar2);
+
         if (!url) {
-            const envVar = charIdx === 0 ? 'MODAL_TTS_URL_CHAR1' : 'MODAL_TTS_URL_CHAR2';
+            const envVar = useRunpod
+                ? 'RUNPOD_TTS_URL_CHAR1'
+                : (charIdx === 0 ? 'MODAL_TTS_URL_CHAR1' : 'MODAL_TTS_URL_CHAR2');
             throw new Error(`${envVar} not configured in backend/.env`);
         }
 
@@ -257,12 +277,12 @@ export class VoiceAgent {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text }),
-            signal: AbortSignal.timeout(30000),  // always-on = no cold start, 30s is plenty
+            signal: AbortSignal.timeout(30000),
         });
 
         if (!res.ok) {
             const errText = await res.text();
-            throw new Error(`Modal TTS char${charIdx} ${res.status}: ${errText}`);
+            throw new Error(`${config.voicePipelineProvider} TTS char${charIdx} ${res.status}: ${errText}`);
         }
 
         const json: any = await res.json();

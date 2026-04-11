@@ -1,26 +1,52 @@
 import { StoryStructureResponse } from '../contracts/data.contracts';
-import { PromptService } from '../services/prompt.service';
+import { PromptService, Lang } from '../services/prompt.service';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL } from '../config/genai';
 import { sanitizeObj } from '../utils/sanitize';
 
-// Framework-specific field defaults
-const FRAMEWORK_DEFAULTS: Record<string, Record<string, string>> = {
-  STAR: {
-    situation: 'Chưa có thông tin bối cảnh.',
-    task:      'Chưa có thông tin nhiệm vụ.',
-    action:    'Chưa có thông tin hành động.',
-    result:    'Chưa có thông tin kết quả.',
+type LangParam = Lang | string;
+function toLang(language?: LangParam): Lang {
+  return language === 'en' ? 'en' : 'vi';
+}
+
+// Framework-specific field defaults (per language)
+const FRAMEWORK_DEFAULTS: Record<Lang, Record<string, Record<string, string>>> = {
+  vi: {
+    STAR: {
+      situation: 'Chưa có thông tin bối cảnh.',
+      task:      'Chưa có thông tin nhiệm vụ.',
+      action:    'Chưa có thông tin hành động.',
+      result:    'Chưa có thông tin kết quả.',
+    },
+    CAR: {
+      challenge: 'Chưa có thông tin thách thức.',
+      action:    'Chưa có thông tin hành động.',
+      result:    'Chưa có thông tin kết quả.',
+    },
+    PREP: {
+      point:   'Chưa có luận điểm chính.',
+      reason:  'Chưa có lý do.',
+      example: 'Chưa có ví dụ.',
+      point2:  'Chưa có kết luận.',
+    },
   },
-  CAR: {
-    challenge: 'Chưa có thông tin thách thức.',
-    action:    'Chưa có thông tin hành động.',
-    result:    'Chưa có thông tin kết quả.',
-  },
-  PREP: {
-    point:   'Chưa có luận điểm chính.',
-    reason:  'Chưa có lý do.',
-    example: 'Chưa có ví dụ.',
-    point2:  'Chưa có kết luận.',
+  en: {
+    STAR: {
+      situation: 'No situation information yet.',
+      task:      'No task information yet.',
+      action:    'No action information yet.',
+      result:    'No result information yet.',
+    },
+    CAR: {
+      challenge: 'No challenge information yet.',
+      action:    'No action information yet.',
+      result:    'No result information yet.',
+    },
+    PREP: {
+      point:   'No main point yet.',
+      reason:  'No reason yet.',
+      example: 'No example yet.',
+      point2:  'No conclusion yet.',
+    },
   },
 };
 
@@ -42,39 +68,29 @@ export class StoryBankAgent {
     followUpAnswers?: string[],
     chatHistory?: { role: string; content: string; fieldTargeted?: string | null }[],
     framework?: string,
-    language = 'vi'
+    language: LangParam = 'vi'
   ): Promise<StoryStructureResponse> {
+    const lang = toLang(language);
     const maxAttempts = 3;
     let lastError: unknown;
     const fw = (framework || 'STAR').toUpperCase();
-    const langInstr = language === 'en'
-      ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-      : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        let contents = `Framework yêu cầu: ${fw}\nInput thô từ user (${inputMethod}):\n${rawInput}`;
-        if (followUpAnswers && followUpAnswers.length > 0) {
-          contents += `\n\nUser đã trả lời các câu hỏi bổ sung:\n`;
-          followUpAnswers.forEach((answer, i) => {
-            contents += `Câu ${i + 1}: ${answer}\n`;
-          });
-          contents += `\nBây giờ hãy cấu trúc hóa đầy đủ theo framework ${fw}, KHÔNG hỏi thêm nữa. needsFollowUp PHẢI = false.`;
-        }
-        if (chatHistory && chatHistory.length > 0) {
-          contents += `\n\nUser đã trò chuyện với Ni để làm rõ thêm:\n`;
-          chatHistory.forEach((msg) => {
-            const speaker = msg.role === 'user' ? 'User' : 'Ni';
-            contents += `${speaker}: ${msg.content}\n`;
-          });
-          contents += `\nBây giờ hãy cấu trúc hóa đầy đủ theo framework ${fw} dựa trên TOÀN BỘ thông tin trên. needsFollowUp PHẢI = false. Nếu thiếu field nào, VẪN cấu trúc hóa nhưng đánh dấu vào missingFields.`;
-        }
+        const contents = this.promptService.buildStoryBankStructurePrompt(
+          fw,
+          rawInput,
+          inputMethod,
+          followUpAnswers,
+          chatHistory,
+          lang,
+        );
 
         const response = await getGenAI().models.generateContent({
           model: this.modelName,
           contents: [{ role: 'user', parts: [{ text: contents }] }],
           config: {
-            systemInstruction: this.promptService.getStoryBankSystemPrompt() + langInstr,
+            systemInstruction: this.promptService.getStoryBankSystemPrompt(lang),
             responseMimeType: 'application/json',
             temperature: 0.6,
           },
@@ -93,7 +109,8 @@ export class StoryBankAgent {
           // Ensure structured sub-fields exist using framework-specific defaults
           if (!result.structured) result.structured = {} as any;
           const s = result.structured as any;
-          const defaults = FRAMEWORK_DEFAULTS[fw] || FRAMEWORK_DEFAULTS.STAR;
+          const langDefaults = FRAMEWORK_DEFAULTS[lang] || FRAMEWORK_DEFAULTS.vi;
+          const defaults = langDefaults[fw] || langDefaults.STAR;
           for (const [field, fallback] of Object.entries(defaults)) {
             if (!s[field]) s[field] = fallback;
           }
