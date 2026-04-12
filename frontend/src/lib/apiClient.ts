@@ -80,11 +80,30 @@ function getTokenFromCookie(): string | null {
     }
 }
 
-function getLangHeader(): Record<string, string> {
+function getCurrentLanguage(): 'vi' | 'en' {
     const lang = typeof window !== 'undefined'
         ? localStorage.getItem('speakmate_language') || 'vi'
         : 'vi'
-    return { 'X-Language': lang }
+    return lang === 'en' ? 'en' : 'vi'
+}
+
+function getLangHeader(): Record<string, string> {
+    return { 'X-Language': getCurrentLanguage() }
+}
+
+/**
+ * Resolve a translation key directly from the translations table.
+ * Used for fallback strings inside apiClient (outside React tree, no useLanguage hook).
+ */
+function tFallback(key: string): string {
+    try {
+        const lang = getCurrentLanguage()
+        // Lazy require to avoid circular import at module load time
+        const { translations } = require('../i18n/translations') as typeof import('../i18n/translations')
+        return translations[lang]?.[key] ?? translations.vi?.[key] ?? key
+    } catch {
+        return key
+    }
 }
 
 /**
@@ -134,13 +153,13 @@ export const apiClient = {
             const authHeaders = await getAuthHeaders();
             const res = await fetch(`${API_BASE_URL}/practice/scenario`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders },
+                headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
                 body: JSON.stringify({ userGoal }),
             });
             if (res.status === 400) {
                 const body = await res.json().catch(() => ({}));
                 if (body.filtered) {
-                    const filterErr = new Error(body.error || 'Nội dung không phù hợp.');
+                    const filterErr = new Error(body.error || tFallback('error.contentFiltered'));
                     (filterErr as any).filtered = true;
                     (filterErr as any).category = body.category;
                     throw filterErr;
@@ -153,33 +172,8 @@ export const apiClient = {
             const json = await res.json();
             return json.data;
         } catch (err: any) {
-            if (err?.filtered) throw err; // Re-throw filter errors — don't mock
-            console.warn('[apiClient] setupScenario API failed, using mock:', err);
-            // Mock fallback when Gemini API unavailable (429/network)
-            return {
-                scenario: {
-                    scenarioName: userGoal || 'Thảo luận với giảng viên về dự án nhóm',
-                    topic: userGoal || 'Trình bày ý kiến cá nhân trong buổi thảo luận học thuật',
-                    interviewerPersona: 'Giảng viên đại học, thân thiện nhưng hay đặt câu hỏi phản biện. Tên là Thầy Minh.',
-                    goals: [
-                        'Diễn đạt ý kiến rõ ràng bằng tiếng Anh',
-                        'Phản biện có cấu trúc khi bị hỏi ngược',
-                        'Giữ tự tin và không ngập ngừng',
-                    ],
-                    startingTurns: [
-                        { speaker: 'AI' as const, line: 'Good morning! So, let\'s discuss your group project. Can you walk me through your progress so far?' },
-                        { speaker: 'User' as const, line: '', expectedUserResponse: 'technical' as const },
-                    ],
-                },
-                evalRules: {
-                    categories: [
-                        { category: 'Fluency', weight: 30, description: 'Độ trôi chảy khi nói' },
-                        { category: 'Clarity', weight: 25, description: 'Độ rõ ràng của ý' },
-                        { category: 'Relevance', weight: 25, description: 'Liên quan đến chủ đề' },
-                        { category: 'Confidence', weight: 20, description: 'Sự tự tin trong giao tiếp' },
-                    ],
-                },
-            } as FullScenarioContext;
+            console.error('[apiClient] setupScenario failed:', err);
+            throw err;
         }
     },
 
@@ -190,7 +184,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/gemini-live-session`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ scenarioStr: JSON.stringify(scenario) }),
         });
         if (!res.ok) {
@@ -204,7 +198,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/gemini-direct-token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ scenarioStr: JSON.stringify(scenario) }),
         });
         if (!res.ok) {
@@ -218,7 +212,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/livekit-session`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({
                 scenarioStr: JSON.stringify(scenario),
                 conversationHistoryStr: JSON.stringify(history)
@@ -247,7 +241,7 @@ export const apiClient = {
 
         const res = await fetch(`${API_BASE_URL}/practice/interact`, {
             method: 'POST',
-            headers: { ...authHeaders },
+            headers: { ...authHeaders, ...getLangHeader() },
             body: formData,
         });
         if (!res.ok) {
@@ -259,7 +253,7 @@ export const apiClient = {
         return {
             botResponse: data.botResponse,
             audioUploadedKey: data.audioUploadedKey,
-            userTranscript: data.userTranscript || '(Không bắt được văn bản)',
+            userTranscript: data.userTranscript || tFallback('error.noTranscript'),
             botAudioUrl: data.botAudioUrl
         };
     },
@@ -269,7 +263,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/tts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ text, charIdx }),
         });
         if (!res.ok) throw new Error(`TTS failed [${res.status}]`);
@@ -288,7 +282,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/analyze`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({
                 rubricStr: JSON.stringify(rubric),
                 audioFileKeys,
@@ -311,14 +305,14 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/hints`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({
                 scenarioStr: JSON.stringify(scenario),
                 conversationHistoryStr: JSON.stringify(conversationHistory),
             }),
         });
         if (!res.ok) {
-            return ["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"];
+            return [tFallback('hint.fallback.1'), tFallback('hint.fallback.2'), tFallback('hint.fallback.3')];
         }
         const json = await res.json();
         return json.hints;
@@ -331,7 +325,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/scenario/adjust`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ currentScenario, adjustmentText }),
         });
         if (!res.ok) {
@@ -349,11 +343,11 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/scenario/suggestions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ currentScenario }),
         });
         if (!res.ok) {
-            return ["Thêm nhân vật phản biện", "Bối cảnh hội trường lớn", "Khán giả là chuyên gia"];
+            return [tFallback('suggestion.fallback.1'), tFallback('suggestion.fallback.2'), tFallback('suggestion.fallback.3')];
         }
         const json = await res.json();
         return json.suggestions;
@@ -367,7 +361,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/mentor-chat/send`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ message }),
         });
         if (!res.ok) {
@@ -406,14 +400,14 @@ export const apiClient = {
             const authHeaders = await getAuthHeaders();
             const res = await fetch(`${API_BASE_URL}/practice/mentor-eval-comment`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders },
+                headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
                 body: JSON.stringify({ evalReport, storyCoverage, streak, previousScore }),
             });
             if (!res.ok) throw new Error('Eval comment failed');
             const json = await res.json();
             return json.data.comment;
         } catch {
-            return 'Phiên luyện tập vừa rồi có nhiều điểm hay đó. Xem chi tiết ở trên và thử áp dụng vào thực tế nhé!';
+            return tFallback('eval.defaultComment');
         }
     },
 
@@ -421,7 +415,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/mentor-chat`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ scenario, evaluationReport, userMessage, conversationHistory })
         });
         if (!res.ok) throw new Error("Mentor chat failed");
@@ -436,7 +430,7 @@ export const apiClient = {
         if (evalReport) body.evaluationStr = JSON.stringify(evalReport);
         const res = await fetch(`${API_BASE_URL}/practice/challenge/generate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify(body)
         });
         if (!res.ok) {
@@ -461,7 +455,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/challenge/deadline`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ challengeId, deadline })
         });
         return res.ok;
@@ -514,7 +508,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/challenge/feedback/form`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ challengeId, ...data }),
         });
         if (!res.ok) throw new Error("Form feedback failed");
@@ -548,7 +542,7 @@ export const apiClient = {
         } else {
             const res = await fetch(`${API_BASE_URL}/practice/feedback/free`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders },
+                headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
                 body: JSON.stringify(formData || {}),
             });
             if (!res.ok) throw new Error('Free feedback failed');
@@ -561,7 +555,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/challenge/adjust`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ challengeId, userRequest, sessionId }),
         });
         if (!res.ok) throw new Error('Adjust challenge failed');
@@ -573,7 +567,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/practice/challenge/skip`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ challengeId }),
         });
         return res.ok;
@@ -650,7 +644,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/storybank/chat`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ framework, initialInput, inputMethod, chatMessages }),
         });
         if (!res.ok) {
@@ -665,7 +659,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/storybank/structure`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ rawInput, inputMethod, followUpAnswers, chatHistory, framework }),
         });
         if (!res.ok) {
@@ -680,7 +674,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/storybank`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify(data),
         });
         if (!res.ok) {
@@ -695,7 +689,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/storybank/${storyId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify(data),
         });
         if (!res.ok) {
@@ -749,7 +743,7 @@ export const apiClient = {
         const authHeaders = await getAuthHeaders();
         const res = await fetch(`${API_BASE_URL}/storybank/compare`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...getLangHeader() },
             body: JSON.stringify({ storyId, sessionId, transcript }),
         });
         if (!res.ok) {

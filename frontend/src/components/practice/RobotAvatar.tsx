@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Volume2 } from 'lucide-react'
 import Image from 'next/image'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface RobotAvatarProps {
     isSpeaking: boolean
@@ -10,6 +11,7 @@ interface RobotAvatarProps {
 }
 
 export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
+    const { t } = useLanguage()
     return (
         <div className="relative flex items-center justify-center select-none">
             {/* Outer ambient glow */}
@@ -104,7 +106,7 @@ export function RobotAvatar({ isSpeaking, isListening }: RobotAvatarProps) {
                         transition={{ duration: 0.2 }}
                     >
                         <Volume2 className="w-3 h-3 text-teal-400" />
-                        <span className="text-[11px] text-teal-300 font-medium whitespace-nowrap">Đang nói...</span>
+                        <span className="text-[11px] text-teal-300 font-medium whitespace-nowrap">{t('practice.aiSpeaking')}</span>
                     </motion.div>
                 )}
             </AnimatePresence>

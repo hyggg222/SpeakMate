@@ -271,9 +271,9 @@ export default function StoryDetailPage() {
                         {/* Structure */}
                         <div className="bg-white border rounded-2xl p-6 space-y-4">
                             <h2 className="font-semibold text-slate-800">{t('stories.structure')} {story.framework}</h2>
-                            {fields.map(({ key, label, emoji }: { key: string; label: string; emoji: string }) => (
+                            {fields.map(({ key, labelKey, emoji }) => (
                                 <div key={key} className="border-l-4 pl-4 py-2" style={{ borderColor: frameworkColor }}>
-                                    <p className="text-xs font-medium text-slate-400 mb-1">{emoji} {label}</p>
+                                    <p className="text-xs font-medium text-slate-400 mb-1">{emoji} {t(labelKey)}</p>
                                     {editing ? (
                                         <textarea value={editStructured?.[key] || ""}
                                             onChange={e => { setEditStructured({ ...editStructured, [key]: e.target.value }); setHasChanges(true); }}

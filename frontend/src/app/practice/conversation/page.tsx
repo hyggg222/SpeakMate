@@ -15,6 +15,7 @@ import { useSileroVAD } from '@/hooks/useSileroVAD'
 import { FEATURE_FLAGS } from '@/lib/featureFlags'
 import { RobotAvatar } from '@/components/practice/RobotAvatar'
 import { FloatingTranscripts } from '@/components/practice/FloatingTranscripts'
+import { useLanguage } from '@/context/LanguageContext'
 
 /** Strip bracketed placeholders like [tên của bạn], [name], [địa điểm] from text */
 function sanitize(text: string): string {
@@ -30,6 +31,7 @@ const mode: 'gemini-direct' | 'livekit' | 'http' =
 
 export default function ConversationStudioPage() {
     const router = useRouter()
+    const { t } = useLanguage()
     const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession, setLivekitSession, geminiDirectSession, setGeminiDirectSession } = useScenario()
     const { isRecording, startRecording, stopRecording } = useAudioRecorder()
 
@@ -38,7 +40,7 @@ export default function ConversationStudioPage() {
     useEffect(() => { historyRef.current = history }, [history])
 
     const [isProcessing, setIsProcessing] = useState(false)
-    const [currentBotMsg, setCurrentBotMsg] = useState('Đang khởi tạo kịch bản...')
+    const [currentBotMsg, setCurrentBotMsg] = useState('')
     const [showTextInput, setShowTextInput] = useState(false)
     const [textInput, setTextInput] = useState('')
     const textInputRef = useRef<HTMLInputElement>(null)
@@ -157,7 +159,7 @@ export default function ConversationStudioPage() {
     // Set initial bot message for HTTP mode (single-char)
     useEffect(() => {
         if (!scenario || isRealtimeMode || history.length > 0) return;
-        const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns?.[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.');
+        const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns?.[0]?.line || t('practice.firstTurnDefault'));
         setCurrentBotMsg(firstTurn);
         setHistory([{ speaker: 'AI', line: firstTurn }]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,10 +194,27 @@ export default function ConversationStudioPage() {
     }, [isRealtimeMode, isConnected, isAgentReady, isMicEnabled])
 
     const playAudioUrl = (url: string) => {
+        // Long data URLs (>1MB) can fail silently in some browsers.
+        // Convert to blob URL for reliable playback.
+        if (url.startsWith('data:')) {
+            try {
+                const [header, payload] = url.split(',');
+                const mime = header.match(/data:([^;]+)/)?.[1] || 'audio/wav';
+                const bin = atob(payload);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const blob = new Blob([bytes], { type: mime });
+                const blobUrl = URL.createObjectURL(blob);
+                const audio = new Audio(blobUrl);
+                audio.onended = () => URL.revokeObjectURL(blobUrl);
+                audio.play().catch(e => console.error("Error playing bot audio:", e));
+                return;
+            } catch (e) {
+                console.error("Failed to convert data URL to blob:", e);
+            }
+        }
         const audio = new Audio(url);
-        audio.play().catch(e => {
-            console.error("Error playing bot audio:", e);
-        });
+        audio.play().catch(e => console.error("Error playing bot audio:", e));
     };
 
     /** Play base64-encoded audio (WAV or raw PCM) returned by Modal NeuTTS */
@@ -276,8 +295,8 @@ export default function ConversationStudioPage() {
                 setAudioFileKeys([...audioFileKeys, result.audioUploadedKey]);
             }
         } catch (error) {
-            console.error('Lỗi khi tương tác âm thanh:', error)
-            alert('Có lỗi xảy ra trong quá trình kết nối tới The Voice AI. Hãy thử lại.')
+            console.error('Audio interaction error:', error)
+            alert(t('practice.audioInteractError'))
         } finally {
             setIsProcessing(false)
         }
@@ -309,7 +328,7 @@ export default function ConversationStudioPage() {
             setHints(result);
         } catch (error) {
             console.error('Hint error:', error);
-            setHints(["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"]);
+            setHints([t('common.retry'), t('recent.continue'), t('practice.hint')]);
         } finally {
             setIsLoadingHints(false);
         }
@@ -343,12 +362,12 @@ export default function ConversationStudioPage() {
                 }),
             });
             const data = await res.json();
-            const aiResponse = sanitize(data.botResponse || data.response || 'Xin lỗi, tôi chưa hiểu.');
+            const aiResponse = sanitize(data.botResponse || data.response || t('practice.aiNotUnderstood'));
             setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: aiResponse, confirmed: true }]);
             browserTTS.speak(aiResponse);
         } catch (err) {
             console.error('Text interaction error:', err);
-            setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: 'Xin lỗi, có lỗi xảy ra.', confirmed: true }]);
+            setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: t('practice.aiGenericError'), confirmed: true }]);
         } finally {
             setIsProcessing(false);
         }
@@ -393,16 +412,16 @@ export default function ConversationStudioPage() {
                     </div>
                     <div className="text-center">
                         <p className="text-slate-300 text-base font-medium mb-1">
-                            Đang chuẩn bị phòng luyện tập...
+                            {t('practice.preparing')}
                         </p>
                         <p className="text-slate-600 text-sm">
-                            {mode === 'gemini-direct' ? 'Đang kết nối Gemini Live...' : 'AI Agent đang tải, vui lòng chờ một chút'}
+                            {mode === 'gemini-direct' ? t('practice.connecting') : t('practice.connectingAgent')}
                         </p>
                     </div>
                     {isConnected && (
                         <div className="flex items-center gap-1.5 mt-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                            <span className="text-xs text-slate-500">Đã kết nối, đang chờ AI...</span>
+                            <span className="text-xs text-slate-500">{t('practice.waitingAI')}</span>
                         </div>
                     )}
                 </div>
@@ -417,14 +436,14 @@ export default function ConversationStudioPage() {
                         className="flex items-center gap-1.5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-400 hover:text-white text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Quay lại</span>
+                        <span className="font-medium">{t('nav.back')}</span>
                     </button>
                     <Link
                         href="/"
                         className="flex items-center gap-1.5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-400 hover:text-white text-sm"
                     >
                         <Home className="w-4 h-4" />
-                        <span className="font-medium">Trang chủ</span>
+                        <span className="font-medium">{t('nav.home')}</span>
                     </Link>
                 </div>
 
@@ -435,7 +454,7 @@ export default function ConversationStudioPage() {
                         className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 rounded-full transition-all border border-amber-500/25 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium"
                     >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Ni ơi, cứu!</span>
+                        <span>{t('practice.helpBtn')}</span>
                     </button>
                     <button className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-500 hover:text-white">
                         <Settings className="w-4 h-4" />
@@ -453,7 +472,7 @@ export default function ConversationStudioPage() {
                     {isRealtimeMode && (
                         <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-slate-800/40 px-3 py-1.5 rounded-full backdrop-blur-sm border border-slate-700/50">
                             <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
-                            <span className="text-[11px] font-medium text-slate-400">{isConnected ? 'Đã kết nối' : 'Đang kết nối...'}</span>
+                            <span className="text-[11px] font-medium text-slate-400">{isConnected ? t('practice.connected') : t('practice.connecting')}</span>
                         </div>
                     )}
 
@@ -478,7 +497,7 @@ export default function ConversationStudioPage() {
                                     <div className="bg-[#161b22]/95 backdrop-blur-md rounded-2xl border border-amber-500/30 p-4 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
                                         <div className="flex items-center gap-2 mb-3">
                                             <Sparkles className="w-4 h-4 text-amber-400" />
-                                            <span className="text-sm font-semibold text-amber-300">Gợi ý từ Ni</span>
+                                            <span className="text-sm font-semibold text-amber-300">{t('practice.hintsTitle')}</span>
                                             <button onClick={() => setShowHints(false)} className="ml-auto text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-md hover:bg-slate-800">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                             </button>
@@ -486,7 +505,7 @@ export default function ConversationStudioPage() {
                                         {isLoadingHints ? (
                                             <div className="flex items-center justify-center gap-2 py-4">
                                                 <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
-                                                <span className="text-sm font-medium text-slate-400">Ni đang nghĩ...</span>
+                                                <span className="text-sm font-medium text-slate-400">{t('practice.hintsLoading')}</span>
                                             </div>
                                         ) : (
                                             <div className="flex flex-wrap gap-2">
@@ -528,7 +547,7 @@ export default function ConversationStudioPage() {
                             value={textInput}
                             onChange={e => setTextInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleTextSend(); } }}
-                            placeholder="Nhập tin nhắn thay vì nói..."
+                            placeholder={t('practice.textPlaceholder')}
                             disabled={isProcessing}
                             className="flex-1 bg-transparent text-slate-200 placeholder:text-slate-500 text-sm outline-none py-1.5"
                         />
@@ -553,7 +572,7 @@ export default function ConversationStudioPage() {
                     className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-medium rounded-full border border-slate-700/60 transition-all disabled:opacity-25 disabled:cursor-not-allowed text-sm"
                 >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Nói lại ({redoCount})</span>
+                    <span>{t('practice.redo.label')} ({redoCount})</span>
                 </button>
 
                 {/* Mic button */}
@@ -583,7 +602,7 @@ export default function ConversationStudioPage() {
                         }
                     </div>
                     <span className="absolute -bottom-5 text-[10px] uppercase font-bold tracking-wider text-teal-400/70 whitespace-nowrap">
-                        {isMicActive ? 'Đang bật' : 'Bắt đầu'}
+                        {isMicActive ? t('practice.micOn') : t('practice.start')}
                     </span>
                 </button>
 
@@ -602,7 +621,7 @@ export default function ConversationStudioPage() {
                     disabled={history.length < 2 || isRecording || isProcessing}
                     className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white font-medium rounded-full border border-slate-700/60 transition-all text-sm disabled:opacity-20 disabled:cursor-not-allowed"
                 >
-                    <span>Kết thúc</span>
+                    <span>{t('practice.endSession')}</span>
                 </button>
             </div>
 

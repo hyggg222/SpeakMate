@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Target, Clock, Star, SkipForward, ArrowRight, Loader2, BookOpen } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function ActiveChallenges() {
     const router = useRouter()
+    const { t } = useLanguage()
     const [challenges, setChallenges] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [skipping, setSkipping] = useState(false)
@@ -67,10 +69,10 @@ export default function ActiveChallenges() {
                     <Target className="w-6 h-6" style={{ color: 'var(--muted-foreground)' }} />
                 </div>
                 <h4 className="font-bold text-[14px]" style={{ color: 'var(--foreground)' }}>
-                    Chưa có nhiệm vụ thực tế
+                    {t('challenges.empty.title')}
                 </h4>
                 <p className="text-[12px] mt-1 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                    Hoàn thành phiên luyện tập đầu tiên trong Phòng gym để nhận nhiệm vụ thực tế!
+                    {t('challenges.realworld.empty.desc')}
                 </p>
             </div>
         )
@@ -113,7 +115,7 @@ export default function ActiveChallenges() {
                         <Target className="w-4 h-4" style={{ color: 'var(--teal)' }} />
                     </div>
                     <h3 className="font-bold text-sm tracking-tight" style={{ color: 'var(--foreground)' }}>
-                        Nhiệm vụ thực tế
+                        {t('challenges.realworld.header')}
                     </h3>
                 </div>
                 {/* Difficulty stars */}
@@ -145,7 +147,7 @@ export default function ActiveChallenges() {
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium w-fit"
                         style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706' }}
                     >
-                        Điểm yếu: {challenge.sourceWeakness || challenge.source_weakness}
+                        {t('challenges.weakness')} {challenge.sourceWeakness || challenge.source_weakness}
                     </div>
                 )}
 
@@ -153,7 +155,7 @@ export default function ActiveChallenges() {
                 {suggestedStories.length > 0 && (
                     <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
-                            Story nên ôn trước:
+                            {t('challenges.storiesToReview')}
                         </span>
                         {suggestedStories.slice(0, 2).map((s, i) => (
                             <button
@@ -175,7 +177,7 @@ export default function ActiveChallenges() {
                         style={{ color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--muted-foreground)' }}
                     >
                         <Clock className="w-3 h-3" />
-                        {isOverdue ? 'Đã quá hạn' : `Còn ${daysLeft} ngày`}
+                        {isOverdue ? t('challenges.overdue') : t('challenges.daysLeft').replace('{n}', String(daysLeft))}
                     </div>
                 )}
 
@@ -186,7 +188,7 @@ export default function ActiveChallenges() {
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-[12px] text-white transition-colors hover:opacity-90"
                         style={{ backgroundColor: 'var(--teal)' }}
                     >
-                        Chia sẻ
+                        {t('challenges.share')}
                         <ArrowRight size={13} />
                     </button>
                     <button
@@ -196,7 +198,7 @@ export default function ActiveChallenges() {
                         style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
                     >
                         {skipping ? <Loader2 size={13} className="animate-spin" /> : <SkipForward size={13} />}
-                        Bỏ qua
+                        {t('challenges.skip')}
                     </button>
                 </div>
             </div>

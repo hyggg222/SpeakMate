@@ -3,15 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { X, MessageCircle } from 'lucide-react'
-
-const GOAL_LABELS: Record<string, string> = {
-    interview: 'kỹ năng phỏng vấn',
-    presentation: 'kỹ năng thuyết trình',
-    meeting: 'giao tiếp trong cuộc họp',
-    debate: 'kỹ năng tranh luận',
-}
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function WelcomeBanner() {
+    const { t } = useLanguage()
     const [visible, setVisible] = useState(false)
     const [onboardingName, setOnboardingName] = useState<string | null>(null)
     const [onboardingGoal, setOnboardingGoal] = useState<string | null>(null)
@@ -39,8 +34,9 @@ export default function WelcomeBanner() {
 
     if (!visible) return null
 
-    const goalLabel = onboardingGoal ? GOAL_LABELS[onboardingGoal] : null
-    const displayName = onboardingName && onboardingName !== 'Bạn' ? onboardingName : null
+    const goalLabelKey = onboardingGoal ? `welcome.goalLabel.${onboardingGoal}` : null
+    const goalLabel = goalLabelKey ? t(goalLabelKey) : null
+    const displayName = onboardingName && onboardingName !== 'Bạn' && onboardingName !== 'You' ? onboardingName : null
 
     return (
         <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl text-sm"
@@ -49,30 +45,30 @@ export default function WelcomeBanner() {
             <span style={{ color: 'var(--foreground)', opacity: 0.85 }}>
                 {displayName && goalLabel ? (
                     <>
-                        Chào {displayName}! Hãy{' '}
+                        {t('welcome.greeting')} {displayName}! {t('welcome.cta')}{' '}
                         <Link href="/chat" onClick={dismiss}
                             className="font-semibold text-teal-400 hover:text-teal-300 underline underline-offset-2">
-                            chat với Mentor Ni
+                            {t('welcome.chatWithNi')}
                         </Link>
-                        {' '}để bắt đầu luyện <strong>{goalLabel}</strong>.
+                        {' '}{t('welcome.goalHint')} <strong>{goalLabel}</strong>.
                     </>
                 ) : displayName ? (
                     <>
-                        Chào {displayName}! Hãy{' '}
+                        {t('welcome.greeting')} {displayName}! {t('welcome.cta')}{' '}
                         <Link href="/chat" onClick={dismiss}
                             className="font-semibold text-teal-400 hover:text-teal-300 underline underline-offset-2">
-                            chat với Mentor Ni
+                            {t('welcome.chatWithNi')}
                         </Link>
-                        {' '}để được hướng dẫn.
+                        {' '}{t('welcome.guideHint')}
                     </>
                 ) : (
                     <>
-                        Nếu đây là lần đầu bạn sử dụng SpeakMate, hãy{' '}
+                        {t('welcome.firstTime')}{' '}
                         <Link href="/chat" onClick={dismiss}
                             className="font-semibold text-teal-400 hover:text-teal-300 underline underline-offset-2">
-                            chat với Mentor Ni
+                            {t('welcome.chatWithNi')}
                         </Link>
-                        {' '}để được hướng dẫn.
+                        {' '}{t('welcome.guideHint')}
                     </>
                 )}
             </span>

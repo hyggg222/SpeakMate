@@ -581,12 +581,12 @@ export default function CreateStoryPage() {
                                         </span>
                                         {t('stories.create.structure')}
                                     </h3>
-                                    {fields.map(({ key, label, emoji }) => {
+                                    {fields.map(({ key, labelKey, emoji }) => {
                                         const isMissing = structuredResult?.missingFields?.includes(key);
                                         return (
                                             <div key={key}>
                                                 <label className={`block text-xs font-medium mb-1 ${isMissing ? 'text-amber-600' : 'text-slate-500'}`}>
-                                                    {emoji} {label} {isMissing && <span className="text-amber-500">{t('stories.create.missing')}</span>}
+                                                    {emoji} {t(labelKey)} {isMissing && <span className="text-amber-500">{t('stories.create.missing')}</span>}
                                                 </label>
                                                 <textarea
                                                     value={structured?.[key] || ""}

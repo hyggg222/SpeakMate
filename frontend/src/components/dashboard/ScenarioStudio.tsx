@@ -4,12 +4,14 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Palette, Image as ImageIcon, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ScenarioStudio() {
+    const { t } = useLanguage();
     return (
         <section className="mt-8">
             <h2 className="text-[18px] font-bold text-foreground mb-4">
-                Phòng Lab Sáng tạo (Studio) 🎨
+                {t('studio.title')}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -25,10 +27,10 @@ export default function ScenarioStudio() {
                                 <Plus className="w-6 h-6 text-violet-400" />
                             </div>
                             <h3 className="text-[16px] font-bold text-foreground">
-                                Tạo bối cảnh mới
+                                {t('studio.createNew')}
                             </h3>
                             <p className="text-[12px] text-muted-foreground mt-1">
-                                Tự định nghĩa tình huống luyện tập của riêng bạn.
+                                {t('studio.createNew.desc')}
                             </p>
                         </div>
                     </motion.div>
@@ -46,10 +48,10 @@ export default function ScenarioStudio() {
                                 <ImageIcon className="w-6 h-6 text-teal-400" />
                             </div>
                             <h3 className="text-[16px] font-bold text-foreground">
-                                Quản lý Tài nguyên (Assets)
+                                {t('studio.assets')}
                             </h3>
                             <p className="text-[12px] text-muted-foreground mt-1">
-                                Cập nhật Mentor Ni và hình ảnh bối cảnh (Dev Tool).
+                                {t('studio.assets.desc')}
                             </p>
 
                             <div className="mt-3 flex gap-1">

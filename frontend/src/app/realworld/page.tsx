@@ -25,7 +25,8 @@ interface EvalResult {
     proficiencyLevel?: string
     language: StageFeedback
     content: StageFeedback
-    emotion: StageFeedback
+    fluency?: StageFeedback
+    emotion?: StageFeedback
 }
 
 const PROFICIENCY_COLORS: Record<string, string> = {
@@ -54,17 +55,17 @@ export default function RealWorldPage() {
     const handleFile = useCallback((f: File) => {
         const maxSize = 10 * 1024 * 1024 // 10MB
         if (f.size > maxSize) {
-            setErrorMsg('File quá lớn. Tối đa 10MB.')
+            setErrorMsg(t('realworld.error.fileTooLarge'))
             return
         }
         const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/ogg']
-        if (!validTypes.some(t => f.type.includes(t.split('/')[1]))) {
-            setErrorMsg('Định dạng không hỗ trợ. Vui lòng dùng MP3, WAV, M4A, hoặc WebM.')
+        if (!validTypes.some(vt => f.type.includes(vt.split('/')[1]))) {
+            setErrorMsg(t('realworld.error.unsupportedFormat'))
             return
         }
         setFile(f)
         setErrorMsg('')
-    }, [])
+    }, [t])
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()
@@ -157,11 +158,13 @@ export default function RealWorldPage() {
 
                         {/* 3-Stage Scores */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {[
+                            {([
                                 { label: t('eval.language'), stage: evaluation.language, color: '#3b82f6', bgClass: 'bg-blue-500' },
                                 { label: t('eval.content'), stage: evaluation.content, color: '#f59e0b', bgClass: 'bg-amber-500' },
-                                { label: t('eval.emotion'), stage: evaluation.emotion, color: '#f87171', bgClass: 'bg-red-400' },
-                            ].map(({ label, stage, color, bgClass }) => (
+                                { label: t('eval.fluency'), stage: (evaluation.fluency || evaluation.emotion) as StageFeedback, color: '#f87171', bgClass: 'bg-red-400' },
+                            ] as { label: string; stage: StageFeedback; color: string; bgClass: string }[])
+                                .filter(({ stage }) => !!stage)
+                                .map(({ label, stage, color, bgClass }) => (
                                 <div key={label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                                     <div className="flex justify-between items-center mb-3">
                                         <span className="text-sm font-bold text-slate-700">{label}</span>
@@ -178,9 +181,9 @@ export default function RealWorldPage() {
                                                 <div key={key} className="flex items-center gap-2">
                                                     <span className="text-[10px] text-slate-500 w-20 text-right">{subScoreLabel(key)}</span>
                                                     <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: color }} />
+                                                        <div className="h-full rounded-full" style={{ width: `${Number(val)}%`, backgroundColor: color }} />
                                                     </div>
-                                                    <span className="text-[10px] font-semibold text-slate-600 w-6">{val}</span>
+                                                    <span className="text-[10px] font-semibold text-slate-600 w-6">{Number(val)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -191,7 +194,7 @@ export default function RealWorldPage() {
                                         <div className="mb-2">
                                             <p className="text-[10px] font-semibold text-emerald-600 mb-1">{t('eval.strengths')}:</p>
                                             <ul className="text-[11px] text-slate-600 space-y-0.5 pl-3 list-disc marker:text-emerald-400">
-                                                {stage.strengths.slice(0, 3).map((s, i) => <li key={i}>{s}</li>)}
+                                                {stage.strengths.slice(0, 3).map((s: string, i: number) => <li key={i}>{s}</li>)}
                                             </ul>
                                         </div>
                                     )}
@@ -201,7 +204,7 @@ export default function RealWorldPage() {
                                         <div>
                                             <p className="text-[10px] font-semibold text-rose-500 mb-1">{t('eval.improvements')}:</p>
                                             <ul className="text-[11px] text-slate-600 space-y-0.5 pl-3 list-disc marker:text-rose-400">
-                                                {stage.weaknesses.slice(0, 3).map((w, i) => <li key={i}>{w.issue}</li>)}
+                                                {stage.weaknesses.slice(0, 3).map((w: any, i: number) => <li key={i}>{w.issue}</li>)}
                                             </ul>
                                         </div>
                                     )}

@@ -1,7 +1,11 @@
-export const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    draft: { label: "Bản nháp", color: "#94a3b8" },
-    ready: { label: "Sẵn sàng", color: "#10b981" },
-    "battle-tested": { label: "Thực chiến", color: "#f59e0b" },
+/**
+ * Status colors for story entries. Labels are resolved via i18n keys
+ * `storybank.status.{draft|ready|battle}` at render time.
+ */
+export const STATUS_LABELS: Record<string, { labelKey: string; color: string }> = {
+    draft: { labelKey: "storybank.status.draft", color: "#94a3b8" },
+    ready: { labelKey: "storybank.status.ready", color: "#10b981" },
+    "battle-tested": { labelKey: "storybank.status.battle", color: "#f59e0b" },
 };
 
 export const FRAMEWORK_COLORS: Record<string, string> = {
@@ -16,23 +20,27 @@ export const FRAMEWORK_OPTIONS = [
     { value: "CAR", label: "CAR", description: "Challenge, Action, Result" },
 ] as const;
 
-export const STRUCTURED_FIELDS: Record<string, { key: string; label: string; emoji: string }[]> = {
+/**
+ * Field definitions per framework. `labelKey` resolves to a translated
+ * label via t(`storybank.field.${key}`).
+ */
+export const STRUCTURED_FIELDS: Record<string, { key: string; labelKey: string; emoji: string }[]> = {
     STAR: [
-        { key: "situation", label: "Situation — Bối cảnh", emoji: "📍" },
-        { key: "task", label: "Task — Nhiệm vụ", emoji: "🎯" },
-        { key: "action", label: "Action — Hành động", emoji: "⚡" },
-        { key: "result", label: "Result — Kết quả", emoji: "🏆" },
+        { key: "situation", labelKey: "storybank.field.situation", emoji: "📍" },
+        { key: "task", labelKey: "storybank.field.task", emoji: "🎯" },
+        { key: "action", labelKey: "storybank.field.action", emoji: "⚡" },
+        { key: "result", labelKey: "storybank.field.result", emoji: "🏆" },
     ],
     PREP: [
-        { key: "point", label: "Point — Luận điểm", emoji: "💡" },
-        { key: "reason", label: "Reason — Lý do", emoji: "📋" },
-        { key: "example", label: "Example — Ví dụ", emoji: "📖" },
-        { key: "point2", label: "Point — Kết luận", emoji: "🎯" },
+        { key: "point", labelKey: "storybank.field.point", emoji: "💡" },
+        { key: "reason", labelKey: "storybank.field.reason", emoji: "📋" },
+        { key: "example", labelKey: "storybank.field.example", emoji: "📖" },
+        { key: "point2", labelKey: "storybank.field.point2", emoji: "🎯" },
     ],
     CAR: [
-        { key: "challenge", label: "Challenge — Thách thức", emoji: "🔥" },
-        { key: "action", label: "Action — Hành động", emoji: "⚡" },
-        { key: "result", label: "Result — Kết quả", emoji: "🏆" },
+        { key: "challenge", labelKey: "storybank.field.challenge", emoji: "🔥" },
+        { key: "action", labelKey: "storybank.field.action", emoji: "⚡" },
+        { key: "result", labelKey: "storybank.field.result", emoji: "🏆" },
     ],
 };
 
