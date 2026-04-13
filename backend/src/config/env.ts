@@ -9,7 +9,18 @@ export const config = {
     geminiApiKey: process.env.GEMINI_API_KEY || '',
     supabaseUrl: process.env.SUPABASE_URL || '',
     supabaseKey: process.env.SUPABASE_SERVICE_KEY || '',
-    nodeEnv: process.env.NODE_ENV || 'development'
+    nodeEnv: process.env.NODE_ENV || 'development',
+    ttsServiceUrl: process.env.TTS_SERVICE_URL || 'http://localhost:8000',
+    sttServiceUrl: process.env.STT_SERVICE_URL || 'http://localhost:8001',
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+    ollamaModel: process.env.OLLAMA_MODEL || 'vistral-7b-chat',
+    // Unified Cloud Pipeline (Modal)
+    modalInteractUrl: process.env.MODAL_INTERACT_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-interact.modal.run",
+    modalTranscribeUrl: process.env.MODAL_TRANSCRIBE_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-transcribe.modal.run",
+    // LiveKit credentials
+    livekitUrl: process.env.LIVEKIT_URL || 'wss://speakmate-yu7nfde8.livekit.cloud',
+    livekitApiKey: process.env.LIVEKIT_API_KEY || 'APItNUc8VAU8Frg',
+    livekitApiSecret: process.env.LIVEKIT_API_SECRET || 'V7RaxJa5U57VVz2xj8WhfMdeZ5DQSZfgIDbpqRiUgqcA',
 };
 
 // Simple validation

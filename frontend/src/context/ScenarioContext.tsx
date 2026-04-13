@@ -1,13 +1,13 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { FullScenarioContext } from '../types/api.contracts';
 
 interface ScenarioContextType {
     scenario: FullScenarioContext | null;
     setScenario: (scenario: FullScenarioContext | null) => void;
     history: any[];
-    setHistory: (history: any[]) => void;
+    setHistory: Dispatch<SetStateAction<any[]>>;
     audioFileKeys: string[];
     setAudioFileKeys: (keys: string[]) => void;
 }

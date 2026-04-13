@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AvatarGreeting() {
   const [greeting, setGreeting] = useState('');
@@ -14,9 +15,26 @@ export default function AvatarGreeting() {
     else if (hour < 18) setGreeting('Chào buổi chiều');
     else setGreeting('Chào buổi tối');
 
-    // Load user name from localStorage (or default)
-    const savedName = localStorage.getItem('speakmate_username');
-    if (savedName) setUserName(savedName);
+    // Try Supabase auth first, fallback to localStorage
+    async function loadUserName() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.user_metadata?.full_name) {
+          setUserName(user.user_metadata.full_name);
+          return;
+        }
+        if (user?.email) {
+          setUserName(user.email.split('@')[0]);
+          return;
+        }
+      } catch {
+        // Not authenticated
+      }
+      const savedName = localStorage.getItem('speakmate_username');
+      if (savedName) setUserName(savedName);
+    }
+    loadUserName();
   }, []);
 
   // Motivational messages rotate

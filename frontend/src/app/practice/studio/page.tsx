@@ -1,13 +1,31 @@
 'use client'
 
-import { ArrowLeft, Home, Settings, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Home, Settings, RotateCcw, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { apiClient } from '@/lib/apiClient'
+import { useScenario } from '@/context/ScenarioContext'
+import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 
 export default function PresentationStudioPage() {
-    const [isRecording, setIsRecording] = useState(false)
+    const router = useRouter()
+    const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys } = useScenario()
+    const { isRecording, startRecording, stopRecording } = useAudioRecorder()
+
     const [time, setTime] = useState(0) // time in seconds
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Accumulated audio blobs across pause/resume cycles (Stage Mode = one long monologue)
+    const collectedBlobs = useRef<Blob[]>([])
+
+    // Redirect to setup if no scenario is loaded
+    useEffect(() => {
+        if (!scenario) {
+            router.push('/setup')
+        }
+    }, [scenario, router])
 
     // Timer logic
     useEffect(() => {
@@ -28,14 +46,79 @@ export default function PresentationStudioPage() {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
 
-    const toggleRecording = () => {
-        setIsRecording(!isRecording)
-    }
+    const toggleRecording = useCallback(async () => {
+        if (isSubmitting) return
 
-    const resetRecording = () => {
-        setIsRecording(false)
+        if (isRecording) {
+            // Pause: stop the current recording segment and collect the blob
+            const audioBlob = await stopRecording()
+            if (audioBlob) {
+                collectedBlobs.current.push(audioBlob)
+            }
+        } else {
+            // Start/resume recording
+            await startRecording()
+        }
+    }, [isRecording, isSubmitting, startRecording, stopRecording])
+
+    const resetRecording = useCallback(async () => {
+        if (isSubmitting) return
+
+        if (isRecording) {
+            await stopRecording() // discard the current segment
+        }
+        collectedBlobs.current = []
         setTime(0)
-    }
+    }, [isRecording, isSubmitting, stopRecording])
+
+    const handleComplete = useCallback(async () => {
+        if (isSubmitting) return
+
+        // Stop recording if currently active and collect the final segment
+        if (isRecording) {
+            const audioBlob = await stopRecording()
+            if (audioBlob) {
+                collectedBlobs.current.push(audioBlob)
+            }
+        }
+
+        // Check that we have audio to send
+        if (collectedBlobs.current.length === 0) {
+            alert('Bạn chưa ghi âm gì. Hãy nhấn nút ghi âm trước khi hoàn thành.')
+            return
+        }
+
+        setIsSubmitting(true)
+
+        try {
+            // Merge all collected blobs into a single blob
+            const mimeType = collectedBlobs.current[0]?.type || 'audio/webm'
+            const mergedBlob = new Blob(collectedBlobs.current, { type: mimeType })
+
+            // Send the complete monologue to backend
+            const result = await apiClient.interactAudio(mergedBlob, scenario?.scenario, history)
+
+            // Store the response in context
+            const updatedHistory = [
+                ...history,
+                { speaker: 'User', line: result.userTranscript },
+                { speaker: 'AI', line: result.botResponse },
+            ]
+            setHistory(updatedHistory)
+
+            if (result.audioUploadedKey) {
+                setAudioFileKeys([...audioFileKeys, result.audioUploadedKey])
+            }
+
+            // Navigate to Q&A / evaluation page
+            router.push('/practice/qa')
+        } catch (error) {
+            console.error('Lỗi khi gửi bài nói:', error)
+            alert('Có lỗi xảy ra khi gửi bài nói. Vui lòng thử lại.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }, [isRecording, isSubmitting, stopRecording, scenario, history, setHistory, audioFileKeys, setAudioFileKeys, router])
 
     // Generate random heights for the waveform
     const generateWaveform = () => {
@@ -49,7 +132,6 @@ export default function PresentationStudioPage() {
                     className={`w-1.5 md:w-2 mx-[2px] rounded-full bg-teal-400 ${isRecording ? 'opacity-100 transition-all duration-150 ease-in-out' : 'opacity-40 transition-all duration-300'}`}
                     style={{
                         height: `${baseHeight}px`,
-                        // Random delay for CSS animation effect if we were to use keyframes
                     }}
                 />
             )
@@ -145,7 +227,8 @@ export default function PresentationStudioPage() {
                             {/* Reset Button */}
                             <button
                                 onClick={resetRecording}
-                                className="flex flex-col items-center gap-3 text-slate-400 hover:text-white transition-colors group"
+                                disabled={isSubmitting}
+                                className="flex flex-col items-center gap-3 text-slate-400 hover:text-white transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 group-hover:bg-slate-700/50 group-hover:border-slate-500 transition-all">
                                     <RotateCcw className="w-5 h-5" />
@@ -155,7 +238,8 @@ export default function PresentationStudioPage() {
                             {/* Main Record/Pause Button */}
                             <button
                                 onClick={toggleRecording}
-                                className="relative flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full group outline-none"
+                                disabled={isSubmitting}
+                                className="relative flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full group outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {/* Outer glowing ring */}
                                 <div className={`absolute inset-0 rounded-full border-[3px] transition-all duration-300
@@ -187,18 +271,20 @@ export default function PresentationStudioPage() {
 
                         {/* Helper Text */}
                         <p className="mt-8 text-sm text-slate-400 font-medium tracking-wide">
-                            {isRecording ? "Đang ghi âm..." : "Nhấn để bắt đầu / tạm dừng bài nói"}
+                            {isSubmitting ? "Đang xử lý bài nói..." : isRecording ? "Đang ghi âm..." : "Nhấn để bắt đầu / tạm dừng bài nói"}
                         </p>
                     </div>
 
                     {/* Right: Complete Button */}
                     <div className="w-auto flex justify-end">
-                        <Link
-                            href="/practice/qa"
-                            className="px-8 py-3.5 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-full shadow-lg shadow-teal-500/20 transition-all uppercase tracking-wide whitespace-nowrap"
+                        <button
+                            onClick={handleComplete}
+                            disabled={isSubmitting}
+                            className="px-8 py-3.5 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-full shadow-lg shadow-teal-500/20 transition-all uppercase tracking-wide whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
+                            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                             Hoàn thành
-                        </Link>
+                        </button>
                     </div>
 
                 </div>

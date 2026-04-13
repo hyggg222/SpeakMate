@@ -2,30 +2,45 @@
 
 import { CalendarDays } from "lucide-react";
 import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/apiClient";
 
 export default function StreakCard() {
   const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('speakmate_history');
-      if (stored) {
-        const sessions = JSON.parse(stored);
-        // Calculate streak: count consecutive days with sessions
-        const uniqueDays = new Set(
-          sessions.map((s: any) => {
-            // Extract date part (before ' – ')
-            const datePart = s.date?.split(' – ')[0];
-            return datePart;
-          }).filter(Boolean)
-        );
-
-        // Simple streak: count unique practice days
-        setStreak(uniqueDays.size);
+    async function fetchStreak() {
+      try {
+        // Try API first (authenticated users)
+        const stats = await apiClient.getUserStats();
+        if (stats) {
+          setStreak(stats.currentStreak);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Fall through to localStorage
       }
-    } catch (e) {
-      console.error("Failed to calculate streak", e);
+
+      // Fallback: localStorage (guest mode)
+      try {
+        const stored = localStorage.getItem('speakmate_history');
+        if (stored) {
+          const sessions = JSON.parse(stored);
+          const uniqueDays = new Set(
+            sessions.map((s: any) => {
+              const datePart = s.date?.split(' – ')[0];
+              return datePart;
+            }).filter(Boolean)
+          );
+          setStreak(uniqueDays.size);
+        }
+      } catch (e) {
+        console.error("Failed to calculate streak", e);
+      }
+      setLoading(false);
     }
+    fetchStreak();
   }, []);
 
   return (
@@ -38,14 +53,23 @@ export default function StreakCard() {
           <CalendarDays size={20} style={{ color: "#22c55e" }} />
         </div>
         <div>
-          <p className="text-[18px] font-bold" style={{ color: "var(--foreground)" }}>
-            <span style={{ color: "var(--teal)" }}>{streak}</span> Day(s) Streak
-          </p>
-          <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-            {streak > 0
-              ? `Tuyệt vời! Tiếp tục duy trì nhé! 🔥`
-              : 'Hoàn thành nhiệm vụ để bắt đầu streak nè :)'}
-          </p>
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="h-5 w-28 rounded bg-slate-200 mb-1" />
+              <div className="h-3 w-36 rounded bg-slate-200" />
+            </div>
+          ) : (
+            <>
+              <p className="text-[18px] font-bold" style={{ color: "var(--foreground)" }}>
+                <span style={{ color: "var(--teal)" }}>{streak}</span> Day(s) Streak
+              </p>
+              <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                {streak > 0
+                  ? `Tuyệt vời! Tiếp tục duy trì nhé! 🔥`
+                  : 'Hoàn thành nhiệm vụ để bắt đầu streak nè :)'}
+              </p>
+            </>
+          )}
         </div>
       </div>
 

@@ -3,6 +3,28 @@ import { GoogleGenAI } from '@google/genai';
 import { EvaluationRubric } from '../contracts/data.contracts';
 
 /**
+ * Strips bracketed placeholders from LLM output.
+ */
+function sanitizeText(text: string): string {
+    let result = text.replace(/\[(?:tên của bạn|tên bạn|your name|tên|name|họ tên)\]/gi, 'bạn');
+    result = result.replace(/\[[^\]]{1,30}\]/g, '');
+    return result.replace(/\s{2,}/g, ' ').trim();
+}
+
+function sanitizeObj(obj: any): any {
+    if (typeof obj === 'string') return sanitizeText(obj);
+    if (Array.isArray(obj)) return obj.map(sanitizeObj);
+    if (obj && typeof obj === 'object') {
+        const result: any = {};
+        for (const key of Object.keys(obj)) {
+            result[key] = sanitizeObj(obj[key]);
+        }
+        return result;
+    }
+    return obj;
+}
+
+/**
  * AnalystAgent evaluates the user's performance after a practice session concludes.
  * It uses the Gemini 2.0 Flash model to produce structured multimodal analysis.
  */
@@ -60,7 +82,7 @@ Analysis Request: Review the transcript and return the JSON report.
 
             const text = response.text || '{}';
             const cleanJson = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanJson);
+            return sanitizeObj(JSON.parse(cleanJson));
         } catch (error) {
             console.error("[AnalystAgent] Session evaluation failed:", error);
             throw error;
