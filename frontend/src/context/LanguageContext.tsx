@@ -19,23 +19,31 @@ const LanguageContext = createContext<LanguageContextValue>({
 })
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    if (typeof window === 'undefined') return 'vi'
-    return (localStorage.getItem(LS_KEY) as Lang) || 'vi'
-  })
+  // Always start at 'vi' on both server and client to keep SSR HTML in sync
+  // with the first client render. The user's saved preference is applied
+  // in a useEffect AFTER hydration so React can safely re-render the tree.
+  const [lang, setLangState] = useState<Lang>('vi')
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LS_KEY) as Lang | null
+      if (saved === 'en' || saved === 'vi') {
+        setLangState(saved)
+        document.documentElement.lang = saved === 'en' ? 'en' : 'vi'
+      }
+    } catch {
+      // localStorage unavailable — keep default
+    }
+  }, [])
 
   const setLang = (l: Lang) => {
-    localStorage.setItem(LS_KEY, l)
+    try { localStorage.setItem(LS_KEY, l) } catch { /* ignore */ }
     document.documentElement.lang = l === 'en' ? 'en' : 'vi'
     setLangState(l)
   }
 
   const t = (key: string): string =>
     translations[lang][key] ?? translations['vi'][key] ?? key
-
-  useEffect(() => {
-    document.documentElement.lang = lang === 'en' ? 'en' : 'vi'
-  }, [lang])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
