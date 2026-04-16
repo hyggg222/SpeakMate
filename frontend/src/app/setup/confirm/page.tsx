@@ -3,19 +3,37 @@
 import { ArrowLeft, Home, Settings, Edit3, Plus, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScenario } from '@/context/ScenarioContext'
+import { apiClient } from '@/lib/apiClient'
+import { FEATURE_FLAGS } from '@/lib/featureFlags'
 
 export default function ContextConfirmationPage() {
-    const { scenario } = useScenario()
+    const { scenario, livekitSession, setLivekitSession } = useScenario()
     const router = useRouter()
+    const hasPreCreatedRef = useRef(false)
 
     useEffect(() => {
         if (!scenario) {
             router.push('/setup')
+            return
         }
-    }, [scenario, router])
+
+        // Pre-create LiveKit session so the agent starts loading while user reviews
+        if (FEATURE_FLAGS.useLiveKit && !livekitSession && !hasPreCreatedRef.current) {
+            hasPreCreatedRef.current = true
+            apiClient.createLivekitSession(scenario.scenario || scenario as any, [])
+                .then(data => {
+                    setLivekitSession({ token: data.token, livekitUrl: data.livekitUrl })
+                    console.log('[Confirm] LiveKit session pre-created, agent loading...')
+                })
+                .catch(e => {
+                    console.error('[Confirm] Pre-create LiveKit session failed:', e)
+                    hasPreCreatedRef.current = false
+                })
+        }
+    }, [scenario, router, livekitSession, setLivekitSession])
 
     if (!scenario) {
         return (
@@ -84,28 +102,28 @@ export default function ContextConfirmationPage() {
                         </div>
 
                         <div className="bg-white rounded-3xl p-8 pt-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col text-[15px] leading-relaxed relative z-0">
-                            <h2 className="text-xl font-bold text-slate-800 mb-6">{scenario.scenario.scenarioName}</h2>
+                            <h2 className="text-xl font-bold text-slate-800 mb-6">{scenario.scenario?.scenarioName || (scenario as any).scenarioName}</h2>
                             <div className="space-y-5 text-slate-700 flex-1">
                                 <div>
                                     <strong className="text-slate-900 block mb-1">Vai trò đối phương (The Voice):</strong>
-                                    <p className="text-sm text-slate-600">{scenario.scenario.interviewerPersona}</p>
+                                    <p className="text-sm text-slate-600">{scenario.scenario?.interviewerPersona || (scenario as any).interviewerPersona}</p>
                                 </div>
                                 <div>
                                     <strong className="text-slate-900 block mb-1">Mục tiêu luyện tập:</strong>
                                     <ul className="list-disc pl-5 text-sm space-y-1 text-slate-600">
-                                        {scenario.scenario.goals.map((g, i) => <li key={i}>{g}</li>)}
+                                        {(scenario.scenario?.goals || (scenario as any).goals || []).map((g: string, i: number) => <li key={i}>{g}</li>)}
                                     </ul>
                                 </div>
                                 <div>
                                     <strong className="text-slate-900 block mb-1">Câu mở đầu của Đối phương:</strong>
                                     <p className="text-sm italic bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600">
-                                        &ldquo;{scenario.scenario.startingTurns[0]?.line}&rdquo;
+                                        &ldquo;{(scenario.scenario?.startingTurns || (scenario as any).startingTurns || [])[0]?.line}&rdquo;
                                     </p>
                                 </div>
                                 <div>
                                     <strong className="text-slate-900 block mb-1">Tiêu chí đánh giá:</strong>
                                     <div className="flex flex-wrap gap-2 mt-1">
-                                        {scenario.evalRules.categories.map((cat, i) => (
+                                        {(scenario.evalRules?.categories || []).map((cat: any, i: number) => (
                                             <span key={i} className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-medium border border-teal-100">
                                                 {cat.category}
                                             </span>

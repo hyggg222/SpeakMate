@@ -95,3 +95,39 @@ export const adjustScenarioSchema = z.object({
 export const suggestionsSchema = z.object({
     currentScenario: nonEmptyObject('currentScenario'),
 });
+
+/**
+ * POST /api/practice/mentor-chat
+ * Requires: scenario, evaluationReport, userMessage, conversationHistory
+ */
+export const mentorChatSchema = z.object({
+    scenario: nonEmptyObject('scenario'),
+    evaluationReport: nonEmptyObject('evaluationReport'),
+    userMessage: z.string().min(1, 'Tin nhắn không được để trống'),
+    conversationHistory: z.array(z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string()
+    }))
+});
+
+/**
+ * POST /api/practice/challenge/generate
+ */
+export const generateChallengeSchema = z.object({
+    sessionId: z.string().uuid('Invalid Session ID')
+});
+
+/**
+ * POST /api/practice/challenge/deadline
+ */
+export const setDeadlineSchema = z.object({
+    challengeId: z.string().uuid('Invalid Challenge ID'),
+    deadline: z.string().datetime('Must be valid ISO8601 datetime')
+});
+
+/**
+ * POST /api/practice/challenge/report
+ */
+export const reportChallengeSchema = z.object({
+    challengeId: z.string().uuid('Invalid Challenge ID')
+});

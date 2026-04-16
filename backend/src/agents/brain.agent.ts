@@ -12,64 +12,38 @@ const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
  * Strips bracketed placeholders like [tên của bạn] from any string.
  */
 function sanitizePlaceholders(text: string): string {
-    // Replace name-related bracketed placeholders with "bạn"
-    let result = text.replace(/\[(?:tên của bạn|tên bạn|tên người dùng|your name|tên|name|họ tên|user name|người dùng)[^\]]*\]/gi, 'bạn');
-    // Remove any remaining bracketed placeholders (addresses, topics, etc.)
-    result = result.replace(/\[[^\]]{1,40}\]/g, '');
-    result = result.replace(/\s{2,}/g, ' ').trim();
-    return result;
+  // Replace name-related bracketed placeholders with "bạn"
+  let result = text.replace(/\[(?:tên của bạn|tên bạn|tên người dùng|your name|tên|name|họ tên|user name|người dùng)[^\]]*\]/gi, 'bạn');
+  // Remove any remaining bracketed placeholders (addresses, topics, etc.)
+  result = result.replace(/\[[^\]]{1,40}\]/g, '');
+  result = result.replace(/\s{2,}/g, ' ').trim();
+  return result;
 }
 
 /**
  * Recursively sanitizes all string values in a scenario object.
  */
 function sanitizeScenario(obj: any): any {
-    if (typeof obj === 'string') return sanitizePlaceholders(obj);
-    if (Array.isArray(obj)) return obj.map(sanitizeScenario);
-    if (obj && typeof obj === 'object') {
-        const result: any = {};
-        for (const key of Object.keys(obj)) {
-            result[key] = sanitizeScenario(obj[key]);
-        }
-        return result;
+  if (typeof obj === 'string') return sanitizePlaceholders(obj);
+  if (Array.isArray(obj)) return obj.map(sanitizeScenario);
+  if (obj && typeof obj === 'object') {
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = sanitizeScenario(obj[key]);
     }
-    return obj;
+    return result;
+  }
+  return obj;
 }
+
+import { PromptService } from '../services/prompt.service';
 
 export class BrainAgent {
   private modelName = 'gemini-2.0-flash';
+  private promptService: PromptService;
 
-  private getSystemPrompt() {
-    return `You are an AI scenario designer for a language practice app.
-Output ONLY a valid JSON object with NO markdown, NO explanation, NO extra text — just raw JSON.
-
-The JSON MUST match this exact structure:
-{
-  "scenario": {
-    "scenarioName": "Short name for this scenario",
-    "jobTitle": "optional job title",
-    "topic": "optional topic",
-    "interviewerPersona": "Brief description of the AI partner's personality and style",
-    "goals": ["Goal 1 for the user to achieve", "Goal 2"],
-    "startingTurns": [
-      { "speaker": "AI", "line": "Opening line the AI partner says first", "emotion": "neutral" },
-      { "speaker": "User", "line": "Expected response from the user", "expectedUserResponse": "behavioral" }
-    ]
-  },
-  "evalRules": {
-    "categories": [
-      { "category": "Sự tự tin (Confidence)", "weight": 40, "description": "Mức độ tự nhiên, thoải mái khi giao tiếp" },
-      { "category": "Mạch lạc (Flow)", "weight": 30, "description": "Nhịp điệu giao tiếp không bị ngập ngừng quá lâu" },
-      { "category": "Từ vựng (Vocabulary)", "weight": 30, "description": "Sử dụng từ ngữ đời thường, gần gũi" }
-    ]
-  }
-}
-
-Adapt scenario content based on the user's goal. This is a "Safe Mode" practice, meaning the focus is on a comfortable, low-pressure conversational environment. Respond in Vietnamese inside string values.
-
-CRITICAL RULES:
-1. Output ONLY the JSON object, nothing else.
-2. NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], [topic], [địa điểm], etc. Instead, invent concrete names, places, and details that fit the scenario naturally. For example, use "bạn" or a realistic Vietnamese name instead of [tên của bạn].`;
+  constructor() {
+    this.promptService = new PromptService();
   }
 
   /**
@@ -86,7 +60,7 @@ CRITICAL RULES:
         model: this.modelName,
         contents: `User Goal: ${userRequirement}`,
         config: {
-          systemInstruction: this.getSystemPrompt(),
+          systemInstruction: this.promptService.getScenarioSystemPrompt(),
           responseMimeType: "application/json",
         }
       });
@@ -158,7 +132,7 @@ NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], e
         model: this.modelName,
         contents: prompt,
         config: {
-          systemInstruction: this.getSystemPrompt(),
+          systemInstruction: this.promptService.getScenarioSystemPrompt(),
           responseMimeType: "application/json",
         }
       });
@@ -199,6 +173,33 @@ Output ONLY a JSON array of 3 strings, no markdown. Example: ["Thêm câu hỏi 
     } catch (error) {
       console.error("[BrainAgent] Failed to generate suggestions:", error);
       return ["Thêm nhân vật phản biện", "Bối cảnh hội trường lớn", "Khán giả là chuyên gia"];
+    }
+  }
+
+  /**
+   * Phase 3: Generates a Real-world Challenge from user weaknesses.
+   */
+  public async generateChallenge(scenario: any, evaluationReport: any): Promise<any> {
+    try {
+      const prompt = `
+Scenario: ${JSON.stringify(scenario)}
+Evaluation Report: ${JSON.stringify(evaluationReport)}
+      `;
+
+      const response = await genAI.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          systemInstruction: this.promptService.getGamificationSystemPrompt(),
+          responseMimeType: "application/json",
+          temperature: 0.8,
+        }
+      });
+      const jsonStr = response.text || "{}";
+      return JSON.parse(jsonStr);
+    } catch (error) {
+      console.error("[BrainAgent] Failed to generate challenge:", error);
+      throw error;
     }
   }
 }

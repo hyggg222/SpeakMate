@@ -17,6 +17,8 @@ export const config = {
     // Unified Cloud Pipeline (Modal)
     modalInteractUrl: process.env.MODAL_INTERACT_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-interact.modal.run",
     modalTranscribeUrl: process.env.MODAL_TRANSCRIBE_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-transcribe.modal.run",
+    // Internal API (Modal worker → backend)
+    internalApiKey: process.env.INTERNAL_API_KEY || '',
     // LiveKit credentials
     livekitUrl: process.env.LIVEKIT_URL || 'wss://speakmate-yu7nfde8.livekit.cloud',
     livekitApiKey: process.env.LIVEKIT_API_KEY || 'APItNUc8VAU8Frg',

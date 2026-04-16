@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { BrainAgent } from '../agents/brain.agent';
 import { VoiceAgent } from '../agents/voice.agent';
 import { AnalystAgent } from '../agents/analyst.agent';
+import { MentorAgent } from '../agents/mentor.agent';
 import { StorageService } from '../services/storage.service';
 import { DatabaseService } from '../services/database.service';
 import { AudioService } from '../services/audio.service';
@@ -13,6 +14,7 @@ import fetch from 'node-fetch';
 const brainAgent = new BrainAgent();
 const voiceAgent = new VoiceAgent();
 const analystAgent = new AnalystAgent();
+const mentorAgent = new MentorAgent();
 const storageService = new StorageService();
 const databaseService = new DatabaseService();
 const audioService = new AudioService();
@@ -25,13 +27,7 @@ const livekitService = new LiveKitService();
  */
 export class PracticeController {
 
-    /**
-     * Phase 1: Scenario Setup
-     * Initiates the BrainAgent to design a custom practice scenario based on user goals.
-     *
-     * @param {Request} req - Express request containing `userGoal`.
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 setupScenario] ...
     public async setupScenario(req: Request, res: Response): Promise<void> {
         try {
             const { userGoal } = req.body;
@@ -40,7 +36,6 @@ export class PracticeController {
                 return;
             }
 
-            // BrainAgent designs the scenario structure based on raw input
             const scenarioContext: FullScenarioContext = await brainAgent.generateScenario(userGoal);
             res.status(200).json({ data: scenarioContext });
         } catch (err: any) {
@@ -49,24 +44,34 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 1 (LiveKit): Create Session Token for Streaming
-     * Connects frontend users to the Modal LiveKitAgentWorker.
-     */
+    // [Step 474 createLivekitSession] ...
     public async createLivekitSession(req: Request, res: Response): Promise<void> {
         try {
             const { scenarioStr, conversationHistoryStr } = req.body;
-            // The auth middleware guarantees req.user if present
-            // We use username 'bạn' if unauthenticated
             const userName = req.user?.email?.split('@')[0] || 'bạn';
             const identity = `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
             const roomName = `speakmate-${Date.now()}`;
 
-            const token = await livekitService.generateToken(roomName, identity, userName, scenarioStr, conversationHistoryStr);
+            let scenarioContext;
+            try {
+                const scenario = JSON.parse(scenarioStr || '{}');
+                scenarioContext = { scenario, evalRules: { categories: [] } };
+            } catch {
+                scenarioContext = { scenario: {}, evalRules: { categories: [] } };
+            }
+
+            const sessionId = await databaseService.createSession(
+                req.user?.id || null,
+                'safe',
+                scenarioContext
+            );
+
+            const token = await livekitService.generateToken(roomName, identity, sessionId);
 
             res.status(200).json({
                 token,
                 roomName,
+                sessionId,
                 livekitUrl: config.livekitUrl
             });
         } catch (err) {
@@ -75,17 +80,9 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 2: Audio Interaction (Split-Stream Handling)
-     * Processes user audio input, handles STT, generates AI response, converts AI response to TTS,
-     * and asynchronously uploads the high-fidelity user audio for later analysis.
-     *
-     * @param {Request} req - Express request containing multipart form data (audio file + JSON strings).
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 interactAudio] ...
     public async interactAudio(req: Request, res: Response): Promise<void> {
         try {
-            // Multer parses the incoming audio file into req.file
             const audioFile = req.file;
             const { scenarioStr, conversationHistoryStr } = req.body;
 
@@ -94,7 +91,6 @@ export class PracticeController {
                 return;
             }
 
-            // Process MIME Type and handle Safari `audio/mp4` transcoding requirements
             const mimeType = audioFile.mimetype;
             let finalBuffer = audioFile.buffer;
 
@@ -106,13 +102,11 @@ export class PracticeController {
             const scenario = JSON.parse(scenarioStr || '{}');
             const history = JSON.parse(conversationHistoryStr || '[]');
 
-            // STREAM 1: Low-latency execution via VoiceAgent (Multimodal: STT + AI Gen)
             const userName = req.user?.email?.split('@')[0] || undefined;
             const result = await voiceAgent.interactAudioStream(scenario, history, finalBuffer, userName);
             const userTranscriptText = result.userTranscript;
             const botResponseText = result.aiResponse;
 
-            // STREAM 2: Background upload HIGH-FIDELITY audio to Supabase for later evaluation
             const tempFileName = `session_${Date.now()}.wav`;
             storageService.uploadAudio(tempFileName, finalBuffer, 'audio/wav')
                 .then(path => console.log('[PracticeController] Background upload success:', path))
@@ -120,7 +114,6 @@ export class PracticeController {
 
             const botAudioUrl = result.botAudioUrl || '';
 
-            // Respond immediately with transcript, reply, and the unified Cloud audio
             res.status(200).json({
                 userTranscript: userTranscriptText,
                 botResponse: botResponseText,
@@ -133,24 +126,16 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 3: Final Session Analysis
-     * Initiates the AnalystAgent to score and provide feedback for the entire completed session.
-     *
-     * @param {Request} req - Express request containing full transcript and evaluation rubric.
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 evaluateSession] ...
     public async evaluateSession(req: Request, res: Response): Promise<void> {
         try {
             const { rubricStr, audioFileKeys, fullTranscript } = req.body;
             const rubric = JSON.parse(rubricStr || '{}');
 
-            // Generate secure signed URLs to pass valid audio references to the AnalystAgent
             const signedUrls = await Promise.all(
                 (audioFileKeys || []).map((k: string) => storageService.getSignedUrl(k))
             );
 
-            // AnalystAgent evaluates the entire history context
             const report = await analystAgent.evaluateSession(rubric, signedUrls[0] || '', fullTranscript);
 
             res.status(200).json({ evaluationReport: report });
@@ -160,13 +145,7 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 4: Scaffolding Hints
-     * Generates real-time conversational hints when the user is stuck.
-     *
-     * @param {Request} req - Express request containing current scenario and conversation history.
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 generateHints] ...
     public async generateHints(req: Request, res: Response): Promise<void> {
         try {
             const { scenarioStr, conversationHistoryStr } = req.body;
@@ -181,13 +160,7 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 5: Adjust Existing Scenario
-     * Modifies the current scenario based on user adjustments instead of regenerating from scratch.
-     *
-     * @param {Request} req - Express request containing `currentScenario` and `adjustmentText`.
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 adjustScenario] ...
     public async adjustScenario(req: Request, res: Response): Promise<void> {
         try {
             const { currentScenario, adjustmentText } = req.body;
@@ -204,13 +177,7 @@ export class PracticeController {
         }
     }
 
-    /**
-     * Phase 6: Generate Context-Aware Suggestions
-     * Returns dynamic suggestions based on the current scenario to help users refine their context.
-     *
-     * @param {Request} req - Express request containing `currentScenario`.
-     * @param {Response} res - Express response.
-     */
+    // [Step 474 generateSuggestions] ...
     public async generateSuggestions(req: Request, res: Response): Promise<void> {
         try {
             const { currentScenario } = req.body;
@@ -227,10 +194,79 @@ export class PracticeController {
         }
     }
 
-    // ----------------------------------------------------------------
-    // Dashboard / History Endpoints (authRequired)
-    // ----------------------------------------------------------------
+    // [Mentor Chat]
+    public async mentorChat(req: Request, res: Response): Promise<void> {
+        try {
+            const { scenario, evaluationReport, userMessage, conversationHistory } = req.body;
+            if (!scenario || !evaluationReport || !userMessage) {
+                res.status(400).json({ error: 'Missing required chat parameters' });
+                return;
+            }
 
+            const response = await mentorAgent.chat(scenario, evaluationReport, userMessage, conversationHistory || []);
+            res.status(200).json({ data: response });
+        } catch (err: any) {
+            console.error("[PracticeController] Mentor chat failed:", err);
+            res.status(500).json({ error: 'Failed to chat with mentor' });
+        }
+    }
+
+    // [Gamification]
+    public async generateChallenge(req: Request, res: Response): Promise<void> {
+        try {
+            const { sessionId } = req.body;
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+            const session = await databaseService.getSession(sessionId);
+            const evaluation = await databaseService.getEvaluation(sessionId);
+            if (!session || !evaluation) {
+                res.status(400).json({ error: 'Session or Evaluation not found' });
+                return;
+            }
+
+            const challengeData = await brainAgent.generateChallenge(session.scenario, evaluation);
+            const challenge = await databaseService.createChallenge(req.user.id, sessionId, challengeData);
+            res.status(200).json({ data: challenge });
+        } catch (err: any) {
+            console.error("[PracticeController] generateChallenge error:", err);
+            res.status(500).json({ error: 'Failed to generate challenge' });
+        }
+    }
+
+    public async getUserChallenges(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) { res.status(200).json({ data: [] }); return; }
+            const challenges = await databaseService.getUserChallenges(req.user.id);
+            res.status(200).json({ data: challenges });
+        } catch (err) {
+            res.status(500).json({ error: 'Failed to fetch challenges' });
+        }
+    }
+
+    public async setChallengeDeadline(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const { challengeId, deadline } = req.body;
+            await databaseService.setChallengeDeadline(challengeId, req.user.id, deadline);
+            res.status(200).json({ success: true });
+        } catch (err) {
+            res.status(500).json({ error: 'Failed to set deadline' });
+        }
+    }
+
+    public async reportChallenge(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const { challengeId } = req.body;
+            await databaseService.addExp(req.user.id, 50, 'Completed Gamification Challenge');
+            res.status(200).json({ success: true, expEarned: 50, message: "Thử thách hoàn thành! Bạn nhận được 50 EXP." });
+        } catch (err) {
+            console.error("[PracticeController] reportChallenge error:", err);
+            res.status(500).json({ error: 'Failed to report challenge' });
+        }
+    }
+
+    // [Dashboard]
     public async getUserSessions(req: Request, res: Response): Promise<void> {
         try {
             if (!req.user) {

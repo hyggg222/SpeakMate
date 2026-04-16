@@ -139,6 +139,16 @@ RoomEvent.ActiveSpeakersChanged
 
 ---
 
+## Các cải tiến User Experience (UX) mới nhất
+
+### Loading Overlay & Pre-loading (2026-04-13)
+Để triệt tiêu độ trễ "cold-start" (~10-30s) của AI Agent, project đã triển khai:
+- **Pre-loading:** LiveKit Session được khởi tạo ngay khi user ở màn hình `/setup/confirm`. Mobile/Desktop browser bắt đầu handshake với Modal Agent ngay lập tức.
+- **Loading Overlay:** Một lớp phủ toàn màn hình với animation spinner và icon mic hiện ra khi user vào phòng luyện tập. Lớp phủ này chỉ biến mất khi nhận được tín hiệu `agent_ready` từ data channel của agent.
+- **Auto-enable Mic:** Micro chỉ tự động bật sau khi agent đã sẵn sàng hoàn toàn, tránh việc user nói mà không ai nghe.
+
+---
+
 ## Lưu ý khi maintain
 
 - `WebcamPreview` dùng `getUserMedia` — chỉ chạy được trên HTTPS hoặc localhost

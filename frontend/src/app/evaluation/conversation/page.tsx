@@ -52,7 +52,7 @@ export default function ConversationEvaluationPage() {
                         mode: 'Giao tiếp cơ bản',
                         modeColor: 'badge-blue',
                         score: result?.overallScore || 'N/A',
-                        topic: scenario?.scenario?.topic || scenario?.scenario?.scenarioName || 'Luyện tập tự do'
+                        topic: (scenario?.scenario || scenario as any)?.topic || (scenario?.scenario || scenario as any)?.scenarioName || 'Luyện tập tự do'
                     };
                     existing.unshift(newEntry);
                     localStorage.setItem('speakmate_history', JSON.stringify(existing));

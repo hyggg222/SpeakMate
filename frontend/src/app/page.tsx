@@ -4,6 +4,7 @@ import PracticeCards from "@/components/dashboard/PracticeCards";
 import DailyTask from "@/components/dashboard/DailyTask";
 import StreakCard from "@/components/dashboard/StreakCard";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
+import ActiveChallenges from "@/components/dashboard/ActiveChallenges";
 
 export default function Home() {
   return (
@@ -28,6 +29,7 @@ export default function Home() {
           className="w-72 flex-shrink-0 overflow-hidden px-4 pt-4 pb-2 flex flex-col gap-3"
           style={{ borderLeft: "1px solid var(--border)" }}
         >
+          <ActiveChallenges />
           <DailyTask />
           <StreakCard />
           <ActivityCalendar />

@@ -69,12 +69,13 @@ Frontend (apiClient) → Express → authOptional middleware → Zod validate mi
 
 Enabled via feature flag `NEXT_PUBLIC_USE_LIVEKIT=true`. Replaces HTTP round-trip with WebRTC streaming for < 1s latency.
 
-- **Frontend:** `useLiveKitRoom` hook (`hooks/useLiveKitRoom.ts`) — Room connect, mic toggle (always-on + VAD), data channel for transcripts
-- **Backend:** `LiveKitService` (`services/livekit.service.ts`) — JWT token generation with scenario/history metadata; endpoint `POST /livekit-session`
-- **Modal:** `LiveKitAgentWorker` in `modal_pipeline.py` — long-running process connecting to LiveKit Cloud SFU
-  - `_livekit_prewarm()` loads Faster-Whisper + Valtec TTS in subprocess via `proc.userdata`
-  - `_livekit_entrypoint()` reads participant metadata, builds `VoicePipelineAgent` (Silero VAD → Whisper STT → Gemini LLM → Valtec TTS)
-  - Transcripts sent via data channel → frontend updates history in real time
+- **Frontend:** `useLiveKitRoom` hook (`hooks/useLiveKitRoom.ts`) — Room connect, mic toggle (always-on + VAD), data channel for transcripts (handles `agent_ready` signal).
+- **Backend:** `LiveKitService` (`services/livekit.service.ts`) — JWT token generation with scenario/history metadata; endpoint `POST /livekit-session`.
+- **Pre-loading Strategy:** To eliminate cold-start latency, the session is pre-created on the `/setup/confirm` page. The token is stored in `ScenarioContext`.
+- **Modal:** `LiveKitAgentWorker` in `modal_pipeline.py` — long-running process connecting to LiveKit Cloud SFU.
+  - `_livekit_prewarm()` loads Faster-Whisper + Valtec TTS in subprocess via `proc.userdata`.
+  - `_livekit_entrypoint()` reads participant metadata, builds `ManualBridgeAgent`.
+  - `ManualBridgeAgent` performs TTS warmup, publishes track, and signals `agent_ready` via data channel when fully initialized.
 - **Custom plugins:** `livekit_plugins/whisper_stt.py` (wraps Faster-Whisper), `livekit_plugins/valtec_tts.py` (wraps Valtec ZeroShotTTS)
 - **HTTP fallback:** `VoicePipeline` class + `useAudioRecorder` hook still work when flag is off
 
@@ -165,3 +166,16 @@ The agent uses forkserver multiprocessing — entrypoint and prewarm must be mod
 - Modal image needs `nvidia-cublas-cu12` for ctranslate2 (Whisper) and `LD_LIBRARY_PATH` pointing to both nvidia/cu13 (torch JIT) and nvidia/cublas dirs
 - LiveKit agent subprocess needs ~30s and ~4.5GB to initialize (Whisper + Valtec TTS); `num_idle_processes=1` and `initialize_process_timeout=120` are set to prevent OOM/timeout
 - `livekit_plugins/` is copied into the Modal image via `.add_local_dir()` — changes require redeploy
+
+## Quy tắc bắt buộc cho tất cả AI Agent
+
+1. **Test thủ công sau mỗi task:** Khi hoàn tất bất kỳ task nào có thay đổi kiến trúc hoặc code, PHẢI cung cấp hướng dẫn test thủ công cho user, bao gồm:
+   - Lệnh cụ thể cần chạy (terminal commands)
+   - Kết quả mong đợi (expected output)
+   - Cách xác nhận thành công / thất bại
+
+2. **Đọc STATE.md đầu session:** Để biết agent trước làm tới đâu, tránh làm lại hoặc xung đột.
+
+3. **Ghi handoff vào STATE.md cuối session:** Tóm tắt những gì vừa làm, cảnh báo lỗi nếu có, để agent tiếp theo nắm bắt.
+
+4. **Thông báo hoàn thành:** Sau mỗi task, chạy `python .ai/notify.py "Task hoan thanh!"`
