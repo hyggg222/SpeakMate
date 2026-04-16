@@ -24,7 +24,15 @@ export const config = {
     modalTtsUrlChar2: process.env.MODAL_TTS_URL_CHAR2 || '',
     // Wake endpoint — triggers LiveKit agent worker to start on Modal
     modalWakeAgentUrl: process.env.MODAL_WAKE_AGENT_URL || '',
-    // Internal API (Modal worker → backend)
+
+    // RunPod alternative — populated when testing RunPod side-by-side with Modal
+    runpodInteractUrl: process.env.RUNPOD_INTERACT_URL || '',
+    runpodTtsUrlChar1: process.env.RUNPOD_TTS_URL_CHAR1 || '',
+    runpodWakeAgentUrl: process.env.RUNPOD_WAKE_AGENT_URL || '',
+    // Provider switch: "modal" (default) | "runpod"
+    voicePipelineProvider: (process.env.VOICE_PIPELINE_PROVIDER || 'modal').toLowerCase(),
+
+    // Internal API (worker → backend), shared by both Modal and RunPod
     internalApiKey: process.env.INTERNAL_API_KEY || '',
     // LiveKit credentials
     livekitUrl: process.env.LIVEKIT_URL || 'wss://speakmate-yu7nfde8.livekit.cloud',

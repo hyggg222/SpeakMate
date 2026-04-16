@@ -11,7 +11,7 @@ const supabaseKey = config.supabaseKey;
 // Wrap fetch with a timeout so Supabase network failures fail fast (not 75s TCP timeout on Windows)
 function fetchWithTimeout(url: RequestInfo | URL, options?: RequestInit): Promise<Response> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = setTimeout(() => controller.abort(), 20000);
     return (globalThis.fetch as typeof fetch)(url as RequestInfo, {
         ...options,
         signal: controller.signal,
