@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface Turn {
     speaker: 'AI' | 'User'
     line: string
+    confirmed?: boolean
 }
 
 interface FloatingTranscriptsProps {
@@ -67,11 +68,11 @@ export function FloatingTranscripts({
                                 className={`flex ${msg.speaker === 'User' ? 'justify-start' : 'justify-end'}`}
                             >
                                 <div
-                                    className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                                        msg.speaker === 'User'
+                                    className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-all duration-300 ${msg.speaker === 'User'
                                             ? 'bg-slate-700/70 text-slate-200 rounded-tl-sm border border-slate-600/50'
                                             : 'bg-teal-950/70 text-teal-100 rounded-tr-sm border border-teal-800/50'
-                                    }`}
+                                        } ${msg.confirmed === false ? 'opacity-50 grayscale-[0.5]' : 'opacity-100 grayscale-0'
+                                        }`}
                                 >
                                     {msg.speaker === 'User' ? `"${msg.line}"` : msg.line}
                                 </div>
