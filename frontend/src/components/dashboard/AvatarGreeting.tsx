@@ -9,18 +9,20 @@ export default function AvatarGreeting() {
   const { t } = useLanguage();
   const [userName, setUserName] = useState('');
   const [imgSrc, setImgSrc] = useState('/ni-avatar.png');
-  const [msgIndex] = useState(() => Math.floor(Math.random() * 4));
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [hour, setHour] = useState(0);
 
-  // Computed directly so they update on language change
-  const hour = new Date().getHours();
   const greeting = hour < 12 ? t('greeting.morning') : hour < 18 ? t('greeting.afternoon') : t('greeting.evening');
   const messages = [t('greeting.msg1'), t('greeting.msg2'), t('greeting.msg3'), t('greeting.msg4')];
   const message = messages[msgIndex];
 
   useEffect(() => {
-    // Cache-bust image on client only
-    const h = new Date().getHours();
-    const m = Math.floor(new Date().getMinutes() / 5);
+    // All time/random values resolved client-side only to avoid hydration mismatch
+    const now = new Date();
+    const h = now.getHours();
+    const m = Math.floor(now.getMinutes() / 5);
+    setHour(h);
+    setMsgIndex(Math.floor(Math.random() * 4));
     setImgSrc(`/ni-avatar.png?v=${h}_${m}`);
 
     // Try Supabase auth first, fallback to localStorage

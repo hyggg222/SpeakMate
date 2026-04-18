@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { BookOpen, ChevronDown, ChevronUp, Clock, X, Plus, ArrowLeft, Search, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Story {
     id: string;
@@ -16,19 +17,13 @@ interface Story {
 }
 
 interface Props {
-    stories: Story[];           // top 5 gợi ý
-    allStories: Story[];        // toàn bộ story bank
-    hasStories: boolean;        // có story nào không
+    stories: Story[];
+    allStories: Story[];
+    hasStories: boolean;
     onSelect: (ids: string[]) => void;
     onSkip: () => void;
     onCreateStory: () => void;
 }
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    draft: { label: "Bản nháp", color: "#94a3b8" },
-    ready: { label: "Sẵn sàng", color: "#10b981" },
-    "battle-tested": { label: "Thực chiến", color: "#f59e0b" },
-};
 
 const FRAMEWORK_COLORS: Record<string, string> = {
     STAR: "#3b82f6",
@@ -38,14 +33,15 @@ const FRAMEWORK_COLORS: Record<string, string> = {
 
 type View = 'suggest' | 'browse';
 
-function StoryCard({ story, isSelected, isExpanded, onToggleSelect, onToggleExpand }: {
+function StoryCard({ story, isSelected, isExpanded, onToggleSelect, onToggleExpand, statusLabels }: {
     story: Story;
     isSelected: boolean;
     isExpanded: boolean;
     onToggleSelect: () => void;
     onToggleExpand: () => void;
+    statusLabels: Record<string, { label: string; color: string }>;
 }) {
-    const statusInfo = STATUS_LABELS[story.status] || STATUS_LABELS.draft;
+    const statusInfo = statusLabels[story.status] || statusLabels.draft;
     const fwColor = FRAMEWORK_COLORS[story.framework] || "#3b82f6";
 
     return (
@@ -94,13 +90,18 @@ function StoryCard({ story, isSelected, isExpanded, onToggleSelect, onToggleExpa
 }
 
 export default function StoryBankSuggestionModal({ stories, allStories, hasStories, onSelect, onSkip, onCreateStory }: Props) {
+    const { t } = useLanguage();
     const [view, setView] = useState<View>('suggest');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>(stories.map(s => s.id));
     const [searchQuery, setSearchQuery] = useState('');
-
-    // IDs that were selected before entering browse
     const [idsBeforeBrowse, setIdsBeforeBrowse] = useState<string[]>([]);
+
+    const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+        draft: { label: t('confirm.status.draft'), color: "#94a3b8" },
+        ready: { label: t('confirm.status.ready'), color: "#10b981" },
+        "battle-tested": { label: t('confirm.status.battleTested'), color: "#f59e0b" },
+    };
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev =>
@@ -124,24 +125,21 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
         setExpandedId(null);
     };
 
-    // Suggest view: merge suggested stories + any additionally selected from browse
     const suggestedIds = useMemo(() => new Set(stories.map(s => s.id)), [stories]);
     const additionalStories = useMemo(() => {
         return allStories.filter(s => selectedIds.includes(s.id) && !suggestedIds.has(s.id));
     }, [allStories, selectedIds, suggestedIds]);
 
-    // Browse: count new selections
     const newSelectCount = useMemo(() => {
         return selectedIds.filter(id => !idsBeforeBrowse.includes(id)).length;
     }, [selectedIds, idsBeforeBrowse]);
 
-    // Browse: filter by search
     const filteredBrowseStories = useMemo(() => {
         if (!searchQuery.trim()) return allStories;
         const q = searchQuery.toLowerCase();
         return allStories.filter(s =>
             s.title.toLowerCase().includes(q) ||
-            (s.tags || []).some(t => t.toLowerCase().includes(q))
+            (s.tags || []).some(tag => tag.toLowerCase().includes(q))
         );
     }, [allStories, searchQuery]);
 
@@ -167,10 +165,9 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             <Sparkles size={28} className="text-slate-400" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 text-[15px] mb-1">Bạn chưa có câu chuyện nào</h4>
+                            <h4 className="font-bold text-slate-800 text-[15px] mb-1">{t('suggestion.noStories')}</h4>
                             <p className="text-[13px] text-slate-500 leading-relaxed">
-                                Tạo câu chuyện đầu tiên để ôn trước khi luyện tập!
-                                Story Bank giúp bạn chuẩn bị tốt hơn cho mỗi buổi gym.
+                                {t('suggestion.noStories.desc')}
                             </p>
                         </div>
                         <button
@@ -179,13 +176,13 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             style={{ backgroundColor: "var(--teal)" }}
                         >
                             <Plus size={16} />
-                            Tạo story mới
+                            {t('suggestion.createNew')}
                         </button>
                     </div>
 
                     <div className="px-6 py-3 border-t">
                         <button onClick={onSkip} className="text-sm text-slate-500 hover:text-slate-700">
-                            Bỏ qua, bắt đầu luôn
+                            {t('suggestion.skip')}
                         </button>
                     </div>
                 </div>
@@ -203,9 +200,9 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             <ArrowLeft size={20} />
                         </button>
                         <div className="flex-1">
-                            <h3 className="font-semibold text-slate-800">Thư viện Story Bank</h3>
+                            <h3 className="font-semibold text-slate-800">{t('suggestion.library')}</h3>
                             <p className="text-xs text-slate-500">
-                                {selectedIds.length} story đã chọn · Tick thêm để đưa vào buổi luyện tập
+                                {selectedIds.length} {t('suggestion.selected')} · {t('suggestion.browsePrompt')}
                             </p>
                         </div>
                     </div>
@@ -215,7 +212,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             <Search size={14} className="text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Tìm theo tên hoặc tag..."
+                                placeholder={t('suggestion.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 className="flex-1 bg-transparent text-sm outline-none text-slate-700 placeholder-slate-400"
@@ -230,7 +227,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
 
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
                         {filteredBrowseStories.length === 0 ? (
-                            <p className="text-center text-sm text-slate-400 py-8">Không tìm thấy story nào</p>
+                            <p className="text-center text-sm text-slate-400 py-8">{t('suggestion.noMatch')}</p>
                         ) : (
                             filteredBrowseStories.map(story => (
                                 <StoryCard
@@ -240,6 +237,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                                     isExpanded={expandedId === story.id}
                                     onToggleSelect={() => toggleSelect(story.id)}
                                     onToggleExpand={() => toggleExpand(story.id)}
+                                    statusLabels={STATUS_LABELS}
                                 />
                             ))
                         )}
@@ -247,7 +245,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
 
                     <div className="px-6 py-4 border-t flex items-center justify-between">
                         <button onClick={closeBrowse} className="text-sm text-slate-500 hover:text-slate-700">
-                            Quay lại
+                            {t('suggestion.back')}
                         </button>
                         <button
                             onClick={closeBrowse}
@@ -258,7 +256,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                                 }`}
                             style={newSelectCount > 0 ? { backgroundColor: "var(--teal)" } : {}}
                         >
-                            {newSelectCount > 0 ? `Thêm ${newSelectCount} story` : 'Chọn story để thêm'}
+                            {newSelectCount > 0 ? `${t('suggestion.addBtn')} ${newSelectCount} story` : t('suggestion.addPrompt')}
                         </button>
                     </div>
                 </div>
@@ -277,11 +275,11 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             <BookOpen size={16} style={{ color: "var(--teal)" }} />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-slate-800">Chuẩn bị trước buổi tập</h3>
+                            <h3 className="font-semibold text-slate-800">{t('suggestion.header')}</h3>
                             <p className="text-xs text-slate-500">
                                 {selectedIds.length > 0
-                                    ? `${selectedIds.length} story đã chọn để ôn`
-                                    : 'Chọn story liên quan để ôn trước khi vào gym'
+                                    ? `${selectedIds.length} ${t('suggestion.selectedToReview')}`
+                                    : t('suggestion.browsePrompt')
                                 }
                             </p>
                         </div>
@@ -293,11 +291,10 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
 
                 {/* Story list */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-                    {/* Gợi ý phù hợp */}
                     {stories.length > 0 && (
                         <div className="space-y-3">
                             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                Gợi ý phù hợp với bối cảnh
+                                {t('suggestion.relevant')}
                             </p>
                             {stories.map(story => (
                                 <StoryCard
@@ -307,17 +304,17 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                                     isExpanded={expandedId === story.id}
                                     onToggleSelect={() => toggleSelect(story.id)}
                                     onToggleExpand={() => toggleExpand(story.id)}
+                                    statusLabels={STATUS_LABELS}
                                 />
                             ))}
                         </div>
                     )}
 
-                    {/* Story đã thêm từ browse */}
                     {additionalStories.length > 0 && (
                         <div className="space-y-3 pt-2">
                             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <CheckCircle2 size={12} style={{ color: "var(--teal)" }} />
-                                Đã thêm vào
+                                {t('suggestion.added')}
                             </p>
                             {additionalStories.map(story => (
                                 <StoryCard
@@ -327,16 +324,16 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                                     isExpanded={expandedId === story.id}
                                     onToggleSelect={() => toggleSelect(story.id)}
                                     onToggleExpand={() => toggleExpand(story.id)}
+                                    statusLabels={STATUS_LABELS}
                                 />
                             ))}
                         </div>
                     )}
 
-                    {/* Không có gợi ý nào match */}
                     {stories.length === 0 && additionalStories.length === 0 && (
                         <div className="text-center py-6 text-slate-500 text-sm">
-                            <p className="mb-2">Không tìm thấy story phù hợp với bối cảnh này.</p>
-                            <p className="text-xs text-slate-400">Nhấn &quot;Thêm story&quot; để chọn từ thư viện, hoặc tạo story mới.</p>
+                            <p className="mb-2">{t('suggestion.noMatch.desc')}</p>
+                            <p className="text-xs text-slate-400">{t('suggestion.noMatch.hint')}</p>
                         </div>
                     )}
                 </div>
@@ -348,7 +345,7 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                             onClick={onSkip}
                             className="text-sm text-slate-500 hover:text-slate-700 transition-colors shrink-0"
                         >
-                            Bỏ qua
+                            {t('suggestion.skip2')}
                         </button>
 
                         <div className="flex items-center gap-2">
@@ -357,21 +354,21 @@ export default function StoryBankSuggestionModal({ stories, allStories, hasStori
                                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:border-[var(--teal)] hover:text-[var(--teal)] transition-colors"
                             >
                                 <Plus size={14} />
-                                Thêm
+                                {t('suggestion.addBtn')}
                             </button>
                             <button
                                 onClick={onCreateStory}
                                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:border-[var(--teal)] hover:text-[var(--teal)] transition-colors"
                             >
                                 <Sparkles size={14} />
-                                Tạo mới
+                                {t('suggestion.createBtn')}
                             </button>
                             <button
                                 onClick={() => onSelect(selectedIds)}
                                 className="px-4 py-2 rounded-xl text-white text-[13px] font-medium transition-all"
                                 style={{ backgroundColor: "var(--teal)" }}
                             >
-                                Vào luyện tập
+                                {t('suggestion.startPractice')}
                             </button>
                         </div>
                     </div>

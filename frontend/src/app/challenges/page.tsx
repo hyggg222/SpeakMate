@@ -123,7 +123,7 @@ export default function ChallengesPage() {
             </div>
 
             <main className="px-6 pb-10 max-w-2xl mx-auto">
-                <AuthGate feature="Thử thách">
+                <AuthGate feature="nav.challenges">
                 {loading ? (
                     <div className="flex justify-center py-16">
                         <Loader2 size={28} className="animate-spin text-teal-500" />

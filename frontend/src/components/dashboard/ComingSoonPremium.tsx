@@ -3,35 +3,38 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Languages, Mic2, Users } from "lucide-react";
-
-const upcomingFeatures = [
-    {
-        title: "Phòng luyện phát âm",
-        desc: "Phân tích khẩu hình và ngữ điệu AI chuyên sâu.",
-        icon: Mic2,
-        color: "from-blue-500 to-indigo-600",
-    },
-    {
-        title: "Gia sư Ngữ pháp",
-        desc: "Chỉnh sửa lỗi sai trong thời gian thực khi bạn nói.",
-        icon: Languages,
-        color: "from-emerald-500 to-teal-600",
-    },
-    {
-        title: "Thách thức Cộng đồng",
-        desc: "Cùng luyện tập và thi đua với bạn học toàn cầu.",
-        icon: Users,
-        color: "from-purple-500 to-pink-600",
-    },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ComingSoonPremium() {
+    const { t } = useLanguage();
+
+    const upcomingFeatures = [
+        {
+            title: t('upcoming.pronunciation.title'),
+            desc: t('upcoming.pronunciation.desc'),
+            icon: Mic2,
+            color: "from-blue-500 to-indigo-600",
+        },
+        {
+            title: t('upcoming.grammar.title'),
+            desc: t('upcoming.grammar.desc'),
+            icon: Languages,
+            color: "from-emerald-500 to-teal-600",
+        },
+        {
+            title: t('upcoming.community.title'),
+            desc: t('upcoming.community.desc'),
+            icon: Users,
+            color: "from-purple-500 to-pink-600",
+        },
+    ];
+
     return (
         <section className="mt-10 mb-8">
             <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-5 h-5 text-amber-400" />
                 <h2 className="text-[18px] font-bold text-foreground">
-                    Sắp ra mắt
+                    {t('practice.comingSoon')}
                 </h2>
             </div>
 

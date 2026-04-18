@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +23,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     if (!form.email || !form.password) {
-      setError('Vui lòng điền đầy đủ thông tin.');
+      setError(t('login.error.required'));
       return;
     }
     setIsLoading(true);
@@ -35,9 +37,9 @@ export default function LoginPage() {
 
     if (authError) {
       if (authError.message.includes('Invalid login credentials')) {
-        setError('Email hoặc mật khẩu không đúng.');
+        setError(t('login.error.invalid'));
       } else if (authError.message.includes('Email not confirmed')) {
-        setError('Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.');
+        setError(t('login.error.unconfirmed'));
       } else {
         setError(authError.message);
       }
@@ -109,11 +111,11 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <h2 className="text-[28px] font-bold text-slate-900">Đăng nhập</h2>
+            <h2 className="text-[28px] font-bold text-slate-900">{t('auth.login')}</h2>
             <p className="text-slate-500 text-sm mt-1">
-              Chưa có tài khoản?{' '}
+              {t('auth.noAccount')}{' '}
               <Link href="/signup" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
-                Tạo tài khoản
+                {t('auth.signup')}
               </Link>
             </p>
           </div>
@@ -133,12 +135,12 @@ export default function LoginPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
             )}
-            Tiếp tục với Google
+            {t('auth.loginWithGoogle')}
           </button>
 
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">hoặc dùng email</span>
+            <span className="text-xs text-slate-400 font-medium">{t('login.orEmail')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
@@ -150,7 +152,7 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Email</label>
+              <label className="text-sm font-medium text-slate-700">{t('auth.email')}</label>
               <input
                 type="email"
                 placeholder="ban@email.com"
@@ -162,15 +164,15 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-700">Mật khẩu</label>
+                <label className="text-sm font-medium text-slate-700">{t('auth.password')}</label>
                 <Link href="/forgot-password" className="text-xs text-teal-600 hover:text-teal-700 transition-colors">
-                  Quên mật khẩu?
+                  {t('auth.forgotPassword')}
                 </Link>
               </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu"
+                  placeholder={t('login.passwordPlaceholder')}
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   className="w-full px-4 py-3 pr-11 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 text-sm bg-white outline-none transition-all"
@@ -188,9 +190,9 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5 active:translate-y-0 mt-2"
             >
               {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Đang đăng nhập...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> {t('login.signingIn')}</>
               ) : (
-                <>Đăng nhập <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.login')} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>

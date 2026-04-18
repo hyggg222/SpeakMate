@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { translations } from '@/i18n/translations';
 
 interface Props {
   children: React.ReactNode;
@@ -11,6 +12,16 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+function getLang(): 'vi' | 'en' {
+  if (typeof window === 'undefined') return 'vi';
+  return (localStorage.getItem('speakmate_language') as 'vi' | 'en') || 'vi';
+}
+
+function t(key: string): string {
+  const lang = getLang();
+  return translations[lang][key] ?? translations.vi[key] ?? key;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
@@ -35,10 +46,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex flex-col items-center justify-center p-8 gap-4 text-center">
           <AlertTriangle className="w-10 h-10" style={{ color: '#f59e0b' }} />
           <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-            Đã xảy ra lỗi
+            {t('error.occurred')}
           </h2>
           <p className="text-sm max-w-md" style={{ color: 'var(--muted-foreground)' }}>
-            {this.state.error?.message?.slice(0, 200) || 'Có lỗi không xác định.'}
+            {this.state.error?.message?.slice(0, 200) || t('error.unknown')}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
@@ -46,7 +57,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             style={{ backgroundColor: 'var(--teal)' }}
           >
             <RotateCcw className="w-4 h-4" />
-            Thử lại
+            {t('common.retry')}
           </button>
         </div>
       );

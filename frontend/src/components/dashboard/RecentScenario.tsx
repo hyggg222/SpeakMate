@@ -5,11 +5,13 @@ import { apiClient } from '@/lib/apiClient';
 import { Clock, ArrowRight, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function RecentScenario() {
     const [recentSession, setRecentSession] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const { t } = useLanguage();
 
     useEffect(() => {
         async function fetchRecent() {
@@ -39,8 +41,8 @@ export default function RecentScenario() {
                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                     <BookOpen size={14} />
                 </div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Bối cảnh đang luyện tập</p>
-                <p className="text-[10px] text-slate-400 italic">Chưa có lịch sử</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('recent.label')}</p>
+                <p className="text-[10px] text-slate-400 italic">{t('recent.noHistory')}</p>
             </div>
         );
     }
@@ -58,10 +60,10 @@ export default function RecentScenario() {
                     <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-500">
                         <Clock size={12} />
                     </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đang luyện tập</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('recent.practicing')}</span>
                 </div>
                 <h4 className="text-[14px] font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-emerald-600 transition-colors">
-                    {scenario.title || "Tình huống chưa đặt tên"}
+                    {scenario.title || t('recent.untitled')}
                 </h4>
             </div>
 
@@ -69,7 +71,7 @@ export default function RecentScenario() {
                 onClick={() => router.push(`/setup?topic=${encodeURIComponent(scenario.scenario?.requirement || scenario.requirement || "")}`)}
                 className="mt-4 flex items-center justify-center gap-2 py-2.5 bg-slate-50 hover:bg-emerald-500 hover:text-white text-slate-600 rounded-2xl text-[12px] font-bold transition-all"
             >
-                Luyện tiếp
+                {t('recent.continue')}
                 <ArrowRight size={14} />
             </button>
         </motion.div>

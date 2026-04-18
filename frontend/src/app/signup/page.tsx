@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, ArrowRight, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -20,17 +22,17 @@ export default function SignupPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const passwordRules = [
-    { label: 'Ít nhất 8 ký tự', pass: form.password.length >= 8 },
-    { label: 'Có chữ hoa', pass: /[A-Z]/.test(form.password) },
-    { label: 'Có số', pass: /[0-9]/.test(form.password) },
+    { label: t('signup.rule.minLength'), pass: form.password.length >= 8 },
+    { label: t('signup.rule.uppercase'), pass: /[A-Z]/.test(form.password) },
+    { label: t('signup.rule.number'), pass: /[0-9]/.test(form.password) },
   ];
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = 'Vui lòng nhập họ tên.';
-    if (!form.email.includes('@')) e.email = 'Email không hợp lệ.';
-    if (form.password.length < 8) e.password = 'Mật khẩu tối thiểu 8 ký tự.';
-    if (form.password !== form.confirm) e.confirm = 'Mật khẩu xác nhận không khớp.';
+    if (!form.name.trim()) e.name = t('signup.error.name');
+    if (!form.email.includes('@')) e.email = t('signup.error.email');
+    if (form.password.length < 8) e.password = t('signup.error.password');
+    if (form.password !== form.confirm) e.confirm = t('signup.error.confirm');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -57,7 +59,7 @@ export default function SignupPage() {
       return;
     }
 
-    setSuccessMsg('Tài khoản đã tạo! Kiểm tra email để xác nhận trước khi đăng nhập.');
+    setSuccessMsg(t('signup.success'));
   };
 
   const handleGoogleSignup = async () => {
@@ -104,9 +106,9 @@ export default function SignupPage() {
           </p>
           <ul className="space-y-3 pt-2">
             {[
-              'Tạo kịch bản theo mục tiêu cá nhân',
-              'Phân tích phát âm & độ trôi chảy',
-              'Gợi ý tức thì khi bí ý tưởng',
+              t('signup.feature1') || 'Tạo kịch bản theo mục tiêu cá nhân',
+              t('signup.feature2') || 'Phân tích phát âm & độ trôi chảy',
+              t('signup.feature3') || 'Gợi ý tức thì khi bí ý tưởng',
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
                 <div className="w-5 h-5 rounded-full bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
@@ -141,11 +143,11 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <h2 className="text-[28px] font-bold text-slate-900 leading-tight">Tạo tài khoản</h2>
+            <h2 className="text-[28px] font-bold text-slate-900 leading-tight">{t('auth.signup')}</h2>
             <p className="text-slate-500 text-sm mt-1">
-              Đã có tài khoản?{' '}
+              {t('auth.hasAccount')}{' '}
               <Link href="/login" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
-                Đăng nhập
+                {t('auth.login')}
               </Link>
             </p>
           </div>
@@ -173,12 +175,12 @@ export default function SignupPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
             )}
-            Tiếp tục với Google
+            {t('auth.loginWithGoogle')}
           </button>
 
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">hoặc dùng email</span>
+            <span className="text-xs text-slate-400 font-medium">{t('signup.orEmail')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
@@ -191,10 +193,10 @@ export default function SignupPage() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Họ và tên</label>
+              <label className="text-sm font-medium text-slate-700">{t('signup.name')}</label>
               <input
                 type="text"
-                placeholder="Nguyễn Văn A"
+                placeholder={t('signup.namePlaceholder')}
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 className={`w-full px-4 py-3 rounded-xl border text-sm bg-white outline-none transition-all
@@ -204,7 +206,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Email</label>
+              <label className="text-sm font-medium text-slate-700">{t('auth.email')}</label>
               <input
                 type="email"
                 placeholder="ban@email.com"
@@ -217,11 +219,11 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Mật khẩu</label>
+              <label className="text-sm font-medium text-slate-700">{t('auth.password')}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Tối thiểu 8 ký tự"
+                  placeholder={t('signup.passwordPlaceholder')}
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm bg-white outline-none transition-all
@@ -246,11 +248,11 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Xác nhận mật khẩu</label>
+              <label className="text-sm font-medium text-slate-700">{t('signup.confirmPassword')}</label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder={t('signup.confirmPlaceholder')}
                   value={form.confirm}
                   onChange={e => setForm({ ...form, confirm: e.target.value })}
                   className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm bg-white outline-none transition-all
@@ -265,10 +267,10 @@ export default function SignupPage() {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed">
-              Bằng cách đăng ký, bạn đồng ý với{' '}
-              <span className="text-teal-600 cursor-pointer hover:underline">Điều khoản dịch vụ</span>{' '}
+              {t('signup.terms')}{' '}
+              <span className="text-teal-600 cursor-pointer hover:underline">{t('signup.termsLink')}</span>{' '}
               và{' '}
-              <span className="text-teal-600 cursor-pointer hover:underline">Chính sách bảo mật</span>.
+              <span className="text-teal-600 cursor-pointer hover:underline">{t('signup.privacyLink')}</span>.
             </p>
 
             <button
@@ -277,9 +279,9 @@ export default function SignupPage() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5 active:translate-y-0"
             >
               {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Đang tạo tài khoản...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> {t('signup.creating')}</>
               ) : (
-                <>Tạo tài khoản <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.signup')} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>
@@ -288,4 +290,3 @@ export default function SignupPage() {
     </div>
   );
 }
-//dsvdv
