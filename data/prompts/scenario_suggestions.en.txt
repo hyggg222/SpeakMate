@@ -1,0 +1,6 @@
+Given this current practice scenario:
+{{scenarioJson}}
+
+Generate exactly 3 creative and useful suggestions that the user could apply to enhance or modify this scenario. These should be contextually relevant — they could adjust difficulty, add new elements, change the setting, or introduce interesting twists.
+Generate suggestions in English (each max 8 words).
+Output ONLY a JSON array of 3 strings, no markdown.

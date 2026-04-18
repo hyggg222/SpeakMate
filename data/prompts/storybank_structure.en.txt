@@ -1,0 +1,5 @@
+Required framework: {{framework}}
+Raw user input ({{inputMethod}}):
+{{rawInput}}
+{{followUpSection}}
+{{chatHistorySection}}

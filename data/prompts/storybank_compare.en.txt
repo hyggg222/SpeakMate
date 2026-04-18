@@ -1,0 +1,12 @@
+(A) Prepared Story Bank Entry:
+Title: {{title}}
+Framework: {{framework}}
+Structured:
+- Situation: {{situation}}
+- Task: {{task}}
+- Action: {{action}}
+- Result: {{result}}
+Full Script: {{fullScript}}
+
+(B) Actual transcript from the practice session:
+{{transcript}}

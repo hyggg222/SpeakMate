@@ -1,0 +1,9 @@
+You are adjusting an existing practice scenario. Here is the current scenario:
+{{scenarioJson}}
+
+The user wants to make this adjustment: "{{adjustment}}"
+
+Modify the existing scenario to incorporate this adjustment while preserving the overall structure and any relevant existing details.
+Output ONLY a valid JSON object matching the exact same structure as the input scenario. No markdown, no explanation.
+You MUST respond entirely in English for all string values.
+NEVER use bracketed placeholders like [your name], [name], etc. Use concrete names or "you" instead.

@@ -1,0 +1,5 @@
+Đây là transcript đầy đủ của phiên luyện tập:
+{{transcript}}
+
+Yêu cầu: Phân tích transcript và trả về JSON report.
+Rubric categories: {{rubricJson}}

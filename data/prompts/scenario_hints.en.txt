@@ -1,0 +1,7 @@
+Scenario: {{scenarioJson}}
+Conversation so far:
+{{historyText}}
+
+The user is stuck and needs help. Generate exactly 3 short keyword hints or phrases (max 5 words each) that would help the user continue the conversation naturally.
+Generate hints in English. These should be suggestive, not full sentences.
+Output ONLY a JSON array of 3 strings, no markdown. Example: ["hint 1", "hint 2", "hint 3"]
