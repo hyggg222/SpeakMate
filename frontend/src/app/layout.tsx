@@ -4,6 +4,7 @@ import './globals.css'
 import { ScenarioProvider } from '@/context/ScenarioContext'
 import { LanguageProvider } from '@/context/LanguageContext'
 import DemoDataSeeder from '@/components/DemoDataSeeder'
+import GuestAuthInit from '@/components/GuestAuthInit'
 
 export const metadata: Metadata = {
   title: 'SpeakMate',
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body className="font-sans antialiased overflow-x-hidden">
         <LanguageProvider>
           <ScenarioProvider>
+            <GuestAuthInit />
             <DemoDataSeeder />
             {children}
             <Analytics />
