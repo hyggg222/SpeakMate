@@ -163,23 +163,23 @@ export class PracticeController {
             const promptService = new (await import('../services/prompt.service')).PromptService();
             const systemPrompt = promptService.buildConversationPrompt(scenario, userName, (req.language === 'en' ? 'en' : 'vi'));
 
-            // Voice selection based on character gender
-            // Gemini voices: Kore (female), Aoede (female), Puck (male), Charon (male)
-            const VOICE_MAP: Record<string, string> = {
-                'female_1': 'Kore',
-                'female_2': 'Aoede',
-                'male_1': 'Puck',
-                'male_2': 'Charon',
-            };
+            // Voice selection based on character gender.
+            // Gemini voices: Kore/Aoede (female), Puck/Charon (male).
+            // Priority order:
+            //   1. characters[0].gender — explicit user pick from setup form
+            //   2. interviewerPersona text heuristic — fallback for legacy
+            //      scenarios that don't carry a characters array yet
             let voiceName = 'Kore'; // default
-            if (isDual) {
-                // Use first character's gender for primary voice
-                const gender1 = characters[0]?.gender || 'female';
-                voiceName = gender1 === 'male' ? 'Puck' : 'Kore';
+            const explicitGender = characters[0]?.gender;
+            if (explicitGender === 'male') {
+                voiceName = 'Puck';
+            } else if (explicitGender === 'female') {
+                voiceName = 'Kore';
             } else if (scenario.interviewerPersona) {
-                // Heuristic: detect gender hints in persona
                 const personaLower = (scenario.interviewerPersona || '').toLowerCase();
-                if (personaLower.includes('anh ') || personaLower.includes('thầy') || personaLower.includes(' nam')) {
+                if (personaLower.includes('anh ') || personaLower.includes('thầy') ||
+                    personaLower.includes(' nam') || personaLower.includes(' male ') ||
+                    personaLower.includes('mr.') || personaLower.includes('mr ')) {
                     voiceName = 'Puck';
                 }
             }
