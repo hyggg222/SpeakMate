@@ -1,5 +1,6 @@
 import { FullScenarioContext, EvaluationRubric } from '../types/api.contracts';
 import { createClient } from '@/lib/supabase/client';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -17,11 +18,11 @@ function ensureAuthListener() {
     _listenerSetUp = true;
     try {
         const supabase = createClient();
-        supabase.auth.onAuthStateChange((_event, session) => {
+        supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
             _cachedToken = session?.access_token ?? null;
         });
         // Also try to hydrate immediately
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
             if (session?.access_token) {
                 _cachedToken = session.access_token;
             }
