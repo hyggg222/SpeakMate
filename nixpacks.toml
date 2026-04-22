@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["ffmpeg", "nodejs_20"]
+
+[phases.build]
+cmds = ["npm install", "cd backend && npm run build"]
+
+[start]
+cmd = "cd backend && node --dns-result-order=ipv4first dist/app.js"
