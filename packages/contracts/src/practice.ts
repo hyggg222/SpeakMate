@@ -171,6 +171,49 @@ export interface ChallengeFeedbackInput {
     whatStuck?: string;
 }
 
+// ----------------------------------------------------------------
+// Real-world Feedback Evaluation (feedback/new flow)
+// Separate from FeedbackAnalysis — different contract, different AI pipeline
+// ----------------------------------------------------------------
+
+export interface RealWorldMetrics {
+    coherenceScore: number;           // 0-100
+    jargonCount: number;
+    jargonList: { word: string; suggestion: string }[];
+    fillerCount: number;
+    fillerPerMinute: number;
+    fillerList: { word: string; count: number }[];
+    fluencyScore: number;             // 0-100: mức độ lưu loát tổng thể
+    fluencyNote: string;              // giải thích ngắn cho fluencyScore
+}
+
+export interface PsychologyMetrics {
+    emotionBefore?: string;
+    emotionAfter?: string;
+    trend: 'improved' | 'same' | 'declined' | 'unknown';
+    trendNote: string;                // "Lo lắng → Tự tin hơn"
+}
+
+export interface RealWorldEvaluation {
+    hasAudio: boolean;
+    transcript?: string;
+    expression?: RealWorldMetrics | null;   // null nếu không có transcript
+    psychology: PsychologyMetrics;
+    strengths: string[];
+    improvements: string[];
+    niComment: string;
+    dialogueAnalysis?: string | null;
+    betterPhrasing?: string | null;
+    newStoryCandidate: boolean;
+    newStorySuggestion?: string;
+    nextDifficulty: number;
+    nextChallengeHint: string;
+    xpEarned: number;
+    sourceType: 'realworld';
+    comparisonWithPrevious?: string;
+    previousExpression?: RealWorldMetrics | null;  // avg của 5 lần trước để hiện so sánh ▲/▼
+}
+
 export interface FeedbackAnalysis {
     comparisonWithGym: string;
     progressNote: string;

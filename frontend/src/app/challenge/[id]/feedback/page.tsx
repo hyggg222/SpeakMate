@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, Send, ArrowLeft, MessageCircle, FileText, Upload, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import FeedbackResults from '@/components/challenge/FeedbackResults'
-import type { FeedbackAnalysis } from '@/types/api.contracts'
+import type { FeedbackAnalysis, RealWorldEvaluation } from '@/types/api.contracts'
 
 type Tab = 'voice' | 'form' | 'upload'
 
@@ -123,7 +123,7 @@ export default function ChallengeFeedbackPage() {
 
     // Submission state
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [analysis, setAnalysis] = useState<FeedbackAnalysis | null>(null)
+    const [analysis, setAnalysis] = useState<RealWorldEvaluation | null>(null)
 
     const challenge = MOCK_CHALLENGE
 
@@ -180,12 +180,33 @@ export default function ChallengeFeedbackPage() {
     }
 
     // Submit voice (mic recording)
+    // Adapter: FeedbackAnalysis (from challenge endpoints) → RealWorldEvaluation
+    const adaptAnalysis = (raw: any, isCompleted: boolean): RealWorldEvaluation => {
+        if (raw?.sourceType === 'realworld') return raw as RealWorldEvaluation
+        const fa = raw as FeedbackAnalysis
+        return {
+            hasAudio: false,
+            sourceType: 'realworld',
+            psychology: { trend: isCompleted ? 'improved' : 'unknown', trendNote: fa.comparisonWithGym || '' },
+            strengths: fa.progressNote ? [fa.progressNote] : [],
+            improvements: [],
+            niComment: fa.niComment || fa.comparisonWithGym || '',
+            dialogueAnalysis: fa.dialogueAnalysis,
+            betterPhrasing: fa.betterPhrasing,
+            newStoryCandidate: fa.newStoryCandidate,
+            newStorySuggestion: fa.newStorySuggestion,
+            nextDifficulty: fa.nextDifficulty,
+            nextChallengeHint: fa.nextChallengeHint,
+            xpEarned: fa.xpEarned,
+        }
+    }
+
     const handleSubmitVoice = async () => {
         if (!audioBlob || completed === null) return
         setIsSubmitting(true)
         try {
             const result = await apiClient.submitFeedbackVoice(challengeId, completed, audioBlob)
-            setAnalysis(result.analysis || result)
+            setAnalysis(adaptAnalysis(result.analysis || result, completed))
         } catch {
             setAnalysis(getFallbackAnalysis(completed))
         } finally {
@@ -199,7 +220,7 @@ export default function ChallengeFeedbackPage() {
         setIsSubmitting(true)
         try {
             const result = await apiClient.submitFeedbackForm(challengeId, { completed, ...formData })
-            setAnalysis(result.analysis || result)
+            setAnalysis(adaptAnalysis(result.analysis || result, completed))
         } catch {
             setAnalysis(getFallbackAnalysis(completed))
         } finally {
@@ -214,7 +235,7 @@ export default function ChallengeFeedbackPage() {
         try {
             // Use submitFeedbackVoice with the uploaded file
             const result = await apiClient.submitFeedbackVoice(challengeId, completed, uploadFile)
-            setAnalysis(result.analysis || result)
+            setAnalysis(adaptAnalysis(result.analysis || result, completed))
         } catch {
             setAnalysis(getFallbackAnalysis(completed))
         } finally {
@@ -420,12 +441,16 @@ export default function ChallengeFeedbackPage() {
     )
 }
 
-function getFallbackAnalysis(completed: boolean): FeedbackAnalysis {
+function getFallbackAnalysis(completed: boolean): RealWorldEvaluation {
     return {
-        comparisonWithGym: completed
-            ? 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.'
-            : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
-        progressNote: 'Kỹ năng giao tiếp của bạn đang tiến bộ từng ngày.',
+        hasAudio: false,
+        sourceType: 'realworld',
+        psychology: {
+            trend: completed ? 'improved' : 'unknown',
+            trendNote: completed ? 'Bạn đã hoàn thành thử thách!' : 'Chưa đủ dữ liệu để phân tích',
+        },
+        strengths: [completed ? 'Bạn đã dám thử và hoàn thành!' : 'Dám thử là đã giỏi rồi'],
+        improvements: ['Tiếp tục luyện tập để cải thiện'],
         newStoryCandidate: completed,
         newStorySuggestion: completed ? 'Trải nghiệm thực chiến hôm nay' : undefined,
         nextDifficulty: completed ? 4 : 3,
