@@ -44,13 +44,13 @@ export default function StreakCard() {
   }, []);
 
   return (
-    <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
+    <div className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
       <div className="flex items-center gap-3">
         <div
-          className="flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-          style={{ backgroundColor: "#f0fdf4", border: "1.5px solid #bbf7d0" }}
+          className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0"
+          style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}
         >
-          <CalendarDays size={20} style={{ color: "#22c55e" }} />
+          <CalendarDays size={16} style={{ color: "#22c55e" }} />
         </div>
         <div>
           {loading ? (

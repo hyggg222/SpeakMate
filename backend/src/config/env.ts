@@ -7,6 +7,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 export const config = {
     port: process.env.PORT || 3001,
     geminiApiKey: process.env.GEMINI_API_KEY || '',
+    geminiApiKeyFallback: process.env.GEMINI_API_KEY_FALLBACK || '',
+    gemmaApiUrl: process.env.GEMMA_API_URL || '',
     supabaseUrl: process.env.SUPABASE_URL || '',
     supabaseKey: process.env.SUPABASE_SERVICE_KEY || '',
     nodeEnv: process.env.NODE_ENV || 'development',
@@ -17,6 +19,8 @@ export const config = {
     // Unified Cloud Pipeline (Modal)
     modalInteractUrl: process.env.MODAL_INTERACT_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-interact.modal.run",
     modalTranscribeUrl: process.env.MODAL_TRANSCRIBE_URL || "https://optimindss4--speakmate-pipeline-v2-voicepipeline-transcribe.modal.run",
+    // Wake endpoint — triggers LiveKit agent worker to start on Modal
+    modalWakeAgentUrl: process.env.MODAL_WAKE_AGENT_URL || '',
     // Internal API (Modal worker → backend)
     internalApiKey: process.env.INTERNAL_API_KEY || '',
     // LiveKit credentials

@@ -6,7 +6,7 @@ import base64
 def test_full_cloud_pipeline():
     # URL của Unified Cloud Pipeline (STT + LLM + TTS)
     url = "https://hyggg222--speakmate-pipeline-v2-voicepipeline-interact.modal.run"
-    audio_path = "d:/SpeakMate/sample1.wav"
+    audio_path = "D:\\SpeakMate\\data\\voice_samples\\sample1\\voice1.wav"
     
     if not os.path.exists(audio_path):
         print(f"❌ Error: Không tìm thấy file {audio_path}. Bạn hãy chuẩn bị 1 file wav để test nhé!")

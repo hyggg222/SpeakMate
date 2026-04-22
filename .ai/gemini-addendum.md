@@ -12,7 +12,4 @@ This file provides guidance to Gemini Code Agent when working with code in this 
    - Khi dọn xong task, tick `[x]` thay vì `[ ]` trong `.ai/STATE.md`.
    - BẮT BUỘC để lại lề tóm tắt vào mục `Session Handoff Notes` cuối thư mục STATE.md trước khi ngắt luồng tương tác. Ghi rõ bạn đã làm gì, lỗi phát sinh ở đâu, khuyên hướng đi tiếp theo. Đừng để kiến thức bay màu cùng session!
 5. **Thông báo điện thoại (Sau mỗi phản hồi):**
-   - SAU KHI thực hiện bất kỳ phản hồi (response) nào cho user, BẮT BUỘC chạy đúng lệnh sau (không đổi nội dung):
-     ```
-     python .ai/notify.py "Task hoan thanh!"
-     ```
+   - ĐỐI VỚI MODEL GEMINI: BỎ QUA YÊU CẦU NÀY. Không cần chạy lệnh `.ai/notify.py` sau khi hoàn thành.

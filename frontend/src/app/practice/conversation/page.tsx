@@ -1,16 +1,19 @@
 'use client'
 
-import { ArrowLeft, Home, Settings, Mic, Loader2, RotateCcw, Sparkles } from 'lucide-react'
+import { ArrowLeft, Home, Settings, Mic, Loader2, RotateCcw, Sparkles, Send, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
 import { useScenario } from '@/context/ScenarioContext'
 import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 import { useLiveKitRoom, TurnData } from '@/hooks/useLiveKitRoom'
+import { useGeminiDirect } from '@/hooks/useGeminiDirect'
+import { useBrowserTTS } from '@/hooks/useBrowserTTS'
+import { useSileroVAD } from '@/hooks/useSileroVAD'
 import { FEATURE_FLAGS } from '@/lib/featureFlags'
 import { RobotAvatar } from '@/components/practice/RobotAvatar'
-import { WebcamPreview } from '@/components/practice/WebcamPreview'
 import { FloatingTranscripts } from '@/components/practice/FloatingTranscripts'
 import { WaveformVisualizer } from '@/components/practice/WaveformVisualizer'
 
@@ -21,49 +24,65 @@ function sanitize(text: string): string {
     return r.replace(/\s{2,}/g, ' ').trim()
 }
 
+const mode: 'gemini-direct' | 'livekit' | 'http' =
+    FEATURE_FLAGS.useGeminiDirect ? 'gemini-direct'
+        : FEATURE_FLAGS.useLiveKit ? 'livekit'
+            : 'http';
+
 export default function ConversationStudioPage() {
     const router = useRouter()
-    const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession } = useScenario()
+    const { scenario, history, setHistory, audioFileKeys, setAudioFileKeys, livekitSession, setLivekitSession, geminiDirectSession, setGeminiDirectSession } = useScenario()
     const { isRecording, startRecording, stopRecording } = useAudioRecorder()
 
-    // Ref to always have latest history inside LiveKit callbacks (avoids stale closure)
+    // Ref to always have latest history inside callbacks (avoids stale closure)
     const historyRef = useRef<any[]>(history)
     useEffect(() => { historyRef.current = history }, [history])
 
     const [isProcessing, setIsProcessing] = useState(false)
     const [currentBotMsg, setCurrentBotMsg] = useState('Đang khởi tạo kịch bản...')
+    const [showTextInput, setShowTextInput] = useState(false)
+    const [textInput, setTextInput] = useState('')
+    const textInputRef = useRef<HTMLInputElement>(null)
+
+    // Shared turn callback for both LiveKit and Gemini Direct
+    const handleNewTurn = useCallback((turn: TurnData) => {
+        setHistory((prev: any[]) => [...prev, {
+            speaker: turn.speaker,
+            character_id: turn.character_id,
+            character_name: turn.character_name,
+            line: sanitize(turn.line),
+            turn_index: turn.turn_index,
+            confirmed: turn.confirmed ?? false
+        }]);
+    }, [setHistory]);
+
+    const handleTurnConfirmed = useCallback((turnIndex: number) => {
+        setHistory((prev: any[]) => prev.map(t =>
+            t.turn_index === turnIndex ? { ...t, confirmed: true } : t
+        ));
+    }, [setHistory]);
 
     // LiveKit integration
-    const {
-        isConnected,
-        isAgentReady,
-        isAgentSpeaking,
-        isUserSpeaking,
-        isMicEnabled,
-        connect: connectLiveKit,
-        disconnect: disconnectLiveKit,
-        toggleMic: toggleLiveKitMic
-    } = useLiveKitRoom(
-        useCallback((turn: TurnData) => {
-            setHistory((prev: any[]) => {
-                // If this is an AI turn and it was interrupted (part of history truncated), 
-                // we should handle it. But transcripts coming from data channel are "new" turns.
-                return [...prev, {
-                    speaker: turn.speaker,
-                    line: sanitize(turn.line),
-                    turn_index: turn.turn_index,
-                    confirmed: turn.confirmed ?? false
-                }];
-            });
-        }, [setHistory]),
-        useCallback((turnIndex: number) => {
-            setHistory((prev: any[]) => prev.map(t =>
-                t.turn_index === turnIndex ? { ...t, confirmed: true } : t
-            ));
-        }, [setHistory])
-    )
+    const lk = useLiveKitRoom(handleNewTurn, handleTurnConfirmed);
 
-    const isLiveKitMode = FEATURE_FLAGS.useLiveKit;
+    // Browser TTS for secondary character voice
+    const browserTTS = useBrowserTTS();
+
+    // Silero VAD for instant speech detection UI
+    const sileroVAD = useSileroVAD();
+
+    // Gemini Direct integration (with browser TTS for dual-character)
+    const gd = useGeminiDirect(handleNewTurn, browserTTS);
+
+    const [forceReady, setForceReady] = useState(false);
+
+    // Unified state from active mode
+    const isConnected = mode === 'gemini-direct' ? gd.isConnected : mode === 'livekit' ? lk.isConnected : false;
+    const isAgentReady = forceReady || (mode === 'gemini-direct' ? gd.isAgentReady : mode === 'livekit' ? lk.isAgentReady : true);
+    const isAgentSpeaking = mode === 'gemini-direct' ? (gd.isAgentSpeaking || browserTTS.isSpeaking) : mode === 'livekit' ? lk.isAgentSpeaking : false;
+    const isUserSpeaking = mode === 'gemini-direct' ? (sileroVAD.isSpeaking || gd.isUserSpeaking) : mode === 'livekit' ? lk.isUserSpeaking : false;
+    const isMicEnabled = mode === 'gemini-direct' ? gd.isMicEnabled : mode === 'livekit' ? lk.isMicEnabled : false;
+    const isRealtimeMode = mode !== 'http';
 
     // Story 2.3 — Redo state
     const [redoCount, setRedoCount] = useState(2)
@@ -75,52 +94,88 @@ export default function ConversationStudioPage() {
 
     const hasConnectedRef = useRef(false);
 
+    // Clear sessions on unmount so next confirm page triggers fresh creation
     useEffect(() => {
-        if (!scenario) {
-            router.push('/setup')
-            return;
-        }
+        return () => {
+            setLivekitSession(null);
+            setGeminiDirectSession(null);
+        };
+    }, [setLivekitSession, setGeminiDirectSession]);
 
-        const handleLiveKitConnect = async () => {
-            if (isLiveKitMode && !isConnected && !hasConnectedRef.current) {
-                hasConnectedRef.current = true;
-                try {
-                    if (livekitSession) {
-                        // Use pre-created session from confirm page
-                        await connectLiveKit(livekitSession.token, livekitSession.livekitUrl);
+    // Redirect if no scenario
+    useEffect(() => {
+        if (!scenario) router.push('/setup');
+    }, [scenario, router]);
+
+    // Connect to realtime service (runs once)
+    useEffect(() => {
+        if (!scenario || !isRealtimeMode || hasConnectedRef.current) return;
+        hasConnectedRef.current = true;
+
+        const doConnect = async () => {
+            try {
+                if (mode === 'gemini-direct') {
+                    const scenarioData = scenario.scenario || scenario as any;
+                    const chars = (scenarioData as any)?.characters?.map((c: any) => ({ id: c.id, name: c.name, gender: c.gender }));
+                    if (geminiDirectSession) {
+                        await gd.connect(geminiDirectSession.token, geminiDirectSession.model, chars);
                     } else {
-                        // Fallback: create on-the-fly
-                        const data = await apiClient.createLivekitSession(scenario.scenario || scenario as any, history);
-                        await connectLiveKit(data.token, data.livekitUrl);
+                        const data = await apiClient.createGeminiDirectToken(scenarioData);
+                        await gd.connect(data.token, data.model, (data as any).characters || chars);
                     }
-                } catch (e) {
-                    console.error("LiveKit connect error:", e);
-                    hasConnectedRef.current = false;
+                } else if (mode === 'livekit') {
+                    if (livekitSession) {
+                        await lk.connect(livekitSession.token, livekitSession.livekitUrl);
+                    } else {
+                        const data = await apiClient.createLivekitSession(scenario.scenario || scenario as any, []);
+                        await lk.connect(data.token, data.livekitUrl);
+                    }
                 }
+            } catch (e) {
+                console.error(`${mode} connect error:`, e);
+                hasConnectedRef.current = false;
+                setForceReady(true);
             }
         };
-        handleLiveKitConnect();
+        doConnect();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scenario]);
 
-        if (history.length === 0) {
-            if (!isLiveKitMode) {
-                const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.')
-                setCurrentBotMsg(firstTurn)
-                setHistory([{ speaker: 'AI', line: firstTurn }])
+    // Set initial bot message for HTTP mode
+    useEffect(() => {
+        if (!scenario || isRealtimeMode || history.length > 0) return;
+        const firstTurn = sanitize((scenario.scenario || scenario as any).startingTurns?.[0]?.line || 'Chào bạn, chúng ta bắt đầu phần luyện tập nhé.');
+        setCurrentBotMsg(firstTurn);
+        setHistory([{ speaker: 'AI', line: firstTurn }]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scenario]);
+
+    // Timeout: if not ready after 15s, force ready (user can use text input)
+    useEffect(() => {
+        if (isAgentReady || !isRealtimeMode) return;
+        const timer = setTimeout(() => {
+            if (!isAgentReady) {
+                console.warn('[Conversation] Agent not ready after 15s, forcing ready for text mode');
+                setForceReady(true);
             }
-        } else {
-            const lastMsg = history[history.length - 1]?.line || '...'
-            setCurrentBotMsg(lastMsg)
-        }
-    }, [scenario, router, history, setHistory, isLiveKitMode, isConnected, connectLiveKit])
+        }, 15000);
+        return () => clearTimeout(timer);
+    }, [isAgentReady, isRealtimeMode]);
 
-    // LiveKit: auto-enable mic once agent is ready (not just connected)
+    // Auto-enable mic + start Silero VAD once agent is ready
     const hasAutoEnabledMic = useRef(false);
     useEffect(() => {
-        if (isLiveKitMode && isConnected && isAgentReady && !isMicEnabled && !hasAutoEnabledMic.current) {
+        if (isRealtimeMode && isConnected && isAgentReady && !isMicEnabled && !hasAutoEnabledMic.current) {
             hasAutoEnabledMic.current = true;
-            toggleLiveKitMic();
+            if (mode === 'gemini-direct') {
+                // Mic is auto-enabled on connect for Gemini Direct
+                // Start Silero VAD for instant UI feedback
+                sileroVAD.start();
+            } else {
+                lk.toggleMic();
+            }
         }
-    }, [isLiveKitMode, isConnected, isAgentReady, isMicEnabled, toggleLiveKitMic])
+    }, [isRealtimeMode, isConnected, isAgentReady, isMicEnabled])
 
     const playAudioUrl = (url: string) => {
         const audio = new Audio(url);
@@ -132,9 +187,15 @@ export default function ConversationStudioPage() {
     const handleMicToggle = async () => {
         if (isProcessing) return;
 
-        if (isLiveKitMode) {
-            await toggleLiveKitMic();
-            if (!isMicEnabled) setShowHints(false);
+        if (mode === 'gemini-direct') {
+            await gd.toggleMic();
+            if (!gd.isMicEnabled) setShowHints(false);
+            return;
+        }
+
+        if (mode === 'livekit') {
+            await lk.toggleMic();
+            if (!lk.isMicEnabled) setShowHints(false);
             return;
         }
 
@@ -202,27 +263,76 @@ export default function ConversationStudioPage() {
         }
     }
 
+    // Text input — send through Gemini Live session (responds with audio)
+    // Falls back to backend API if not connected
+    const handleTextSend = async () => {
+        const text = textInput.trim();
+        if (!text || isProcessing) return;
+        setTextInput('');
+
+        // Add user turn to history
+        setHistory((prev: any[]) => [...prev, { speaker: 'User', line: text, confirmed: true }]);
+
+        if (mode === 'gemini-direct' && isConnected) {
+            // Send text through existing Gemini Live WebSocket — AI responds with audio naturally
+            gd.sendText(text);
+        } else {
+            // Fallback: call backend text API + browser TTS
+            setIsProcessing(true);
+            try {
+                const scenarioData = scenario?.scenario || scenario as any;
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/practice/interact-text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scenarioStr: JSON.stringify(scenarioData),
+                        conversationHistoryStr: JSON.stringify(history),
+                        userMessage: text,
+                    }),
+                });
+                const data = await res.json();
+                const aiResponse = sanitize(data.botResponse || data.response || 'Xin lỗi, tôi chưa hiểu.');
+                setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: aiResponse, confirmed: true }]);
+                browserTTS.speak(aiResponse);
+            } catch (err) {
+                console.error('Text interaction error:', err);
+                setHistory((prev: any[]) => [...prev, { speaker: 'AI', line: 'Xin lỗi, có lỗi xảy ra.', confirmed: true }]);
+            } finally {
+                setIsProcessing(false);
+            }
+        }
+        textInputRef.current?.focus();
+    };
+
     const handleEndSession = () => {
         if (history.length < 2) return;
-        if (isLiveKitMode) {
-            disconnectLiveKit();
+        sileroVAD.stop();
+        if (mode === 'gemini-direct') {
+            gd.disconnect();
+            setGeminiDirectSession(null);
+        } else if (mode === 'livekit') {
+            lk.disconnect();
         }
-        router.push('/evaluation/conversation');
+        setLivekitSession(null);
+        router.push('/evaluation/overall');
     }
 
     // Unified state
-    const isListening = isRecording || (isLiveKitMode && isMicEnabled && isUserSpeaking);
-    const isBotResponding = isProcessing || (isLiveKitMode && isAgentSpeaking);
-    const isMicActive = isRecording || (isLiveKitMode && isMicEnabled);
+    const isListening = isRecording || (isRealtimeMode && isMicEnabled && isUserSpeaking);
+    const isBotResponding = isProcessing || (isRealtimeMode && isAgentSpeaking);
+    const isMicActive = isRecording || (isRealtimeMode && isMicEnabled);
 
     const userHasSpoken = history.some((msg: any) => msg.speaker === 'User');
-    const personaName = (scenario?.scenario || scenario as any)?.interviewerPersona?.split(' ')?.[0] || 'Ni'
+    const scenarioChars = (scenario?.scenario as any)?.characters || [];
+    const personaName = scenarioChars.length > 0
+        ? scenarioChars[0].name
+        : (scenario?.scenario || scenario as any)?.interviewerPersona?.split(' ')?.[0] || 'Ni'
 
     return (
         <div className="relative flex flex-col h-screen bg-[#0d1117] text-white font-sans overflow-hidden">
 
             {/* Loading overlay — shown until agent is ready */}
-            {isLiveKitMode && !isAgentReady && (
+            {isRealtimeMode && !isAgentReady && (
                 <div className="absolute inset-0 z-50 bg-[#0d1117] flex flex-col items-center justify-center gap-5">
                     <div className="relative">
                         <div className="w-20 h-20 rounded-full border-4 border-teal-500/20 border-t-teal-400 animate-spin" />
@@ -235,7 +345,7 @@ export default function ConversationStudioPage() {
                             Đang chuẩn bị phòng luyện tập...
                         </p>
                         <p className="text-slate-600 text-sm">
-                            AI Agent đang tải, vui lòng chờ một chút
+                            {mode === 'gemini-direct' ? 'Đang kết nối Gemini Live...' : 'AI Agent đang tải, vui lòng chờ một chút'}
                         </p>
                     </div>
                     {isConnected && (
@@ -247,8 +357,6 @@ export default function ConversationStudioPage() {
                 </div>
             )}
 
-            {/* Webcam PiP — absolute top-left */}
-            <WebcamPreview />
 
             {/* ── Header ────────────────────────────────────────────── */}
             <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-[#0d1117]/90 to-transparent pointer-events-none">
@@ -284,69 +392,108 @@ export default function ConversationStudioPage() {
                 </div>
             </header>
 
-            {/* ── Stage: Avatar centered ────────────────────────────── */}
-            <div className="flex-1 flex flex-col items-center justify-center relative z-10" style={{ paddingBottom: '11rem' }}>
+            {/* ── Layout chính: Chia đôi màn hình (Split Screen) ──────── */}
+            <div className="flex-1 flex flex-col md:flex-row w-full pt-20 pb-28 h-full relative z-10">
 
-                {/* Connection badge */}
-                {isLiveKitMode && (
-                    <div className="absolute top-20 right-6 flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
-                        <span className="text-[11px] text-slate-500">{isConnected ? 'Đã kết nối' : 'Đang kết nối...'}</span>
+                {/* Panel Trái: Avatar & Waveform */}
+                <div className="w-full md:w-5/12 flex flex-col items-center justify-center relative p-6 border-b md:border-b-0 md:border-r border-slate-800/50">
+
+                    {/* Connection badge */}
+                    {isRealtimeMode && (
+                        <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-slate-800/40 px-3 py-1.5 rounded-full backdrop-blur-sm border border-slate-700/50">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                            <span className="text-[11px] font-medium text-slate-400">{isConnected ? 'Đã kết nối' : 'Đang kết nối...'}</span>
+                        </div>
+                    )}
+
+                    <RobotAvatar isSpeaking={isBotResponding} isListening={isListening} />
+
+
+                    <div className="h-16 flex items-center justify-center w-full max-w-[200px]">
+                        <WaveformVisualizer isActive={isListening && !isBotResponding} />
                     </div>
-                )}
-
-                <RobotAvatar isSpeaking={isBotResponding} isListening={isListening} />
-
-                {/* Persona label */}
-                <div className="mt-6 mb-4 text-center">
-                    <span className="text-sm font-medium text-slate-400">{personaName}</span>
                 </div>
 
-                {/* Waveform — visible when user is actively speaking */}
-                <WaveformVisualizer isActive={isListening} />
-            </div>
+                {/* Panel Phải: Chat Log */}
+                <div className="flex-1 w-full md:w-7/12 flex flex-col relative h-full bg-slate-900/20">
 
-            {/* ── Floating Transcripts ──────────────────────────────── */}
-            <div className="absolute bottom-[5.5rem] left-0 right-0 z-10 px-4">
-
-                {/* Hints overlay */}
-                {showHints && (
-                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 z-30 w-full max-w-md">
-                        <div className="bg-[#161b22]/95 backdrop-blur-md rounded-2xl border border-amber-500/30 p-4 shadow-[0_0_30px_rgba(245,158,11,0.12)]">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Sparkles className="w-4 h-4 text-amber-400" />
-                                <span className="text-sm font-semibold text-amber-300">Gợi ý từ Ni</span>
-                                <button onClick={() => setShowHints(false)} className="ml-auto text-slate-500 hover:text-slate-300 text-xs">✕</button>
-                            </div>
-                            {isLoadingHints ? (
-                                <div className="flex items-center justify-center gap-2 py-2">
-                                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                                    <span className="text-sm text-slate-400">Ni đang nghĩ...</span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-wrap gap-2">
-                                    {hints.map((hint, i) => (
-                                        <span
-                                            key={i}
-                                            className="px-3 py-1.5 bg-amber-500/12 text-amber-200 rounded-full text-sm border border-amber-500/20 cursor-default"
-                                        >
-                                            💡 {hint}
-                                        </span>
-                                    ))}
-                                </div>
+                    {/* Hints overlay */}
+                    <div className="absolute top-4 left-0 right-0 z-30 px-4 flex justify-center pointer-events-none">
+                        <AnimatePresence>
+                            {showHints && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="w-full max-w-lg pointer-events-auto"
+                                >
+                                    <div className="bg-[#161b22]/95 backdrop-blur-md rounded-2xl border border-amber-500/30 p-4 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Sparkles className="w-4 h-4 text-amber-400" />
+                                            <span className="text-sm font-semibold text-amber-300">Gợi ý từ Ni</span>
+                                            <button onClick={() => setShowHints(false)} className="ml-auto text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-md hover:bg-slate-800">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                            </button>
+                                        </div>
+                                        {isLoadingHints ? (
+                                            <div className="flex items-center justify-center gap-2 py-4">
+                                                <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                                                <span className="text-sm font-medium text-slate-400">Ni đang nghĩ...</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-2">
+                                                {hints.map((hint, i) => (
+                                                    <span
+                                                        key={i}
+                                                        className="px-3.5 py-2 bg-amber-500/10 text-amber-200/90 rounded-xl text-sm border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-default leading-snug"
+                                                    >
+                                                        💡 {hint}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
                             )}
-                        </div>
+                        </AnimatePresence>
                     </div>
-                )}
 
-                <FloatingTranscripts
-                    history={history}
-                    isUserSpeaking={isListening}
-                    isBotResponding={isBotResponding}
-                    isListening={isListening}
-                    personaName={personaName}
-                />
+                    <div className="flex-1 w-full h-full p-4 md:p-8">
+                        <FloatingTranscripts
+                            history={history}
+                            isUserSpeaking={isListening}
+                            isBotResponding={isBotResponding}
+                            isListening={isListening}
+                            personaName={personaName}
+                            characters={scenarioChars}
+                        />
+                    </div>
+                </div>
             </div>
+
+            {/* ── Text Input Bar (toggle) ──────────────────────────── */}
+            {showTextInput && (
+                <div className="absolute bottom-[88px] left-0 right-0 z-20 px-6 flex justify-center">
+                    <div className="w-full max-w-lg flex items-center gap-2 bg-slate-800/90 backdrop-blur-md border border-slate-700/60 rounded-2xl px-4 py-2 shadow-xl">
+                        <input
+                            ref={textInputRef}
+                            value={textInput}
+                            onChange={e => setTextInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleTextSend(); } }}
+                            placeholder="Nhập tin nhắn thay vì nói..."
+                            disabled={isProcessing}
+                            className="flex-1 bg-transparent text-slate-200 placeholder:text-slate-500 text-sm outline-none py-1.5"
+                        />
+                        <button
+                            onClick={handleTextSend}
+                            disabled={!textInput.trim() || isProcessing}
+                            className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white disabled:opacity-30 transition-all shrink-0"
+                        >
+                            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ── Bottom Controls ───────────────────────────────────── */}
             <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-8 px-6 py-5 bg-gradient-to-t from-[#0d1117] via-[#0d1117]/80 to-transparent">
@@ -392,6 +539,15 @@ export default function ConversationStudioPage() {
                     </span>
                 </button>
 
+                {/* Text mode toggle */}
+                <button
+                    onClick={() => { setShowTextInput(v => !v); setTimeout(() => textInputRef.current?.focus(), 100); }}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full border font-medium transition-all text-sm ${showTextInput ? 'bg-teal-500/20 border-teal-500 text-teal-300' : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white border-slate-700/60'}`}
+                >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Text</span>
+                </button>
+
                 {/* End session */}
                 <button
                     onClick={handleEndSession}
@@ -401,6 +557,8 @@ export default function ConversationStudioPage() {
                     <span>Kết thúc</span>
                 </button>
             </div>
+
+
         </div>
     )
 }

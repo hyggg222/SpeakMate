@@ -1,0 +1,6 @@
+{
+  "code": "23502",
+  "details": "Failing row contains (9454ee4f-f5fa-4dad-91a0-81392b7d83da, 96d43a47-47e0-4980-b765-ef6e3ae7d33e, Tối ưu hoá hiệu suất API hệ thống, Tôi đã tối ưu hoá API chậm bằng cách thêm caching v..., text, STAR, {\"task\": \"Nhiệm vụ của tôi là phân tích nguyên nhân ..., Xin chào, tôi xin chia sẻ về một lần tôi tối ưu ho..., 60, {Performance,Optimization,Backend}, draft, null, null, 2026-04-22 12:54:45.428039+00, 2026-04-22 12:54:45.428039+00).",
+  "hint": null,
+  "message": "null value in column \"practice_count\" of relation \"story_entries\" violates not-null constraint"
+}

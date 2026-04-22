@@ -11,7 +11,11 @@ export class LiveKitService {
             identity: identity,
         });
 
-        at.addGrant({ roomJoin: true, room: roomName });
+        at.addGrant({
+            roomJoin: true,
+            roomCreate: true,
+            room: roomName,
+        });
 
         // Minimal metadata — no scenario/history bloat
         at.metadata = JSON.stringify({

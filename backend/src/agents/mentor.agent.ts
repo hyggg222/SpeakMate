@@ -1,8 +1,6 @@
-import { config } from '../config/env';
-import { GoogleGenAI } from '@google/genai';
 import { PromptService } from '../services/prompt.service';
-
-const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
+import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
+import type { FeedbackAnalysis } from '../contracts/data.contracts';
 
 export interface MentorChatResponse {
     reply: string;
@@ -12,8 +10,30 @@ export interface MentorChatResponse {
     };
 }
 
+export interface StoryChatMessage {
+    role: 'user' | 'mentor';
+    content: string;
+    fieldTargeted?: string | null;
+}
+
+export interface StoryChatResponse {
+    chatMessage: string;
+    fieldTargeted: string | null;
+}
+
+export interface GeneralChatResponse {
+    reply: string;
+    intent: 'query' | 'action' | 'support';
+    actionTaken?: { type: string; label: string; href: string } | null;
+    dataCards?: {
+        stories?: any[];
+        challenges?: any[];
+        progress?: any;
+    } | null;
+}
+
 export class MentorAgent {
-    private modelName = 'gemini-2.0-flash';
+    private modelName = GEMINI_MODEL;
     private promptService: PromptService;
 
     constructor() {
@@ -46,13 +66,14 @@ User Message: "${userMessage}"
 
             messages.push({ role: "user", parts: [{ text: context }] });
 
-            const response = await genAI.models.generateContent({
+            const response = await getGenAI().models.generateContent({
                 model: this.modelName,
                 contents: messages,
                 config: {
                     systemInstruction: systemPrompt,
                     responseMimeType: "application/json",
                     temperature: 0.7,
+                    safetySettings: SAFETY_SETTINGS,
                 }
             });
 
@@ -63,5 +84,307 @@ User Message: "${userMessage}"
             console.error("[MentorAgent] Chat error:", error);
             throw error;
         }
+    }
+
+    /**
+     * Generates Ni's summary comment after evaluation.
+     */
+    public async generateEvalComment(
+        evalReport: any,
+        storyCoverage?: any[],
+        streak?: number,
+        previousScore?: number
+    ): Promise<string> {
+        const maxAttempts = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const coverageSummary = storyCoverage && storyCoverage.length > 0
+                    ? storyCoverage.map((c: any) => `Story "${c.title || 'N/A'}": coverage ${c.coverageScore}%`).join('. ')
+                    : 'Không có Story Bank coverage.';
+
+                const context = `
+Báo cáo Analyst:
+- Điểm tổng: ${evalReport.goalProgress || 0}%
+- Ngôn ngữ: ${evalReport.language?.score || 0}/100
+- Nội dung: ${evalReport.content?.score || 0}/100
+- Cảm xúc: ${evalReport.emotion?.score || 0}/100
+- Feedback: ${evalReport.overallFeedback || ''}
+
+Story Bank Coverage: ${coverageSummary}
+Streak hiện tại: ${streak ?? 0} tuần
+${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây là phiên đầu tiên.'}
+`;
+
+                const response = await getGenAI().models.generateContent({
+                    model: this.modelName,
+                    contents: [{ role: 'user', parts: [{ text: context }] }],
+                    config: {
+                        systemInstruction: this.promptService.getEvalCommentPrompt(),
+                        temperature: 0.8,
+                        safetySettings: SAFETY_SETTINGS,
+                    }
+                });
+
+                return (response.text || '').trim();
+            } catch (error) {
+                lastError = error;
+                console.error(`[MentorAgent] generateEvalComment attempt ${attempt}/${maxAttempts} failed:`, error);
+                if (isRateLimited(error)) switchToFallback();
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+        // Fallback comment if API fails
+        return 'Phiên luyện tập vừa rồi có nhiều điểm hay đó. Xem chi tiết ở trên và thử áp dụng vào thực tế nhé!';
+    }
+
+    /**
+     * Responds as Mentor Ni in story creation chat.
+     * Asks one question at a time targeting missing framework fields.
+     */
+    public async chatForStory(
+        framework: string,
+        initialInput: string,
+        chatMessages: StoryChatMessage[],
+        inputMethod: string
+    ): Promise<StoryChatResponse> {
+        const maxAttempts = 3;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const systemPrompt = this.promptService.getStoryChatSystemPrompt(framework, initialInput);
+
+                // Build multi-turn conversation
+                const messages: { role: string; parts: { text: string }[] }[] = [];
+
+                if (chatMessages.length === 0) {
+                    // First turn: send initial input as user message to get Ni's greeting + first question
+                    messages.push({
+                        role: 'user',
+                        parts: [{ text: `Input gốc (${inputMethod}): ${initialInput}` }]
+                    });
+                } else {
+                    // Include initial input context in first message
+                    messages.push({
+                        role: 'user',
+                        parts: [{ text: `Input gốc (${inputMethod}): ${initialInput}` }]
+                    });
+
+                    // Add chat history
+                    for (const msg of chatMessages) {
+                        messages.push({
+                            role: msg.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: msg.content }]
+                        });
+                    }
+                }
+
+                const response = await getGenAI().models.generateContent({
+                    model: this.modelName,
+                    contents: messages,
+                    config: {
+                        systemInstruction: systemPrompt,
+                        responseMimeType: 'application/json',
+                        temperature: 0.7,
+                        safetySettings: SAFETY_SETTINGS,
+                    }
+                });
+
+                const jsonStr = response.text || '{}';
+                const parsed: StoryChatResponse = JSON.parse(jsonStr);
+
+                // Ensure valid response shape
+                return {
+                    chatMessage: parsed.chatMessage || 'Xin lỗi, Ni chưa hiểu. Bạn nói lại nhé?',
+                    fieldTargeted: parsed.fieldTargeted || null,
+                };
+            } catch (error) {
+                lastError = error;
+                console.error(`[MentorAgent] chatForStory attempt ${attempt}/${maxAttempts} failed:`, (error as any)?.message || error);
+                if (isRateLimited(error)) switchToFallback();
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000 * attempt));
+            }
+        }
+        throw lastError;
+    }
+
+    /**
+     * Analyzes challenge feedback and returns personalized Ni comment + dialogue analysis.
+     */
+    public async analyzeFeedback(
+        challenge: { title: string; description: string; sourceWeakness?: string; difficulty: number },
+        feedbackData: {
+            completed: boolean;
+            situation?: string;
+            emotionBefore?: string;
+            emotionAfter?: string;
+            whatUserSaid?: string;
+            othersReaction?: string;
+            whatWorked?: string;
+            whatStuck?: string;
+        },
+        voiceTranscript?: string | null,
+        prevWeakness?: string | null
+    ): Promise<FeedbackAnalysis> {
+        const maxAttempts = 2;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const context = `
+Challenge:
+- Tiêu đề: ${challenge.title}
+- Mô tả: ${challenge.description}
+- Nguồn điểm yếu: ${challenge.sourceWeakness || 'Không rõ'}
+- Độ khó: ${challenge.difficulty}/5
+
+Feedback từ user:
+- Đã thực hiện: ${feedbackData.completed ? 'Có' : 'Chưa'}
+- Diễn biến: ${feedbackData.situation || 'Không có'}
+- Cảm xúc trước: ${feedbackData.emotionBefore || 'Không có'}
+- Cảm xúc sau: ${feedbackData.emotionAfter || 'Không có'}
+- Bạn đã nói gì: ${feedbackData.whatUserSaid || 'Không có'}
+- Người kia phản ứng sao: ${feedbackData.othersReaction || 'Không có'}
+- Chỗ suôn sẻ: ${feedbackData.whatWorked || 'Không có'}
+- Chỗ bị kẹt: ${feedbackData.whatStuck || 'Không có'}
+${voiceTranscript ? `\nVoice transcript: ${voiceTranscript}` : ''}
+${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
+`;
+                const systemPrompt = this.promptService.getFeedbackAnalysisPrompt();
+
+                const response = await getGenAI().models.generateContent({
+                    model: this.modelName,
+                    contents: [{ role: 'user', parts: [{ text: context }] }],
+                    config: {
+                        systemInstruction: systemPrompt,
+                        responseMimeType: 'application/json',
+                        temperature: 0.75,
+                        safetySettings: SAFETY_SETTINGS,
+                    }
+                });
+
+                const raw = response.text || '{}';
+                let parsed: any;
+                try {
+                    parsed = JSON.parse(raw);
+                } catch {
+                    parsed = {};
+                }
+
+                const xpEarned = feedbackData.completed ? 150 : 75;
+                return {
+                    comparisonWithGym: parsed.niComment || '',
+                    progressNote: parsed.dialogueAnalysis || '',
+                    newStoryCandidate: parsed.newStoryCandidate === true,
+                    newStorySuggestion: parsed.newStorySuggestion || undefined,
+                    nextDifficulty: Math.min(5, Math.max(1, parsed.nextDifficulty || challenge.difficulty)),
+                    nextChallengeHint: parsed.nextChallengeHint || 'Tiếp tục luyện tập nhé!',
+                    xpEarned: parsed.xpEarned || xpEarned,
+                    niComment: parsed.niComment || undefined,
+                    dialogueAnalysis: parsed.dialogueAnalysis || null,
+                    betterPhrasing: parsed.betterPhrasing || null,
+                };
+            } catch (error) {
+                lastError = error;
+                console.error(`[MentorAgent] analyzeFeedback attempt ${attempt}/${maxAttempts} failed:`, error);
+                if (isRateLimited(error)) switchToFallback();
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        // Fallback
+        const xp = feedbackData.completed ? 150 : 75;
+        return {
+            comparisonWithGym: feedbackData.completed
+                ? 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.'
+                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
+            progressNote: '',
+            newStoryCandidate: false,
+            nextDifficulty: challenge.difficulty,
+            nextChallengeHint: 'Tiếp tục luyện tập để cải thiện nhé!',
+            xpEarned: xp,
+            niComment: feedbackData.completed
+                ? 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.'
+                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
+            dialogueAnalysis: null,
+            betterPhrasing: null,
+        };
+    }
+
+    /**
+     * General chat with Mentor Ni — natively uses Gemini.
+     * Returns structured response with reply, intent, actionTaken, dataCards.
+     */
+    public async generalChat(
+        userMessage: string,
+        conversationHistory: { role: string; content: string }[],
+        userContext: string
+    ): Promise<GeneralChatResponse> {
+        const maxAttempts = 3;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const systemPrompt = this.promptService.getMentorChatSystemPrompt(userContext);
+
+                const messages = [
+                    ...conversationHistory.map(m => ({
+                        role: m.role === 'user' ? 'user' as const : 'model' as const,
+                        parts: [{ text: m.content }],
+                    })),
+                    { role: 'user' as const, parts: [{ text: userMessage }] },
+                ];
+
+                const response = await getGenAI().models.generateContent({
+                    model: this.modelName,
+                    contents: messages,
+                    config: {
+                        systemInstruction: systemPrompt,
+                        responseMimeType: 'application/json',
+                        temperature: 0.7,
+                        maxOutputTokens: 1024,
+                        safetySettings: SAFETY_SETTINGS,
+                    }
+                });
+
+                const rawResponse = response.text || "{}";
+
+                // Parse JSON response
+                let parsed: GeneralChatResponse;
+                try {
+                    parsed = JSON.parse(rawResponse);
+                } catch {
+                    // If JSON parse fails, treat raw text as reply
+                    parsed = {
+                        reply: rawResponse,
+                        intent: 'support',
+                        actionTaken: null,
+                        dataCards: null,
+                    };
+                }
+
+                return {
+                    reply: parsed.reply || 'Mình nghe rồi! Bạn cứ hỏi thêm nhé.',
+                    intent: parsed.intent || 'support',
+                    actionTaken: parsed.actionTaken || null,
+                    dataCards: parsed.dataCards || null,
+                };
+            } catch (error) {
+                lastError = error;
+                console.error(`[MentorAgent] generalChat attempt ${attempt}/${maxAttempts} failed:`, (error as any)?.message || error);
+                if (isRateLimited(error)) switchToFallback();
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000 * attempt));
+            }
+        }
+
+        // Fallback if all attempts fail
+        return {
+            reply: 'Xin lỗi, Ni đang gặp trục trặc. Bạn thử lại sau nhé!',
+            intent: 'support',
+            actionTaken: null,
+            dataCards: null,
+        };
     }
 }
