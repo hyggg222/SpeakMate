@@ -1,12 +1,10 @@
-import { config } from '../config/env';
-import { GoogleGenAI } from '@google/genai';
 import { FullScenarioContext } from '../contracts/data.contracts';
+import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
 
 /**
  * BrainAgent is responsible for processing user requirements into structured JSON scenarios.
  * It uses the Gemini 2.0 Flash model to generate contexts for practice sessions.
  */
-const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 /**
  * Strips bracketed placeholders like [tên của bạn] from any string.
@@ -39,7 +37,7 @@ function sanitizeScenario(obj: any): any {
 import { PromptService } from '../services/prompt.service';
 
 export class BrainAgent {
-  private modelName = 'gemini-2.0-flash';
+  private modelName = GEMINI_MODEL;
   private promptService: PromptService;
 
   constructor() {
@@ -55,23 +53,29 @@ export class BrainAgent {
    * @throws Will throw an error if the model fails to generate content or returns invalid JSON.
    */
   public async generateScenario(userRequirement: string): Promise<FullScenarioContext> {
-    try {
-      const response = await genAI.models.generateContent({
-        model: this.modelName,
-        contents: `User Goal: ${userRequirement}`,
-        config: {
-          systemInstruction: this.promptService.getScenarioSystemPrompt(),
-          responseMimeType: "application/json",
-        }
-      });
-      // The SDK returns text which is JSON formatted
-      const jsonStr = response.text || "{}";
-      const configObj: FullScenarioContext = sanitizeScenario(JSON.parse(jsonStr));
-      return configObj;
-    } catch (error) {
-      console.error("BrainAgent error:", error);
-      throw error;
+    const maxAttempts = 3;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await getGenAI().models.generateContent({
+          model: this.modelName,
+          contents: [{ role: 'user', parts: [{ text: `User Goal: ${userRequirement}` }] }],
+          config: {
+            systemInstruction: this.promptService.getScenarioSystemPrompt(),
+            responseMimeType: "application/json",
+            safetySettings: SAFETY_SETTINGS,
+          }
+        });
+        const jsonStr = response.text || "{}";
+        const configObj: FullScenarioContext = sanitizeScenario(JSON.parse(jsonStr));
+        return configObj;
+      } catch (error) {
+        lastError = error;
+        console.error(`[BrainAgent] generateScenario attempt ${attempt}/${maxAttempts} failed:`, error);
+        if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
     }
+    throw lastError;
   }
 
   /**
@@ -92,12 +96,13 @@ ${historyText}
 The user is stuck and needs help. Generate exactly 3 short Vietnamese keyword hints or phrases (max 5 words each) that would help the user continue the conversation naturally. These should be suggestive, not full sentences.
 Output ONLY a JSON array of 3 strings, no markdown. Example: ["từ khóa 1", "cụm từ 2", "gợi ý 3"]`;
 
-      const response = await genAI.models.generateContent({
+      const response = await getGenAI().models.generateContent({
         model: this.modelName,
-        contents: prompt,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           temperature: 0.8,
+          safetySettings: SAFETY_SETTINGS,
         }
       });
       const jsonStr = response.text || '["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"]';
@@ -128,12 +133,13 @@ Output ONLY a valid JSON object matching the exact same structure as the input s
 Respond in Vietnamese inside string values.
 NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], etc. Use concrete names or "bạn" instead.`;
 
-      const response = await genAI.models.generateContent({
+      const response = await getGenAI().models.generateContent({
         model: this.modelName,
-        contents: prompt,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction: this.promptService.getScenarioSystemPrompt(),
           responseMimeType: "application/json",
+          safetySettings: SAFETY_SETTINGS,
         }
       });
       const jsonStr = response.text || "{}";
@@ -160,12 +166,13 @@ ${JSON.stringify(currentScenario, null, 2)}
 Generate exactly 3 creative and useful Vietnamese suggestions (each max 8 words) that the user could apply to enhance or modify this scenario. These should be contextually relevant — they could adjust difficulty, add new elements, change the setting, or introduce interesting twists.
 Output ONLY a JSON array of 3 strings, no markdown. Example: ["Thêm câu hỏi phản biện", "Bối cảnh phỏng vấn online", "Tăng tempo cuộc hội thoại"]`;
 
-      const response = await genAI.models.generateContent({
+      const response = await getGenAI().models.generateContent({
         model: this.modelName,
-        contents: prompt,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           temperature: 0.9,
+          safetySettings: SAFETY_SETTINGS,
         }
       });
       const jsonStr = response.text || '["Thêm nhân vật phản biện", "Bối cảnh hội trường lớn", "Khán giả là chuyên gia"]';
@@ -180,25 +187,54 @@ Output ONLY a JSON array of 3 strings, no markdown. Example: ["Thêm câu hỏi 
    * Phase 3: Generates a Real-world Challenge from user weaknesses.
    */
   public async generateChallenge(scenario: any, evaluationReport: any): Promise<any> {
-    try {
-      const prompt = `
+    const prompt = `
 Scenario: ${JSON.stringify(scenario)}
 Evaluation Report: ${JSON.stringify(evaluationReport)}
-      `;
+User Request: null
+    `;
+    return this._callGamificationPrompt(prompt);
+  }
 
-      const response = await genAI.models.generateContent({
+  public async adjustChallenge(
+    currentChallenge: { title: string; description: string; difficulty: number; sourceWeakness?: string },
+    userRequest: string,
+    scenario: any,
+    evaluationReport: any
+  ): Promise<any> {
+    const prompt = `
+Scenario: ${JSON.stringify(scenario)}
+Evaluation Report: ${JSON.stringify(evaluationReport)}
+Challenge hiện tại: ${JSON.stringify(currentChallenge)}
+User Request: "${userRequest}"
+    `;
+    return this._callGamificationPrompt(prompt);
+  }
+
+  private async _callGamificationPrompt(prompt: string): Promise<any> {
+    try {
+      const response = await getGenAI().models.generateContent({
         model: this.modelName,
-        contents: prompt,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction: this.promptService.getGamificationSystemPrompt(),
           responseMimeType: "application/json",
           temperature: 0.8,
+          safetySettings: SAFETY_SETTINGS,
         }
       });
       const jsonStr = response.text || "{}";
-      return JSON.parse(jsonStr);
+      const parsed = JSON.parse(jsonStr);
+      // Ensure required fields have defaults
+      return {
+        title: parsed.title || 'Thử thách giao tiếp',
+        description: parsed.description || '',
+        difficulty: Math.min(5, Math.max(1, parsed.difficulty || 3)),
+        sourceWeakness: parsed.sourceWeakness || null,
+        opener_hints: Array.isArray(parsed.opener_hints) ? parsed.opener_hints : [],
+        suggestedStories: [],
+      };
     } catch (error) {
-      console.error("[BrainAgent] Failed to generate challenge:", error);
+      console.error("[BrainAgent] Failed to call gamification prompt:", error);
       throw error;
     }
   }

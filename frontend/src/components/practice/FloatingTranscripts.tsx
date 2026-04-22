@@ -5,8 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface Turn {
     speaker: 'AI' | 'User'
+    character_id?: string
+    character_name?: string
     line: string
     confirmed?: boolean
+}
+
+interface CharacterInfo {
+    id: string
+    name: string
+    color?: string
 }
 
 interface FloatingTranscriptsProps {
@@ -15,7 +23,14 @@ interface FloatingTranscriptsProps {
     isBotResponding: boolean
     isListening: boolean
     personaName?: string
+    characters?: CharacterInfo[]
 }
+
+const CHARACTER_COLORS: Record<string, { bg: string; border: string; label: string }> = {
+    teal:   { bg: 'bg-teal-950/70',   border: 'border-teal-800/50',   label: 'text-teal-400/80' },
+    indigo: { bg: 'bg-indigo-950/70',  border: 'border-indigo-800/50', label: 'text-indigo-400/80' },
+}
+const DEFAULT_AI_STYLE = CHARACTER_COLORS.teal
 
 export function FloatingTranscripts({
     history,
@@ -23,7 +38,18 @@ export function FloatingTranscripts({
     isBotResponding,
     isListening,
     personaName = 'AI',
+    characters = [],
 }: FloatingTranscriptsProps) {
+    const isDual = characters.length >= 2
+
+    // Map character id → color style
+    const charColorMap = new Map<string, typeof DEFAULT_AI_STYLE>()
+    if (isDual) {
+        const palette = ['teal', 'indigo']
+        characters.forEach((ch, i) => {
+            charColorMap.set(ch.id, CHARACTER_COLORS[ch.color || palette[i] || 'teal'] || DEFAULT_AI_STYLE)
+        })
+    }
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Auto-scroll to bottom when new messages arrive
@@ -35,23 +61,15 @@ export function FloatingTranscripts({
 
     return (
         <motion.div
-            className="w-full max-w-lg mx-auto"
+            className="w-full h-full max-w-4xl mx-auto flex flex-col"
             animate={{ opacity: isUserSpeaking ? 0.2 : 1 }}
             transition={{ duration: 0.25 }}
         >
-            {/* Gradient fade mask at top + scrollable container */}
-            <div
-                className="relative overflow-hidden"
-                style={{
-                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 100%)',
-                }}
-            >
+            <div className="flex-1 relative overflow-hidden">
                 <div
                     ref={scrollRef}
-                    className="overflow-y-auto flex flex-col gap-2.5 px-1 pb-1"
+                    className="absolute inset-0 overflow-y-auto flex flex-col gap-4 px-4 pb-8 pt-4"
                     style={{
-                        maxHeight: '38vh',
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none',
                     }}
@@ -67,14 +85,24 @@ export function FloatingTranscripts({
                                 transition={{ duration: 0.28, ease: 'easeOut' }}
                                 className={`flex ${msg.speaker === 'User' ? 'justify-start' : 'justify-end'}`}
                             >
-                                <div
-                                    className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-all duration-300 ${msg.speaker === 'User'
+                                <div className={`max-w-[85%] flex flex-col ${msg.confirmed === false ? 'opacity-50 grayscale-[0.5]' : 'opacity-100 grayscale-0'}`}>
+                                    {/* Character name label (dual mode, AI only) */}
+                                    {isDual && msg.speaker === 'AI' && msg.character_name && (
+                                        <span className={`text-xs font-semibold mb-1 px-1 ${(msg.character_id && charColorMap.get(msg.character_id)?.label) || DEFAULT_AI_STYLE.label}`}>
+                                            {msg.character_name}
+                                        </span>
+                                    )}
+                                    <div
+                                        className={`px-5 py-3.5 rounded-2xl text-base leading-relaxed transition-all duration-300 shadow-md ${msg.speaker === 'User'
                                             ? 'bg-slate-700/70 text-slate-200 rounded-tl-sm border border-slate-600/50'
-                                            : 'bg-teal-950/70 text-teal-100 rounded-tr-sm border border-teal-800/50'
-                                        } ${msg.confirmed === false ? 'opacity-50 grayscale-[0.5]' : 'opacity-100 grayscale-0'
+                                            : (() => {
+                                                const style = (msg.character_id && charColorMap.get(msg.character_id)) || DEFAULT_AI_STYLE
+                                                return `${style.bg} text-white rounded-tr-sm border ${style.border}`
+                                            })()
                                         }`}
-                                >
-                                    {msg.speaker === 'User' ? `"${msg.line}"` : msg.line}
+                                    >
+                                        {msg.speaker === 'User' ? `"${msg.line}"` : msg.line}
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}

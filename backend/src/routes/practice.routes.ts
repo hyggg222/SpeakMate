@@ -11,6 +11,8 @@ import {
     adjustScenarioSchema,
     suggestionsSchema,
     livekitSessionSchema,
+    geminiLiveSessionSchema,
+    geminiDirectTokenSchema,
     mentorChatSchema,
     generateChallengeSchema,
     setDeadlineSchema,
@@ -43,8 +45,17 @@ router.post('/scenario', validate(setupScenarioSchema), (req, res) => practiceCo
 // 1.5. LiveKit Token generation
 router.post('/livekit-session', livekitLimiter, validate(livekitSessionSchema), (req, res) => practiceController.createLivekitSession(req, res));
 
+// 1.6. Gemini Live Pipeline v3 session
+router.post('/gemini-live-session', livekitLimiter, validate(geminiLiveSessionSchema), (req, res) => practiceController.createGeminiLiveSession(req, res));
+
+// 1.7. Gemini Direct — ephemeral token for browser-to-Gemini WebSocket
+router.post('/gemini-direct-token', livekitLimiter, validate(geminiDirectTokenSchema), (req, res) => practiceController.createGeminiDirectToken(req, res));
+
 // 2. Transcode (if needed), upload to Supabase & get real-time response from "The Voice" (Gemini 1.5 Flash)
 router.post('/interact', upload.single('audio'), validate(interactAudioSchema), (req, res) => practiceController.interactAudio(req, res));
+
+// 2.5. Text-only interaction (no audio, for testing)
+router.post('/interact-text', (req, res) => practiceController.interactText(req, res));
 
 // 3. Evaluate the entire session using "The Analyst" (Gemini 1.5 Pro)
 router.post('/analyze', validate(evaluateSessionSchema), (req, res) => practiceController.evaluateSession(req, res));
@@ -61,15 +72,38 @@ router.post('/scenario/suggestions', validate(suggestionsSchema), (req, res) => 
 // 6.5 Mentor Ni Chat (Phase 3)
 router.post('/mentor-chat', validate(mentorChatSchema), (req, res) => practiceController.mentorChat(req, res));
 
+// 6.6 Mentor Ni Eval Comment (Bridge to Reality)
+router.post('/mentor-eval-comment', (req, res) => practiceController.generateEvalComment(req, res));
+
 // Gamification (Phase 3)
 router.post('/challenge/generate', authRequired, validate(generateChallengeSchema), (req, res) => practiceController.generateChallenge(req, res));
+router.post('/challenge/adjust', authRequired, (req, res) => practiceController.adjustChallenge(req, res));
 router.get('/challenges', authRequired, (req, res) => practiceController.getUserChallenges(req, res));
 router.post('/challenge/deadline', authRequired, validate(setDeadlineSchema), (req, res) => practiceController.setChallengeDeadline(req, res));
-router.post('/challenge/report', authRequired, upload.single('audio'), validate(reportChallengeSchema), (req, res) => practiceController.reportChallenge(req, res));
+router.post('/challenge/report', authRequired, upload.single('audio'), (req, res) => practiceController.reportChallenge(req, res));
+router.post('/challenge/feedback/voice', authRequired, upload.single('audio'), (req, res) => practiceController.submitFeedbackVoice(req, res));
+router.post('/challenge/feedback/form', authRequired, upload.single('audio'), (req, res) => practiceController.submitFeedbackForm(req, res));
+// Free share — no challenge required (auth optional so guests can also share)
+// Accepts up to 2 audio files: 'voiceBlob' (mic recording) and 'audioFile' (upload)
+router.post('/feedback/free', authOptional, upload.fields([{ name: 'voiceBlob', maxCount: 1 }, { name: 'audioFile', maxCount: 1 }]), (req, res) => practiceController.submitFeedbackFree(req, res));
+router.post('/challenge/skip', authRequired, (req, res) => practiceController.skipChallenge(req, res));
+
+// 6.7 Custom Mentor Avatar & Project Assets (Developer Tool)
+router.post('/mentor/avatar', upload.single('image'), (req, res) => practiceController.uploadAsset(req, res));
+
+// Real-world audio upload & analysis
+router.post('/realworld/upload', authOptional, upload.single('audio'), (req, res) => practiceController.uploadRealWorldAudio(req, res));
+
+// Debug: save audio for VAD inspection
+router.post('/debug-audio', upload.single('audio'), (req, res) => practiceController.saveDebugAudio(req, res));
 
 // 7. Dashboard / History endpoints (require authenticated user)
 router.get('/sessions', authRequired, (req, res) => practiceController.getUserSessions(req, res));
 router.get('/sessions/:id', authRequired, (req, res) => practiceController.getSessionById(req, res));
 router.get('/stats', authRequired, (req, res) => practiceController.getUserStats(req, res));
+
+// 8. Progress tracking
+router.get('/progress', authRequired, (req, res) => practiceController.getUserProgress(req, res));
+router.get('/progress/detail', authRequired, (req, res) => practiceController.getProgressDetail(req, res));
 
 export default router;

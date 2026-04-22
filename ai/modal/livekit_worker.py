@@ -27,17 +27,8 @@ class LiveKitAgentWorker:
     @modal.enter()
     def load_models(self):
         """Pre-download models so subprocess loads are fast (cached on volume)."""
-        import sys, io
         os.environ["HF_HUB_CACHE"] = "/hf_cache"
-        _real_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            from huggingface_hub import snapshot_download
-            snapshot_download("dinhthuan/neutts-air-vi")
-            snapshot_download("neuphonic/neucodec")
-            snapshot_download("kiendt/PhoWhisper-large-ct2")
-        finally:
-            sys.stdout = _real_stdout
+        print("[LiveKit] Pre-downloading VieNeu-TTS models...", flush=True)
 
     @modal.method()
     def run(self):
@@ -45,8 +36,12 @@ class LiveKitAgentWorker:
         import logging
         import warnings
 
-        logging.getLogger("livekit.agents").setLevel(logging.ERROR)
-        logging.getLogger("livekit").setLevel(logging.ERROR)
+        logging.getLogger("livekit.agents").setLevel(logging.WARNING)
+        logging.getLogger("livekit").setLevel(logging.WARNING)
+        # Suppress repetitive memory warnings
+        logging.getLogger("livekit.agents").addFilter(
+            type("MemFilter", (), {"filter": lambda self, r: "memory usage" not in r.getMessage()})()
+        )
         for name in ("hpack", "httpcore", "httpx", "huggingface_hub", "huggingface_hub.utils._http"):
             logging.getLogger(name).setLevel(logging.ERROR)
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -80,7 +75,6 @@ class LiveKitAgentWorker:
 
 def _livekit_prewarm(proc: object):
     """Called in each agent subprocess to load models before any job arrives."""
-    import sys
     import logging
     import warnings
     import traceback
@@ -91,40 +85,33 @@ def _livekit_prewarm(proc: object):
         os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
         os.environ["HF_HUB_CACHE"] = "/hf_cache"
 
-        if "/root/ai/livekit_plugins" not in sys.path:
-            sys.path.append("/root/ai/livekit_plugins")
-            
-        from faster_whisper import WhisperModel
         from ai.livekit_plugins.neutts import NeuTTS
-        import io
 
-        print("[LiveKit] Loading models...", flush=True)
-
-        _real_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            # Initialize PyTorch models FIRST to prevent CTranslate2 from fragmenting VRAM
-            proc.userdata["tts_model"] = NeuTTS(
-                checkpoint_path="dinhthuan/neutts-air-vi",
-                codec_model="neuphonic/neucodec"
-            )
-
-            proc.userdata["stt_model"] = WhisperModel(
-                "kiendt/PhoWhisper-large-ct2", device="cuda", compute_type="float16"
-            )
-        finally:
-            sys.stdout = _real_stdout
+        print(f"[LiveKit] Loading TTS model (pid={os.getpid()})...", flush=True)
+        proc.userdata["tts_model"] = NeuTTS()
 
         voice_ref = "/valtec_models/voice_clone/voice2.mp3"
         if not os.path.exists(voice_ref):
             print(f"[LiveKit] WARNING: voice ref NOT FOUND: {voice_ref}", flush=True)
         proc.userdata["voice_ref"] = voice_ref
-        print("[LiveKit] Ready.", flush=True)
+        print(f"[LiveKit] Subprocess ready (pid={os.getpid()}).", flush=True)
 
     except Exception as e:
         print(f"[LiveKit Subprocess] CRITICAL ERROR during prewarm: {e}", flush=True)
         traceback.print_exc()
         raise e
+
+
+@app.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+def wake_livekit_agent():
+    """
+    HTTP endpoint để backend trigger LiveKit worker khởi động.
+    Trả về ngay lập tức; worker chạy ở background.
+    Gọi từ createLivekitSession khi user tạo session mới.
+    """
+    LiveKitAgentWorker().run.spawn()
+    return {"status": "starting"}
 
 
 async def _livekit_entrypoint(ctx):
@@ -133,12 +120,11 @@ async def _livekit_entrypoint(ctx):
     from livekit.plugins import silero
     from google import genai
 
-    stt_model    = ctx.proc.userdata["stt_model"]
     tts_model    = ctx.proc.userdata["tts_model"]
     voice_ref    = ctx.proc.userdata["voice_ref"]
     genai_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    vad_model    = silero.VAD.load(threshold=0.65, min_speech_duration=0.1)
+    vad_model    = silero.VAD.load()
 
-    agent = ManualBridgeAgent(ctx, vad_model, stt_model, tts_model, voice_ref, genai_client)
+    agent = ManualBridgeAgent(ctx, vad_model, tts_model, voice_ref, genai_client)
     await agent.start()
     await asyncio.Future()  # keep alive until framework cancels

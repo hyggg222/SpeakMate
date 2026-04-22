@@ -1,21 +1,13 @@
 import { config } from '../config/env';
-import { GoogleGenAI } from '@google/genai';
-// System will use global undici dispatcher for IPv4
+import { getGenAI, GEMINI_MODEL } from '../config/genai';
 
 interface ChatMessage {
     role: 'system' | 'user' | 'assistant';
     content: string;
 }
 
-/**
- * Gemini LLM Service.
- */
-const genAI = new GoogleGenAI({
-    apiKey: config.geminiApiKey,
-});
-
 export class LlmService {
-    private modelName = 'gemini-2.0-flash';
+    private modelName = GEMINI_MODEL;
 
     async chat(systemPrompt: string, messages: ChatMessage[]): Promise<string> {
         try {
@@ -32,7 +24,7 @@ export class LlmService {
             }
 
             // Enhanced call with better parameter structure for @google/genai
-            const response = await genAI.models.generateContent({
+            const response = await getGenAI().models.generateContent({
                 model: this.modelName,
                 contents: contents as any,
                 config: {

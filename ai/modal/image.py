@@ -3,27 +3,20 @@ import os
 
 # Removed _download_zeroshot_model as Valtec is replaced by NeuTTS
 
-
+# --- Main image for LiveKit voice pipeline ---
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg", "git", "espeak-ng")
     .pip_install(
         "torch",
         "torchaudio",
-        "faster-whisper",
-        "fastapi",
+        "vieneu",
+        "fastapi[standard]",
         "python-multipart",
         "hf_transfer",
         "soundfile",
         "librosa",
-        "viphoneme",
-        "vinorm",
-        "underthesea",
-        "eng_to_ipa",
         "scipy",
-        "transformers",
-        "neucodec",
-        "phonemizer",
         "nvidia-cublas-cu12",
         "google-genai",
         "livekit-agents",
@@ -32,14 +25,26 @@ image = (
         "huggingface_hub",
         "httpx",
     )
-    .run_commands("git clone https://github.com/tronghieuit/valtec-tts.git /root/valtec-tts")
-    .add_local_dir("ai/livekit_plugins", "/root/livekit_plugins", copy=True)
     .add_local_dir("ai", "/root/ai", copy=True)
     .env({
-        "PYTHONPATH": "/root/valtec-tts:/root",
+        "PYTHONPATH": "/root",
         "LD_LIBRARY_PATH": (
             "/usr/local/lib/python3.11/site-packages/nvidia/cu13/lib:"
             "/usr/local/lib/python3.11/site-packages/nvidia/cublas/lib"
         ),
+    })
+)
+
+# --- Gemma vLLM image for Mentor Ni Chat ---
+gemma_image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .pip_install(
+        "vllm",
+        "huggingface_hub",
+        "hf_transfer",
+        "fastapi[standard]",
+    )
+    .env({
+        "HF_HUB_ENABLE_HF_TRANSFER": "1",
     })
 )

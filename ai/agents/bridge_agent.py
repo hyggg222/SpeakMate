@@ -5,6 +5,7 @@ VAD → STT → LLM → TTS, with turn persistence via Internal API.
 import os
 import asyncio
 import json
+import numpy as np
 
 
 MAX_RECENT_TURNS = 6
@@ -28,10 +29,9 @@ def _extract_text(content) -> str:
 
 
 class ManualBridgeAgent:
-    def __init__(self, ctx, vad_model, stt_model, tts_model, voice_ref, genai_client):
+    def __init__(self, ctx, vad_model, tts_model, voice_ref, genai_client):
         self.ctx = ctx
         self.vad = vad_model
-        self.stt_model = stt_model
         self.tts_model = tts_model
         self.voice_ref = voice_ref
         self.genai_client = genai_client
@@ -61,12 +61,17 @@ class ManualBridgeAgent:
         print("[Bridge] Warming up TTS...", flush=True)
         try:
             def _warmup():
-                _, sr = self.tts_model.synthesize("Xin chào.", reference_audio=self.voice_ref)
+                print("[Bridge] Warmup: calling synthesize...", flush=True)
+                audio, sr = self.tts_model.synthesize("Xin chào.", reference_audio=self.voice_ref)
+                print(f"[Bridge] Warmup: got {len(audio)} samples, sr={sr}", flush=True)
                 return sr
-            self.tts_sr = await asyncio.to_thread(_warmup)
+            self.tts_sr = await asyncio.wait_for(asyncio.to_thread(_warmup), timeout=120)
+        except asyncio.TimeoutError:
+            print("[Bridge] TTS warm-up TIMEOUT (120s), defaulting to 24000 Hz", flush=True)
+            self.tts_sr = 24000
         except Exception as e:
-            print(f"[Bridge] TTS warm-up failed ({e}), defaulting to 22050 Hz", flush=True)
-            self.tts_sr = 22050
+            print(f"[Bridge] TTS warm-up failed ({e}), defaulting to 24000 Hz", flush=True)
+            self.tts_sr = 24000
         print(f"[Bridge] TTS sample rate: {self.tts_sr}", flush=True)
 
         # Create AudioSource, connect, publish track
@@ -195,7 +200,15 @@ class ManualBridgeAgent:
         def _call():
             r = self.genai_client.models.generate_content(
                 model="gemini-2.0-flash",
-                contents=[{"role": "user", "parts": [{"text": summary_prompt}]}]
+                contents=[{"role": "user", "parts": [{"text": summary_prompt}]}],
+                config={
+                    "safety_settings": [
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    ]
+                }
             )
             return r.text
             
@@ -247,12 +260,16 @@ class ManualBridgeAgent:
 
     async def _handle_audio_track(self, track_recv, participant_identity):
         from livekit import agents, rtc
-        audio_stream = rtc.AudioStream(track_recv, sample_rate=16000, num_channels=1)
+        from collections import deque
+        audio_stream = rtc.AudioStream(track_recv, sample_rate=48000, num_channels=1)
         self.vad_stream = self.vad.stream()
         frame_count = 0
+        # Pre-roll buffer: keep last ~500ms of audio before speech starts
+        # At 48kHz with 10ms frames, 50 frames ≈ 500ms
+        pre_roll = deque(maxlen=50)
 
         async def _vad_finalize():
-            await asyncio.sleep(2.0) # Wait 2.0s before deciding speech ended
+            await asyncio.sleep(1.0)
             if not self.is_user_speaking and self.audio_buffer:
                 print(f"[VAD] Speech finalize. {len(self.audio_buffer)} frames", flush=True)
                 asyncio.create_task(self._process_user_turn(list(self.audio_buffer)))
@@ -268,17 +285,21 @@ class ManualBridgeAgent:
                             self._tts_cancelled = True
                             self._current_tts_task.cancel()
                             asyncio.create_task(self._signal_ai_interrupted())
-                        
+
+                        # Seed audio_buffer with pre-roll so we don't lose utterance onset
+                        self.audio_buffer = list(pre_roll)
                         self.is_user_speaking = True
                         if hasattr(self, '_vad_timeout_task') and self._vad_timeout_task:
                             self._vad_timeout_task.cancel()
                             self._vad_timeout_task = None
-                            
-                        # Only reset buffer if it's been processed, otherwise keep accumulating
-                        if not self.audio_buffer:
-                            pass
 
                     elif vad_event.type == agents.vad.VADEventType.END_OF_SPEECH:
+                        # Ignore very short segments (< 0.5s) — likely noise
+                        if len(self.audio_buffer) < 25:
+                            print(f"[VAD] Too short ({len(self.audio_buffer)} frames), ignoring.", flush=True)
+                            self.audio_buffer = []
+                            self.is_user_speaking = False
+                            continue
                         print("[VAD] Silence detected, waiting to finalize...", flush=True)
                         self.is_user_speaking = False
                         if hasattr(self, '_vad_timeout_task') and self._vad_timeout_task:
@@ -292,28 +313,29 @@ class ManualBridgeAgent:
             async for event in audio_stream:
                 frame = event.frame if hasattr(event, 'frame') else event
                 frame_count += 1
-                # Increase VAD sensitivity by applying a gain before detection
-                # Convert to int16, apply gain, then clip
-                audio_data = np.frombuffer(frame.data, dtype=np.int16)
-                boosted_data = np.clip(audio_data.astype(np.float32) * 1.2, -32768, 32767).astype(np.int16)
-                
-                # Create a new frame for VAD (not for processing later, just for VAD)
-                boosted_frame = rtc.AudioFrame(
-                    data=boosted_data.tobytes(),
-                    sample_rate=frame.sample_rate,
-                    num_channels=frame.num_channels,
-                    samples_per_channel=frame.samples_per_channel
+
+                # Resample 48kHz → 16kHz for VAD only (Silero VAD expects 16kHz)
+                audio_48k = np.frombuffer(frame.data, dtype=np.int16)
+                audio_16k = audio_48k.reshape(-1, 3).mean(axis=1).astype(np.int16)
+                vad_frame = rtc.AudioFrame(
+                    data=audio_16k.tobytes(),
+                    sample_rate=16000,
+                    num_channels=1,
+                    samples_per_channel=len(audio_16k)
                 )
-                
                 try:
-                    self.vad_stream.push_frame(boosted_frame)
+                    self.vad_stream.push_frame(vad_frame)
                 except Exception as e:
                     print(f"[VAD] push_frame error: {e}", flush=True)
+
+                # Keep original 48kHz frame for STT (no quality loss)
                 if self.is_user_speaking:
                     self.audio_buffer.append(frame)
+                else:
+                    pre_roll.append(frame)
         finally:
             print(f"[Bridge] Audio stream from {participant_identity} closed. Total frames: {frame_count}", flush=True)
-            if self.vad_stream: self.vad_stream.close()
+            if self.vad_stream: await self.vad_stream.aclose()
             if self.vad_task:   self.vad_task.cancel()
 
     @staticmethod
@@ -328,93 +350,171 @@ class ManualBridgeAgent:
 
     async def _process_user_turn(self, frames):
         import io
+        import base64
         import numpy as np
         import soundfile as sf
-        import librosa
         from livekit import rtc
 
         print(f"[Bridge] Processing {len(frames)} frames...", flush=True)
 
-        # STT
+        # Build WAV buffer from frames — keep original 48kHz for best STT quality
         raw_bytes = b"".join(f.data for f in frames)
         input_sr  = frames[0].sample_rate
         audio_f32 = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32767.0
-        if input_sr != 16000:
-            audio_f32 = librosa.resample(audio_f32, orig_sr=input_sr, target_sr=16000)
 
+        # Debug: save raw WAV async (non-blocking)
+        def _save_debug(audio_data, sr):
+            try:
+                debug_dir = "/debug_audio"
+                if os.path.isdir(debug_dir):
+                    idx = len([f for f in os.listdir(debug_dir) if f.endswith('.wav')])
+                    debug_buf = io.BytesIO()
+                    sf.write(debug_buf, audio_data, sr, format="WAV", subtype="PCM_16")
+                    debug_bytes = debug_buf.getvalue()
+                    debug_path = f"{debug_dir}/turn_{idx:03d}_user.wav"
+                    with open(debug_path, "wb") as f:
+                        f.write(debug_bytes)
+                    duration = len(audio_data) / sr
+                    print(f"[Debug] Saved {debug_path} ({len(debug_bytes)} bytes, {duration:.1f}s, {sr}Hz)", flush=True)
+            except Exception as e:
+                print(f"[Debug] Save failed: {e}", flush=True)
+        asyncio.create_task(asyncio.to_thread(_save_debug, audio_f32.copy(), input_sr))
+
+        # RMS normalization for STT — boost quiet audio to target level
+        TARGET_DBFS = -20.0
+        MAX_GAIN_DB = 30.0
         rms = np.sqrt(np.mean(audio_f32 ** 2))
         if rms > 1e-6:
-            gain = min(0.1 / rms, 10.0)
-            audio_f32 = np.clip(audio_f32 * gain, -1.0, 1.0)
+            current_db = 20 * np.log10(rms)
+            gain_db = min(TARGET_DBFS - current_db, MAX_GAIN_DB)
+            if gain_db > 0:
+                gain = 10 ** (gain_db / 20)
+                audio_f32 = np.clip(audio_f32 * gain, -1.0, 1.0)
+                print(f"[STT] RMS norm: {current_db:.1f}dB → {TARGET_DBFS}dB (gain +{gain_db:.1f}dB)", flush=True)
 
         wav_buf = io.BytesIO()
-        sf.write(wav_buf, audio_f32, 16000, format="WAV", subtype="FLOAT")
-        wav_buf.seek(0)
+        sf.write(wav_buf, audio_f32, input_sr, format="WAV", subtype="PCM_16")
+        wav_bytes = wav_buf.getvalue()
+        audio_b64 = base64.b64encode(wav_bytes).decode()
 
-        prompt_texts = []
-        if self.context_summary:
-            prompt_texts.append(self.context_summary)
-        # Take the last 2 lines for immediate context
-        for h in self.history[-2:]:
-            prompt_texts.append(h["line"])
-        whisper_prompt = " ".join(prompt_texts).strip()
+        # Single call: STT first (no context bias), then LLM responds
+        # TWO-STAGE PIPELINE: Stage 1 (STT) -> Stage 2 (LLM Response)
+        recent = self.history[-MAX_RECENT_TURNS:]
 
-        def _transcribe():
-            segs, _ = self.stt_model.transcribe(
-                wav_buf,
-                language="vi",
-                beam_size=5,
-                vad_filter=False,
-                no_speech_threshold=0.5,
-                log_prob_threshold=-1.0,
-                compression_ratio_threshold=2.4,
-                condition_on_previous_text=False,
-                temperature=[0.0, 0.2],
-                initial_prompt=whisper_prompt if whisper_prompt else None,
+        def _get_stt():
+            """Stage 1: Dedicated transcription call (focused, no roleplay bias)"""
+            resp = self.genai_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[{
+                    "role": "user",
+                    "parts": [
+                        {"inline_data": {"mime_type": "audio/wav", "data": audio_b64}},
+                        {"text": (
+                            "BẠN LÀ MỘT CHUYÊN GIA STT (Speech-to-Text).\n"
+                            "NGÔN NGỮ ĐẦU VÀO: Chỉ bao gồm Tiếng Việt hoặc Tiếng Anh.\n"
+                            "NHIỆM VỤ: Nghe audio và viết lại CHÍNH XÁC những gì người nói.\n"
+                            "QUY TẮC BẮT BUỘC:\n"
+                            "1. VIẾT LẠI NGUYÊN VĂN (Literal). Không sửa lỗi, không tự ý hoàn thiện câu.\n"
+                            "2. TUYỆT ĐỐI KHÔNG DỊCH. Nếu người dùng nói tiếng Việt, ghi tiếng Việt. Nếu nói tiếng Anh, ghi tiếng Anh.\n"
+                            "3. GIỮ NGUYÊN TỪ ĐỆM (ừm, à, ờ) nếu nó giúp phản ánh đúng cảm xúc người nói.\n"
+                            "4. KHÔNG suy đoán, KHÔNG tự hoàn thiện câu.\n"
+                            "Nếu không nghe rõ hoặc audio quá nhiễu, chỉ ghi duy nhất: [không nghe rõ]"
+                        )}
+                    ]
+                }]
             )
-            return " ".join(s.text.strip() for s in segs).strip()
+            return (resp.text or "").strip().replace("TRANSCRIPT:", "").strip()
 
-        transcript = await asyncio.to_thread(_transcribe)
+        def _get_response(transcript_text):
+            """Stage 2: Conversational response call using the transcript"""
+            if not transcript_text or transcript_text == "[không nghe rõ]":
+                return "Xin lỗi, tôi không nghe rõ. Bạn có thể nói lại được không?"
+
+            # Build conversation history for context
+            history_text = ""
+            if self.context_summary:
+                history_text += f"[Tóm tắt]: {self.context_summary}\n"
+            for h in recent:
+                speaker = "AI" if h["speaker"] == "AI" else "User"
+                history_text += f"{speaker}: {h['line']}\n"
+
+            resp = self.genai_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[{
+                    "role": "user",
+                    "parts": [
+                        {"text": (
+                            f"VAI CỦA BẠN: {self.system_prompt}\n"
+                            f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n"
+                            f"THÔNG ĐIỆP MỚI TỪ NGƯỜI DÙNG: \"{transcript_text}\"\n\n"
+                            "YÊU CẦU: Trả lời đúng vai nhân vật, tự nhiên, cực kỳ ngắn gọn (tối đa 2 câu)."
+                        )}
+                    ]
+                }],
+                config={
+                    "safety_settings": [
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    ]
+                }
+            )
+            return (resp.text or "").strip()
+
+        # Step 1: Transcribe
+        transcript = await asyncio.to_thread(_get_stt)
+        print(f"[STT] raw: '{transcript}'", flush=True)
+
+        # Step 2: Respond
+        ai_text = await asyncio.to_thread(_get_response, transcript)
+        print(f"[LLM] raw: '{ai_text}'", flush=True)
+
+        if not transcript and not ai_text:
+            print("[Bridge] Empty response from Gemini, skipping.", flush=True)
+            return
+
+        # Content filtering — check user transcript and AI response
+        from ai.utils.content_filter import filter_content, redact_pii, SAFE_RESPONSE
+        user_filter = filter_content(transcript)
+        if not user_filter["safe"] and user_filter.get("category") != "pii":
+            print(f"[ContentFilter] User input blocked: {user_filter['category']}", flush=True)
+            ai_text = SAFE_RESPONSE
+            transcript = redact_pii(transcript) if user_filter.get("category") == "pii" else transcript
+        else:
+            if transcript: transcript = redact_pii(transcript)
+            ai_filter = filter_content(ai_text)
+            if not ai_filter["safe"] and ai_filter.get("category") != "pii":
+                print(f"[ContentFilter] AI output blocked: {ai_filter['category']}", flush=True)
+                ai_text = SAFE_RESPONSE
+            else:
+                ai_text = redact_pii(ai_text)
+
+        ai_text = self._sanitize(ai_text, self.user_name)
         print(f"[STT] '{transcript}'", flush=True)
-        if not transcript:
+        print(f"[LLM] '{ai_text}'", flush=True)
+
+        if not ai_text:
             return
 
         user_turn_idx = self.turn_counter
         ai_turn_idx   = self.turn_counter + 1
         self.turn_counter += 2
 
-        await self.ctx.room.local_participant.publish_data(
-            json.dumps({"type": "transcript", "speaker": "User", "line": transcript, "turn_index": user_turn_idx}).encode(),
-            reliable=True
-        )
-        asyncio.create_task(self._persist_turn(user_turn_idx, "User", transcript))
-
-        # LLM
-        messages = self._build_messages(transcript)
-
-        def _llm_call():
-            r = self.genai_client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=messages,
-                config={"system_instruction": self.system_prompt}
+        # Publish user transcript
+        if transcript:
+            await self.ctx.room.local_participant.publish_data(
+                json.dumps({"type": "transcript", "speaker": "User", "line": transcript, "turn_index": user_turn_idx}).encode(),
+                reliable=True
             )
-            return r.text
+            asyncio.create_task(self._persist_turn(user_turn_idx, "User", transcript))
 
-        ai_text = self._sanitize(await asyncio.to_thread(_llm_call), self.user_name)
-        print(f"[LLM] '{ai_text}'", flush=True)
-
-        self.history.append({"speaker": "User", "line": transcript})
+        self.history.append({"speaker": "User", "line": transcript or "(không nghe rõ)"})
         # AI turn will be appended AFTER streaming (to handle truncation if interrupted)
         # self.history.append({"speaker": "AI",   "line": ai_text})
         await self._maybe_summarize()
 
-        await self.ctx.room.local_participant.publish_data(
-            json.dumps({"type": "transcript", "speaker": "AI", "line": ai_text, "turn_index": ai_turn_idx}).encode(),
-            reliable=True
-        )
-        asyncio.create_task(self._persist_turn(ai_turn_idx, "AI", ai_text))
-
-        # TTS
+        # TTS — synthesize first (retry up to 3x), then publish text + start audio together
         if not os.path.exists(self.voice_ref):
             print(f"[Bridge] WARNING: voice_ref missing: {self.voice_ref}", flush=True)
             return
@@ -422,12 +522,22 @@ class ManualBridgeAgent:
         def _synthesize():
             return self.tts_model.synthesize(ai_text, reference_audio=self.voice_ref)
 
-        audio_np, sr = await asyncio.to_thread(_synthesize)
-        
+        audio_np, sr = None, 24000
+        for attempt in range(3):
+            audio_np, sr = await asyncio.to_thread(_synthesize)
+            if audio_np is not None and len(audio_np) > 0:
+                break
+            print(f"[TTS] Empty audio attempt {attempt + 1}/3, retrying...", flush=True)
+
         if audio_np is None or len(audio_np) == 0:
-            print("[Bridge] WARNING: TTS model returned empty audio.", flush=True)
-            # Append AI line to history to not break the turn sequence
+            print("[Bridge] WARNING: TTS failed after 3 attempts.", flush=True)
             self.history.append({"speaker": "AI", "line": ai_text})
+            # Still send text so frontend shows the response
+            await self.ctx.room.local_participant.publish_data(
+                json.dumps({"type": "transcript", "speaker": "AI", "line": ai_text, "turn_index": ai_turn_idx}).encode(),
+                reliable=True
+            )
+            asyncio.create_task(self._persist_turn(ai_turn_idx, "AI", ai_text))
             return
 
         audio_f32_tts = np.array(audio_np, dtype=np.float32)
@@ -435,6 +545,13 @@ class ManualBridgeAgent:
         if peak > 0:
             audio_f32_tts = np.clip(audio_f32_tts / peak * 0.95, -1.0, 1.0)
         audio_i16 = (audio_f32_tts * 32767).astype(np.int16)
+
+        # Publish AI text + start audio together (text appears when audio begins)
+        await self.ctx.room.local_participant.publish_data(
+            json.dumps({"type": "transcript", "speaker": "AI", "line": ai_text, "turn_index": ai_turn_idx}).encode(),
+            reliable=True
+        )
+        asyncio.create_task(self._persist_turn(ai_turn_idx, "AI", ai_text))
 
         # Set tracking state
         self._current_ai_turn_idx = ai_turn_idx

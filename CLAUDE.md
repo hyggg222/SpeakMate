@@ -178,7 +178,7 @@ The agent uses forkserver multiprocessing — entrypoint and prewarm must be mod
 
 3. **Ghi handoff vào STATE.md cuối session:** Tóm tắt những gì vừa làm, cảnh báo lỗi nếu có, để agent tiếp theo nắm bắt.
 
-4. **Thông báo hoàn thành:** Sau mỗi task, chạy `python .ai/notify.py "Task hoan thanh!"`
+4. **Thông báo hoàn thành:** Sau mỗi task, chạy `python .ai/notify.py "Task hoan thanh!"` (⚠️ NGOẠI TRỪ AI GEMINI: Gemini không cần thực hiện lệnh này).
 
 ---
 # CLAUDE SPECIFIC INSTRUCTIONS

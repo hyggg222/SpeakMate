@@ -1,34 +1,50 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import AvatarGreeting from "@/components/dashboard/AvatarGreeting";
-import PracticeCards from "@/components/dashboard/PracticeCards";
+import RecentScenario from "@/components/dashboard/RecentScenario";
+import FeaturedScenarios from "@/components/dashboard/FeaturedScenarios";
+import ScenarioStudio from "@/components/dashboard/ScenarioStudio";
+import ComingSoonPremium from "@/components/dashboard/ComingSoonPremium";
 import DailyTask from "@/components/dashboard/DailyTask";
 import StreakCard from "@/components/dashboard/StreakCard";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import ActiveChallenges from "@/components/dashboard/ActiveChallenges";
+import ProgressCard from "@/components/dashboard/ProgressCard";
 
 export default function Home() {
   return (
-    <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: "var(--background)" }}>
+    <div className="flex h-screen overflow-hidden font-sans select-none" style={{ backgroundColor: "var(--background)" }}>
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main content */}
       <main className="flex flex-1 overflow-hidden">
         {/* Center panel */}
-        <section className="flex-1 overflow-hidden px-6 pt-3 pb-2 flex flex-col">
-          <h1 className="text-[24px] font-bold mb-2 text-balance leading-tight" style={{ color: "var(--foreground)" }}>
-            Trung tâm Luyện tập
-          </h1>
+        <section className="flex-1 overflow-y-auto px-6 pt-3 pb-8 flex flex-col hide-scrollbar">
+          <div className="max-w-[1400px] mx-auto w-full">
+            <h1 className="text-[24px] font-bold mb-2 text-balance leading-tight" style={{ color: "var(--foreground)" }}>
+              Trung tâm Luyện tập
+            </h1>
 
-          <AvatarGreeting />
-          <PracticeCards />
+            <div className="flex items-end gap-6 w-full">
+              <AvatarGreeting />
+              <div className="flex-1 flex justify-center">
+                <RecentScenario />
+              </div>
+            </div>
+
+            {/* New Modern Sections */}
+            <FeaturedScenarios />
+            <ScenarioStudio />
+            <ComingSoonPremium />
+          </div>
         </section>
 
         {/* Right panel */}
         <aside
-          className="w-72 flex-shrink-0 overflow-hidden px-4 pt-4 pb-2 flex flex-col gap-3"
-          style={{ borderLeft: "1px solid var(--border)" }}
+          className="w-80 flex-shrink-0 overflow-hidden px-3 pt-2 pb-10 flex flex-col gap-2 hide-scrollbar sticky top-0 h-full"
+          style={{ borderLeft: "1px solid var(--border)", backgroundColor: "rgba(10, 15, 25, 0.3)" }}
         >
+          <ProgressCard />
           <ActiveChallenges />
           <DailyTask />
           <StreakCard />
