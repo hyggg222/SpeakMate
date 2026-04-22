@@ -7,4 +7,7 @@ export {
     type RealWorldChallenge,
     type ChallengeFeedbackInput,
     type FeedbackAnalysis,
+    type RealWorldEvaluation,
+    type RealWorldMetrics,
+    type PsychologyMetrics,
 } from '@speakmate/contracts';

@@ -11,6 +11,8 @@ interface Props {
     isVisible: boolean;
     onAccepted: () => void;
     onSkipped: () => void;
+    evalReport?: any;
+    scenario?: any;
 }
 
 const ADJUST_PRESETS = [
@@ -21,7 +23,7 @@ const ADJUST_PRESETS = [
     { label: 'Ngắn gọn hơn', value: 'Rút ngắn thử thách, chỉ cần 1 câu nói thay vì cả đoạn hội thoại' },
 ]
 
-export default function InlineChallengeCard({ sessionId, isVisible, onAccepted, onSkipped }: Props) {
+export default function InlineChallengeCard({ sessionId, isVisible, onAccepted, onSkipped, evalReport, scenario }: Props) {
     const router = useRouter()
     const cardRef = useRef<HTMLDivElement>(null)
 
@@ -46,7 +48,7 @@ export default function InlineChallengeCard({ sessionId, isVisible, onAccepted, 
         setLoading(true)
         setError(null)
         try {
-            const data = await apiClient.generateChallenge(sessionId)
+            const data = await apiClient.generateChallenge(sessionId, scenario, evalReport)
             setChallenge(data)
         } catch (err) {
             console.error('generateChallenge failed:', err)
@@ -72,11 +74,21 @@ export default function InlineChallengeCard({ sessionId, isVisible, onAccepted, 
             await apiClient.setChallengeDeadline(challenge.id, d.toISOString())
         } catch {
             // OK if no auth / DB not ready
-        } finally {
-            setAccepting(false)
-            onAccepted()
-            router.push('/')
         }
+        // Save to localStorage so sidebar shows it even for guests
+        try {
+            const stored = JSON.parse(localStorage.getItem('speakmate_challenges') || '[]')
+            const exists = stored.find((c: any) => c.id === challenge.id)
+            if (!exists) {
+                const d = new Date()
+                d.setDate(d.getDate() + parseInt(deadline))
+                stored.unshift({ ...challenge, status: 'pending', deadline: d.toISOString(), accepted_at: new Date().toISOString() })
+                localStorage.setItem('speakmate_challenges', JSON.stringify(stored.slice(0, 20)))
+            }
+        } catch { /* ignore */ }
+        setAccepting(false)
+        onAccepted()
+        router.push('/')
     }
 
     const handleSkip = async () => {

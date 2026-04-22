@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Flame, Star, TrendingUp, BookOpen, Swords, Calendar } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { apiClient } from '@/lib/apiClient'
+import { getLocalProgressDetail } from '@/lib/seedDemoData'
 
 const LEVEL_NAMES: Record<number, string> = {
     1: 'Bắt đầu', 2: 'Tập sự', 3: 'Quen dần', 4: 'Tự tin hơn', 5: 'Khá ổn',
@@ -18,11 +19,18 @@ const BADGES = [
     { key: 'Thực chiến gia', icon: '🏆', desc: 'Luyện 15 tuần liên tiếp', condition: (s: number) => s >= 15 },
 ]
 
-const CHART_LINES = [
+const GYM_CHART_LINES = [
     { key: 'coherence_score', label: 'Mạch lạc', color: '#14b8a6' },
     { key: 'filler_per_minute', label: 'Từ đệm/phút', color: '#f59e0b', dotted: true },
-    { key: 'jargon_count', label: 'Jargon thừa', color: '#ef4444', dotted: true },
-    { key: 'avg_response_time', label: 'Tốc độ phản xạ (s)', color: '#8b5cf6' },
+    { key: 'jargon_count', label: 'Từ CM thừa', color: '#ef4444', dotted: true },
+    { key: 'avg_response_time', label: 'Phản xạ (giây)', color: '#8b5cf6' },
+]
+
+const REALWORLD_CHART_LINES = [
+    { key: 'coherence_score', label: 'Mạch lạc', color: '#14b8a6' },
+    { key: 'fluency_score', label: 'Lưu loát', color: '#6366f1' },
+    { key: 'filler_per_minute', label: 'Từ đệm/phút', color: '#f59e0b', dotted: true },
+    { key: 'jargon_count', label: 'Từ CM thừa', color: '#ef4444', dotted: true },
 ]
 
 function StatBox({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string | number; sub?: string }) {
@@ -37,19 +45,32 @@ function StatBox({ icon, label, value, sub }: { icon: React.ReactNode; label: st
     )
 }
 
+type ProgressTab = 'gym' | 'realworld'
+
 export default function ProgressPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [userProgress, setUserProgress] = useState<any>(null)
-    const [sessionHistory, setSessionHistory] = useState<any[]>([])
+    const [gymHistory, setGymHistory] = useState<any[]>([])
+    const [realworldHistory, setRealworldHistory] = useState<any[]>([])
+    const [activeTab, setActiveTab] = useState<ProgressTab>('gym')
 
     useEffect(() => {
         apiClient.getProgressDetail().then(data => {
             if (data) {
                 setUserProgress(data.userProgress)
-                setSessionHistory(data.sessionHistory || [])
+                // Use API data if available, otherwise fall back to localStorage seed
+                const local = getLocalProgressDetail()
+                setGymHistory(data.gymHistory?.length ? data.gymHistory : (local?.gymHistory || []))
+                setRealworldHistory(data.realworldHistory?.length ? data.realworldHistory : (local?.realworldHistory || []))
             }
-        }).catch(() => {}).finally(() => setLoading(false))
+        }).catch(() => {
+            const local = getLocalProgressDetail()
+            if (local) {
+                setGymHistory(local.gymHistory)
+                setRealworldHistory(local.realworldHistory)
+            }
+        }).finally(() => setLoading(false))
     }, [])
 
     if (loading) {
@@ -70,13 +91,20 @@ export default function ProgressPage() {
     const xpForNextLevel = level * 100
     const xpProgress = Math.min((xp % xpForNextLevel) / xpForNextLevel * 100, 100)
 
-    // Chart data — map snake_case DB fields to chart
-    const chartData = sessionHistory.map((s, i) => ({
+    const gymChartData = gymHistory.map((s, i) => ({
         name: `#${i + 1}`,
         coherence_score: s.coherence_score ?? 0,
         filler_per_minute: s.filler_per_minute ?? 0,
         jargon_count: s.jargon_count ?? 0,
         avg_response_time: s.avg_response_time ?? 0,
+    }))
+
+    const realworldChartData = realworldHistory.map((s, i) => ({
+        name: `#${i + 1}`,
+        coherence_score: s.coherence_score ?? 0,
+        fluency_score: s.fluency_score ?? 0,
+        filler_per_minute: s.filler_per_minute ?? 0,
+        jargon_count: s.jargon_count ?? 0,
     }))
 
     return (
@@ -120,36 +148,87 @@ export default function ProgressPage() {
                     </div>
                 </div>
 
-                {/* Section 1 — 4 Metrics Line Chart */}
-                {chartData.length > 0 && (
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                {/* Section 1 — Metrics Charts with Tabs */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="flex border-b border-slate-100">
+                        <button onClick={() => setActiveTab('gym')}
+                            className={`flex-1 py-3 text-[13px] font-bold transition-colors border-b-2 ${activeTab === 'gym' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                            🏋️ Phòng ảo
+                        </button>
+                        <button onClick={() => setActiveTab('realworld')}
+                            className={`flex-1 py-3 text-[13px] font-bold transition-colors border-b-2 ${activeTab === 'realworld' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                            🌍 Thực tế
+                        </button>
+                    </div>
+
+                    <div className="p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <TrendingUp size={18} className="text-teal-500" />
-                            <h2 className="font-bold text-[15px] text-[#0b1325]">4 chỉ số diễn đạt ({chartData.length} phiên gần nhất)</h2>
+                            <h2 className="font-bold text-[15px] text-[#0b1325]">
+                                {activeTab === 'gym'
+                                    ? `Chỉ số phòng gym (${gymChartData.length} phiên gần nhất)`
+                                    : `Chỉ số thực tế (${realworldChartData.length} lượt gần nhất)`
+                                }
+                            </h2>
                         </div>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} />
-                                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                                {CHART_LINES.map(l => (
-                                    <Line
-                                        key={l.key}
-                                        type="monotone"
-                                        dataKey={l.key}
-                                        name={l.label}
-                                        stroke={l.color}
-                                        strokeWidth={2}
-                                        dot={{ r: 3 }}
-                                        strokeDasharray={l.dotted ? '4 2' : undefined}
-                                    />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
+
+                        {activeTab === 'gym' && gymChartData.length > 0 && (
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={gymChartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                                    <YAxis tick={{ fontSize: 11 }} />
+                                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                                    {GYM_CHART_LINES.map(l => (
+                                        <Line key={l.key} type="monotone" dataKey={l.key} name={l.label}
+                                            stroke={l.color} strokeWidth={2} dot={{ r: 3 }}
+                                            strokeDasharray={l.dotted ? '4 2' : undefined} />
+                                    ))}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
+                        {activeTab === 'gym' && gymChartData.length === 0 && (
+                            <p className="text-[13px] text-slate-400 text-center py-8">Chưa có dữ liệu phòng gym. Hoàn thành 1 phiên luyện tập để xem biểu đồ!</p>
+                        )}
+
+                        {activeTab === 'realworld' && realworldChartData.length > 0 && (
+                            <>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <LineChart data={realworldChartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                                        <YAxis tick={{ fontSize: 11 }} />
+                                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                                        {REALWORLD_CHART_LINES.map(l => (
+                                            <Line key={l.key} type="monotone" dataKey={l.key} name={l.label}
+                                                stroke={l.color} strokeWidth={2} dot={{ r: 3 }}
+                                                strokeDasharray={l.dotted ? '4 2' : undefined} />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
+                                {/* Fluency notes timeline */}
+                                {realworldHistory.some((r: any) => r.fluency_note) && (
+                                    <div className="mt-4">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Nhận xét lưu loát</p>
+                                        <div className="space-y-2">
+                                            {realworldHistory.filter((r: any) => r.fluency_note).map((r: any, i: number) => (
+                                                <div key={i} className="flex gap-2 text-[12px]">
+                                                    <span className="text-slate-400 shrink-0">#{realworldHistory.indexOf(r) + 1}</span>
+                                                    <span className="text-slate-600">{r.fluency_note}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        {activeTab === 'realworld' && realworldChartData.length === 0 && (
+                            <p className="text-[13px] text-slate-400 text-center py-8">Chưa có dữ liệu thực tế. Chia sẻ trải nghiệm qua "Chia sẻ" để xem biểu đồ!</p>
+                        )}
                     </div>
-                )}
+                </div>
 
                 {/* Section 2 — Story Bank Stats */}
                 {(storyStats.total > 0 || true) && (

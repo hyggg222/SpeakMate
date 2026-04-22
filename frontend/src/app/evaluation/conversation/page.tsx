@@ -294,10 +294,11 @@ function ConversationContent() {
 
                         {/* Inline Challenge Card */}
                         <InlineChallengeCard
-                            sessionId={isDemo ? 'demo' : 'session'}
+                            sessionId={''}
                             isVisible={showInlineChallenge}
                             onAccepted={() => setShowInlineChallenge(false)}
                             onSkipped={() => setShowInlineChallenge(false)}
+                            evalReport={report}
                         />
                     </>
                 )}

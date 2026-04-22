@@ -328,7 +328,7 @@ function OverallContent() {
                         previous={previousMetrics?.coherence_score}
                     />
                     <MetricCard
-                        label="Từ chuyên môn thừa"
+                        label="Từ CM thừa"
                         icon="📝"
                         value={(evalReport as any).sessionMetrics.jargonCount}
                         unit="từ"
@@ -352,6 +352,11 @@ function OverallContent() {
                         inverse
                     />
                 </div>
+            )}
+            {previousMetrics && (evalReport as any).sessionMetrics && (
+                <p className="text-[11px] text-center -mt-4 mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                    Mũi tên so sánh với <span className="font-semibold">phiên luyện trước</span>
+                </p>
             )}
 
             {/* Jargon & Filler Details (expandable) */}
@@ -528,10 +533,12 @@ function OverallContent() {
 
             {/* Inline Challenge Card — slide down */}
             <InlineChallengeCard
-                sessionId={sessionId || 'demo'}
+                sessionId={sessionId || ''}
                 isVisible={showInlineChallenge}
                 onAccepted={() => setShowInlineChallenge(false)}
                 onSkipped={() => setShowInlineChallenge(false)}
+                evalReport={evalReport}
+                scenario={fullSession?.scenario}
             />
 
             {/* Modals */}
