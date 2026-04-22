@@ -39,7 +39,7 @@ def _synthesize_wav(tts, text: str, voice_ref: str) -> dict:
     image=image,
     gpu="L4",
     volumes=volumes,
-    keep_warm=1,   # always-on: no cold start for character 1
+    min_containers=1,  # always-on: no cold start for character 1
     timeout=300,
 )
 class TTSChar1:
@@ -65,7 +65,7 @@ class TTSChar1:
     image=image,
     gpu="L4",
     volumes=volumes,
-    keep_warm=1,   # always-on: no cold start for character 2
+    min_containers=1,  # always-on: no cold start for character 2
     timeout=300,
 )
 class TTSChar2:
