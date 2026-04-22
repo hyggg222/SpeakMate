@@ -1,33 +1,59 @@
 """
-Upload voice clone reference audio to Modal persistent volume.
-Run this ONCE before deploying the pipeline:
-    python upload_voice_to_modal.py
+Upload voice clone reference audio files to Modal persistent volume.
+Run this ONCE before deploying the pipeline (or when adding new voice files):
+    python scripts/upload_voice_to_modal.py
+
+Uploads:
+  voice1.wav  → char1 voice (character index 0 in dual-char mode)
+  voice2.mp3  → char2 voice (character index 1 in dual-char mode)
 """
 import modal
 import os
 
 VOLUME_NAME = "speakmate-valtec-models"
-LOCAL_VOICE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "voice_samples", "sample2", "voice2.mp3")
 REMOTE_DIR = "voice_clone"
-REMOTE_FILENAME = "voice2.mp3"
+
+VOICE_FILES = [
+    {
+        "local": os.path.join(os.path.dirname(__file__), "..", "data", "voice_samples", "sample1", "voice1.wav"),
+        "remote": "voice1.wav",
+        "desc": "char1 voice (voice index 0)",
+    },
+    {
+        "local": os.path.join(os.path.dirname(__file__), "..", "data", "voice_samples", "sample2", "voice2.mp3"),
+        "remote": "voice2.mp3",
+        "desc": "char2 voice (voice index 1)",
+    },
+]
+
 
 def main():
-    if not os.path.exists(LOCAL_VOICE_PATH):
-        print(f"ERROR: Voice sample not found at {LOCAL_VOICE_PATH}")
-        return
-
     vol = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
+    uploaded = []
+    skipped = []
 
-    print(f"Uploading {LOCAL_VOICE_PATH} -> /{REMOTE_DIR}/{REMOTE_FILENAME} ...")
+    for vf in VOICE_FILES:
+        local_path = os.path.normpath(vf["local"])
+        remote_path = f"/{REMOTE_DIR}/{vf['remote']}"
 
-    with open(LOCAL_VOICE_PATH, "rb") as f:
-        voice_data = f.read()
+        if not os.path.exists(local_path):
+            print(f"SKIP: {local_path} not found — {vf['desc']}")
+            skipped.append(vf["remote"])
+            continue
 
-    with vol.batch_upload() as batch:
-        batch.put_file(LOCAL_VOICE_PATH, f"/{REMOTE_DIR}/{REMOTE_FILENAME}")
+        size_mb = os.path.getsize(local_path) / 1024 / 1024
+        print(f"Uploading {local_path} ({size_mb:.1f} MB) → {remote_path} ...")
+        with vol.batch_upload() as batch:
+            batch.put_file(local_path, remote_path)
+        print(f"  ✓ {vf['remote']} uploaded ({vf['desc']})")
+        uploaded.append(vf["remote"])
 
-    print(f"Upload complete! Voice sample is at /valtec_models/{REMOTE_DIR}/{REMOTE_FILENAME} inside the Modal container.")
-    print("You can now deploy: modal deploy modal_pipeline.py")
+    print()
+    print(f"Done. Uploaded: {uploaded}" + (f" | Skipped: {skipped}" if skipped else ""))
+    print("Now deploy: modal deploy modal_pipeline.py")
+    if skipped:
+        print(f"Note: {skipped} not found — dual-char char1 will fall back to voice2 until uploaded.")
+
 
 if __name__ == "__main__":
     main()

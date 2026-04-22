@@ -45,7 +45,10 @@ const app = express();
 const port = config.port;
 
 // Middleware
-app.use(cors({ origin: '*' }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : ['*'];
+app.use(cors({ origin: allowedOrigins.includes('*') ? '*' : allowedOrigins }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -56,6 +59,9 @@ app.get('/api/health', (req, res) => {
 
 // Setup Multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Health check (used by Railway)
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 // Routes
 app.use('/api/practice', practiceRoutes);

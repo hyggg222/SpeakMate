@@ -66,9 +66,8 @@ export function useGeminiDirect(
     const userTextBuffer = useRef('');
     const aiTextBuffer = useRef('');
     const turnCounter = useRef(0);
+    const aiTurnCounter = useRef(0); // counts only AI turns (for accurate fallback modulo)
     const charactersRef = useRef<{ id: string; name: string }[]>([]);
-    // Track if current AI turn should use browser TTS (secondary character)
-    const muteGeminiAudio = useRef(false);
 
     // Debug: accumulate mic PCM chunks only during user speech for VAD inspection
     const micPcmChunks = useRef<Int16Array[]>([]);
@@ -104,8 +103,6 @@ export function useGeminiDirect(
     }, []);
 
     const enqueueAudio = useCallback((pcmBytes: Uint8Array) => {
-        // Skip Gemini audio when secondary character is speaking via browser TTS
-        if (muteGeminiAudio.current) return;
         audioQueue.current.push(pcmBytes.buffer as ArrayBuffer);
         setIsAgentSpeaking(true);
         if (!isPlaying.current) playNext();
@@ -195,21 +192,9 @@ export function useGeminiDirect(
                             console.log(`[GeminiDirect] Capture stopped (${(micPcmSamples.current / 16000).toFixed(1)}s)`);
                         }
 
-                        // Output transcription (AI speech)
+                        // Output transcription (AI speech) — AUDIO mode only
                         if (sc.outputTranscription?.text) {
                             aiTextBuffer.current += sc.outputTranscription.text;
-
-                            // Detect secondary character prefix early to mute Gemini audio
-                            if (charactersRef.current.length >= 2 && !muteGeminiAudio.current) {
-                                const accumulated = aiTextBuffer.current.trimStart();
-                                const char2 = charactersRef.current[1];
-                                if (accumulated.startsWith(char2.name + ':') || accumulated.startsWith(char2.name + ': ')) {
-                                    muteGeminiAudio.current = true;
-                                    // Stop any Gemini audio already queued
-                                    audioQueue.current = [];
-                                    console.log(`[GeminiDirect] Secondary char detected: ${char2.name} → browser TTS`);
-                                }
-                            }
                         }
 
                         // Turn complete
@@ -263,14 +248,15 @@ export function useGeminiDirect(
                                         }
                                     }
                                     if (!character_id) {
-                                        // Fallback if model forgets prefix: alternate turns roughly
-                                        const fallbackIdx = (turnCounter.current) % charactersRef.current.length;
+                                        // Fallback: use AI-turn counter (not total turn counter) for correct modulo
+                                        const fallbackIdx = aiTurnCounter.current % charactersRef.current.length;
                                         character_id = charactersRef.current[fallbackIdx].id;
                                         character_name = charactersRef.current[fallbackIdx].name;
                                         character_gender = (charactersRef.current[fallbackIdx] as any).gender;
                                     }
+                                    aiTurnCounter.current++;
 
-                                    // In dual mode, Gemini audio is muted at backend (TEXT mode), so we generate TTS for BOTH characters locally
+                                    // In TEXT mode, browser TTS handles audio for all characters
                                     if (browserTTSRef.current && cleanLine) {
                                         browserTTSRef.current.speak(cleanLine, character_gender);
                                         setIsAgentSpeaking(true);
@@ -283,9 +269,6 @@ export function useGeminiDirect(
                                     }
                                 }
 
-                                // Reset mute flag for next turn
-                                muteGeminiAudio.current = false;
-
                                 onNewTurnRef.current({
                                     speaker: 'AI',
                                     character_id,
@@ -294,8 +277,6 @@ export function useGeminiDirect(
                                     turn_index: turnCounter.current++,
                                     confirmed: true
                                 });
-                            } else {
-                                muteGeminiAudio.current = false;
                             }
                             setIsUserSpeaking(false);
                         }
@@ -303,7 +284,6 @@ export function useGeminiDirect(
                         // Interruption
                         if (sc.interrupted) {
                             audioQueue.current = [];
-                            muteGeminiAudio.current = false;
                             browserTTSRef.current?.cancel();
                             setIsAgentSpeaking(false);
                         }
