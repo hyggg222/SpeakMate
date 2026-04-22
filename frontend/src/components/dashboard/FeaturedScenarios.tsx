@@ -56,11 +56,11 @@ export default function FeaturedScenarios() {
                         <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
                             <div>
                                 {/* Badges */}
-                                <div className="flex gap-2 mb-8">
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white text-black/80">
+                                <div className="flex flex-wrap gap-2 mb-8">
+                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white text-black/80 whitespace-nowrap">
                                         {s.tag}
                                     </span>
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-black/20 text-white border border-white/10 backdrop-blur-md">
+                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-black/20 text-white border border-white/10 backdrop-blur-md whitespace-nowrap">
                                         {s.difficulty}
                                     </span>
                                 </div>
