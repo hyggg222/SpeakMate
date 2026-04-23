@@ -1,6 +1,6 @@
 "use client";
 
-import { History, BookOpen, FileText, MessageCircle, Settings, LogOut, Mic, Share2, Target } from "lucide-react";
+import { History, FileText, MessageCircle, Settings, LogOut, Share2, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,8 +14,6 @@ const navItems = [
   { icon: Share2, label: "Chia sẻ", href: "/feedback/new" },
   { icon: Target, label: "Thử thách", href: "/challenges" },
   { icon: FileText, label: "Kho Chuyện", href: "/stories" },
-  { icon: Mic, label: "Phân tích", href: "/realworld" },
-  { icon: BookOpen, label: "Thư viện", href: "/library" },
   { icon: History, label: "Lịch sử", href: "/history" },
   { icon: Settings, label: "Cài đặt", href: "/settings" },
 ];
@@ -50,14 +48,14 @@ export default function Sidebar() {
       style={{ backgroundColor: "var(--navy)", borderRight: "1px solid var(--sidebar-border)" }}>
 
       {/* Logo */}
-      <Link href="/" className="flex items-center justify-center w-10 h-10 mb-4 rounded-lg overflow-hidden mt-2 border border-slate-700/50 bg-[#0f1b2d] hover:border-teal-500/50 transition-colors">
+      <Link href="/" className="flex items-center justify-center w-12 h-12 mb-3 rounded-xl overflow-hidden mt-2 border border-slate-700/50 bg-[#0f1b2d] hover:border-teal-500/50 transition-colors">
         <Image
           src="/brand-logo.png"
           alt="SpeakMate"
-          width={40}
-          height={40}
+          width={48}
+          height={48}
           style={{ width: '100%', height: '100%' }}
-          className="object-cover"
+          className="object-contain"
           priority
         />
       </Link>
@@ -73,7 +71,7 @@ export default function Sidebar() {
               key={item.label}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center w-full py-3 my-0.5 gap-1 transition-all group",
+                "relative flex flex-col items-center justify-center w-full py-2.5 my-0.5 gap-1 transition-all group",
                 isActive
                   ? "text-[var(--teal)] opacity-100"
                   : "text-white opacity-60 hover:opacity-100"
