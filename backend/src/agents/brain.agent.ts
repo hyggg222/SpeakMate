@@ -67,7 +67,22 @@ export class BrainAgent {
           }
         });
         const jsonStr = response.text || "{}";
-        const configObj: FullScenarioContext = sanitizeScenario(JSON.parse(jsonStr));
+        const raw = sanitizeScenario(JSON.parse(jsonStr));
+        // Normalize: prompt returns flat object, but FullScenarioContext needs { scenario, evalRules }
+        const configObj: FullScenarioContext = (raw.scenario && raw.evalRules)
+          ? raw  // already correct shape
+          : {
+              scenario: {
+                scenarioName: raw.title || raw.scenarioName || userRequirement,
+                topic: raw.description || raw.topic,
+                interviewerPersona: raw.interviewerPersona || '',
+                characters: raw.characters,
+                goals: raw.goals || [],
+                startingTurns: raw.startingTurns || [],
+                relevantTags: raw.relevantTags,
+              },
+              evalRules: raw.evalRules || { categories: [] },
+            };
         return configObj;
       } catch (error) {
         lastError = error;
@@ -143,7 +158,21 @@ NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], e
         }
       });
       const jsonStr = response.text || "{}";
-      const adjustedScenario: FullScenarioContext = sanitizeScenario(JSON.parse(jsonStr));
+      const raw = sanitizeScenario(JSON.parse(jsonStr));
+      const adjustedScenario: FullScenarioContext = (raw.scenario && raw.evalRules)
+        ? raw
+        : {
+            scenario: {
+              scenarioName: raw.title || raw.scenarioName || currentScenario.scenario?.scenarioName || '',
+              topic: raw.description || raw.topic || currentScenario.scenario?.topic,
+              interviewerPersona: raw.interviewerPersona || currentScenario.scenario?.interviewerPersona || '',
+              characters: raw.characters || currentScenario.scenario?.characters,
+              goals: raw.goals || currentScenario.scenario?.goals || [],
+              startingTurns: raw.startingTurns || currentScenario.scenario?.startingTurns || [],
+              relevantTags: raw.relevantTags || currentScenario.scenario?.relevantTags,
+            },
+            evalRules: raw.evalRules || currentScenario.evalRules,
+          };
       return adjustedScenario;
     } catch (error) {
       console.error("[BrainAgent] Adjust scenario error:", error);
