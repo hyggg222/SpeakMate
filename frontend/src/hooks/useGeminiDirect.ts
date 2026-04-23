@@ -5,7 +5,7 @@ import type { TurnData } from './useLiveKitRoom';
 
 export type { TurnData };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://speakmate-k26b.onrender.com/api';
 
 /** Create WAV blob from Int16 PCM and upload to backend debug_audio/ folder */
 function saveDebugWav(samples: Int16Array, sampleRate: number, filename: string) {
