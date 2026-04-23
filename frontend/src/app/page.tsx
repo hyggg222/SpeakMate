@@ -6,7 +6,6 @@ import ScenarioStudio from "@/components/dashboard/ScenarioStudio";
 import ComingSoonPremium from "@/components/dashboard/ComingSoonPremium";
 import DailyTask from "@/components/dashboard/DailyTask";
 import StreakCard from "@/components/dashboard/StreakCard";
-import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import ActiveChallenges from "@/components/dashboard/ActiveChallenges";
 import ProgressCard from "@/components/dashboard/ProgressCard";
 import WelcomeBanner from "@/components/WelcomeBanner";
@@ -50,7 +49,6 @@ export default function Home() {
           <ActiveChallenges />
           <DailyTask />
           <StreakCard />
-          <ActivityCalendar />
         </aside>
       </main>
     </div>
