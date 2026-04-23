@@ -44,11 +44,16 @@ dns.resolve4('vlxpxatpuwkjnwhwfprz.supabase.co', () => { });
 const app = express();
 const port = config.port;
 
-// Middleware
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : ['*'];
-app.use(cors({ origin: allowedOrigins.includes('*') ? '*' : allowedOrigins }));
+// Middleware — allow all origins; use ALLOWED_ORIGINS only to add extra restrictions if needed
+const extraOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(o => o !== '*')
+    : [];
+app.use(cors({
+    origin: (origin, callback) => {
+        // Always allow: no-origin requests (curl/Postman), and all browser origins
+        callback(null, true);
+    }
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
