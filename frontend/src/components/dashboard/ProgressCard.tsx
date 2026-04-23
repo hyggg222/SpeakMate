@@ -26,13 +26,17 @@ export default function ProgressCard() {
 
     if (loading) {
         return (
-            <div className="rounded-2xl p-4 animate-pulse space-y-3" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <div className="h-3 bg-slate-700/40 rounded w-20" />
+            <div className="rounded-2xl p-5 backdrop-blur-sm shadow-xl animate-pulse space-y-4"
+                style={{
+                    backgroundColor: "rgba(15, 23, 42, 0.6)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)"
+                }}>
+                <div className="h-3.5 bg-slate-700/40 rounded w-20" />
                 <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-slate-700/40" />
-                    <div className="flex-1 space-y-1.5">
-                        <div className="h-3 bg-slate-700/40 rounded w-24" />
-                        <div className="h-1.5 bg-slate-700/40 rounded-full" />
+                    <div className="w-12 h-12 rounded-xl bg-slate-700/40" />
+                    <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-slate-700/40 rounded w-24" />
+                        <div className="h-2 bg-slate-700/40 rounded-full" />
                     </div>
                 </div>
             </div>
@@ -41,16 +45,32 @@ export default function ProgressCard() {
 
     if (!progress) {
         return (
-            <div className="rounded-2xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-[11px] font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Target className="w-3 h-3 text-teal-400" /> Tiến trình
+            <div className="rounded-2xl p-5 backdrop-blur-sm shadow-xl transition-all hover:shadow-teal-500/5"
+                style={{
+                    backgroundColor: "rgba(15, 23, 42, 0.6)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)"
+                }}>
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20">
+                        <Target className="w-4 h-4 text-teal-400" />
+                    </div>
+                    <p className="text-[13px] font-bold text-white tracking-wide">
+                        Tiến trình
+                    </p>
+                </div>
+
+                <p className="text-[12px] text-slate-300 leading-relaxed mb-5">
+                    Hoàn thành phiên luyện tập đầu tiên để bắt đầu theo dõi và phân tích sự tiến bộ của bạn.
                 </p>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Hoàn thành phiên luyện đầu tiên để bắt đầu theo dõi tiến bộ.
-                </p>
-                <Link href="/setup" className="mt-3 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-teal-400 transition-colors"
-                    style={{ backgroundColor: 'rgba(20,184,166,0.08)' }}>
-                    Luyện tập ngay <ChevronRight className="w-3 h-3" />
+
+                <Link href="/setup"
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-teal-500/10"
+                    style={{
+                        background: "linear-gradient(135deg, oklch(0.6 0.18 185), oklch(0.5 0.18 185))",
+                        border: "1px solid rgba(255, 255, 255, 0.1)"
+                    }}>
+                    Luyện tập ngay <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
             </div>
         );
@@ -65,7 +85,12 @@ export default function ProgressCard() {
     const xpPct = Math.min(xpInLevel / xpForNextLevel * 100, 100);
 
     return (
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl transition-all hover:shadow-teal-500/5 group"
+            style={{
+                backgroundColor: "rgba(15, 23, 42, 0.6)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)"
+            }}>
 
             {/* ── Level header ── */}
             <div className="px-4 pt-4 pb-3">
@@ -101,30 +126,30 @@ export default function ProgressCard() {
             </div>
 
             {/* ── Divider ── */}
-            <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
 
             {/* ── Stats row ── */}
             <div className="grid grid-cols-3">
-                <div className="px-3 py-2.5 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[11px] font-bold text-white">{progress.total_sessions || 0}</p>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Phiên</p>
+                <div className="px-3 py-3 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                    <p className="text-[12px] font-bold text-white">{progress.total_sessions || 0}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Phiên</p>
                 </div>
-                <div className="px-3 py-2.5 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[11px] font-bold text-white">{(progress.avg_coherence || 0).toFixed(0)}</p>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Mạch lạc</p>
+                <div className="px-3 py-3 text-center" style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                    <p className="text-[12px] font-bold text-white">{(progress.avg_coherence || 0).toFixed(0)}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Mạch lạc</p>
                 </div>
-                <div className="px-3 py-2.5 text-center">
+                <div className="px-3 py-3 text-center">
                     {streak > 0 ? (
                         <>
-                            <p className="text-[11px] font-bold text-orange-400 flex items-center justify-center gap-0.5">
-                                <Flame className="w-2.5 h-2.5" />{streak}
+                            <p className="text-[12px] font-bold text-orange-400 flex items-center justify-center gap-0.5">
+                                <Flame className="w-3 h-3" />{streak}
                             </p>
-                            <p className="text-[9px] text-slate-500 mt-0.5">Tuần</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">Tuần</p>
                         </>
                     ) : (
                         <>
-                            <p className="text-[11px] font-bold text-slate-500">—</p>
-                            <p className="text-[9px] text-slate-600 mt-0.5">Streak</p>
+                            <p className="text-[12px] font-bold text-slate-400">—</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Streak</p>
                         </>
                     )}
                 </div>
@@ -133,7 +158,7 @@ export default function ProgressCard() {
             {/* ── Badges (if any) ── */}
             {badges.length > 0 && (
                 <>
-                    <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+                    <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
                     <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
                         {badges.map((badge, i) => (
                             <span key={i}
@@ -147,11 +172,11 @@ export default function ProgressCard() {
             )}
 
             {/* ── CTA ── */}
-            <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
             <Link href="/progress"
-                className="flex items-center justify-center gap-1 py-2.5 text-[11px] font-semibold text-teal-400 hover:text-teal-300 transition-colors"
-                style={{ backgroundColor: 'rgba(20,184,166,0.05)' }}>
-                <Zap className="w-3 h-3" /> Xem chi tiết tiến trình <ChevronRight className="w-3 h-3" />
+                className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-teal-400 hover:text-teal-300 transition-all hover:bg-teal-500/5"
+            >
+                <Zap className="w-3.5 h-3.5" /> Xem chi tiết tiến trình <ChevronRight className="w-3.5 h-3.5" />
             </Link>
         </div>
     );
