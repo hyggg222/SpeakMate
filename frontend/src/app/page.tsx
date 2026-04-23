@@ -9,6 +9,7 @@ import StreakCard from "@/components/dashboard/StreakCard";
 import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import ActiveChallenges from "@/components/dashboard/ActiveChallenges";
 import ProgressCard from "@/components/dashboard/ProgressCard";
+import WelcomeBanner from "@/components/WelcomeBanner";
 
 export default function Home() {
   return (
@@ -21,6 +22,7 @@ export default function Home() {
         {/* Center panel */}
         <section className="flex-1 overflow-y-auto px-6 pt-3 pb-8 flex flex-col hide-scrollbar">
           <div className="max-w-[1400px] mx-auto w-full">
+            <WelcomeBanner />
             <h1 className="text-[24px] font-bold mb-2 text-balance leading-tight" style={{ color: "var(--foreground)" }}>
               Trung tâm Luyện tập
             </h1>
