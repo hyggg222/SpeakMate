@@ -530,7 +530,7 @@ export default function ConversationStudioPage() {
             </header>
 
             {/* ── Layout chính: Chia đôi màn hình (Split Screen) ──────── */}
-            <div className="flex-1 flex flex-col md:flex-row w-full pt-20 pb-28 h-full relative z-10">
+            <div className="flex-1 flex flex-col md:flex-row w-full pt-16 pb-24 md:pt-20 md:pb-28 h-full relative z-10">
 
                 {/* Panel Trái: Avatar & Waveform */}
                 <div className="w-full md:w-5/12 flex flex-col items-center justify-center relative p-6 border-b md:border-b-0 md:border-r border-slate-800/50">
@@ -549,7 +549,7 @@ export default function ConversationStudioPage() {
                 </div>
 
                 {/* Panel Phải: Chat Log */}
-                <div className="flex-1 w-full md:w-7/12 flex flex-col relative h-full bg-slate-900/20">
+                <div className="flex-1 w-full md:w-7/12 flex flex-col relative h-full overflow-y-auto md:overflow-hidden bg-slate-900/20">
 
                     {/* Hints overlay */}
                     <div className="absolute top-4 left-0 right-0 z-30 px-4 flex justify-center pointer-events-none">

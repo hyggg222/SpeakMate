@@ -177,6 +177,12 @@ function OverallContent() {
             return;
         }
 
+        // Load previous metrics from localStorage (saved at end of last session)
+        try {
+            const cached = localStorage.getItem('speakmate_previous_metrics');
+            if (cached) setPreviousMetrics(JSON.parse(cached));
+        } catch { /* ignore */ }
+
         // Fetch user progress in parallel (non-blocking)
         apiClient.getUserProgress().then(p => setUserProgress(p)).catch(() => {});
 
@@ -187,6 +193,16 @@ function OverallContent() {
                 apiClient.evaluateSession(scenario.evalRules, audioFileKeys || [], fullTranscript)
                     .then(report => {
                         setEvalReport(report);
+                        // Save current metrics as "previous" for next session
+                        if (report?.sessionMetrics) {
+                            const m = report.sessionMetrics;
+                            localStorage.setItem('speakmate_previous_metrics', JSON.stringify({
+                                coherence_score: m.coherenceScore,
+                                jargon_count: m.jargonCount,
+                                filler_per_minute: m.fillerPerMinute,
+                                avg_response_time: m.avgResponseTime ?? 0,
+                            }));
+                        }
                         setLoading(false);
                     })
                     .catch(() => setLoading(false));
@@ -196,13 +212,10 @@ function OverallContent() {
             return;
         }
         apiClient.getSessionById(sessionId).then(data => {
-            if (data?.session) {
-                setFullSession(data.session);
-            }
+            if (data?.session) setFullSession(data.session);
             if (data?.evaluation?.report_data) {
                 setEvalReport(data.evaluation.report_data);
             } else if (data?.evaluation) {
-                // Backward compatibility if old structure
                 const raw = data.evaluation;
                 setEvalReport({
                     goalProgress: raw.score || 0,
@@ -338,7 +351,7 @@ function OverallContent() {
                     <MetricCard
                         label="Tốc độ phản xạ"
                         icon="⚡"
-                        value={(evalReport as any).sessionMetrics.avgResponseTime ?? previousMetrics?.avg_response_time ?? 0}
+                        value={(evalReport as any).sessionMetrics.avgResponseTime ?? 0}
                         unit="giây"
                         previous={previousMetrics?.avg_response_time}
                         inverse
@@ -580,9 +593,9 @@ export default function OverallEvaluationPage() {
                 </div>
             </header>
 
-            <div className="flex flex-1 max-w-[1400px] mx-auto w-full p-6 md:p-8 gap-8">
-                {/* Fixed Sidebar for Navigation */}
-                <aside className="w-64 shrink-0 flex flex-col gap-6">
+            <div className="flex flex-col lg:flex-row flex-1 max-w-[1400px] mx-auto w-full p-4 md:p-6 lg:p-8 gap-6 lg:gap-8">
+                {/* Fixed Sidebar for Navigation — hidden on mobile */}
+                <aside className="hidden lg:flex w-64 shrink-0 flex-col gap-6">
                     <h3 className="font-bold text-slate-800 mb-2 px-2 border-b border-slate-200 pb-2">Hồi tưởng kết quả</h3>
                     <nav className="flex flex-col gap-2">
                         <div className="bg-[#0b1325] text-white px-4 py-3 rounded-full text-sm font-medium shadow-md w-full text-center">
