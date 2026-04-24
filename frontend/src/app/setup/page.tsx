@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useScenario } from '@/context/ScenarioContext'
 import { FullScenarioContext } from '@/types/api.contracts'
-import { Users, User } from 'lucide-react'
+import { User } from 'lucide-react'
 
 const STORAGE_KEY = 'speakmate_saved_context';
 interface AgentConfig {
@@ -47,10 +47,7 @@ export default function ContextBuilderPage() {
     const router = useRouter()
 
     // Agent config state
-    const [agentCount, setAgentCount] = useState<1 | 2>(1)
     const [agent1, setAgent1] = useState<AgentConfig>({ ...DEFAULT_AGENT })
-    const [agent2, setAgent2] = useState<AgentConfig>({ ...DEFAULT_AGENT, gender: 'female' })
-    const [activeCharIndex, setActiveCharIndex] = useState(0)
 
 
     // Load saved context from localStorage on mount
@@ -97,15 +94,7 @@ export default function ContextBuilderPage() {
     // Build goal string with agent config appended
     const buildGoalWithAgents = (goal: string): string => {
         let enriched = goal;
-        if (agentCount === 2) {
-            const a1 = agent1.name ? `${agent1.name} (${agent1.gender === 'male' ? 'nam' : 'nữ'}): ${agent1.persona}` : '';
-            const a2 = agent2.name ? `${agent2.name} (${agent2.gender === 'male' ? 'nam' : 'nữ'}): ${agent2.persona}` : '';
-            if (a1 || a2) {
-                enriched += `\n\n[CẤU HÌNH 2 NHÂN VẬT AI]\nNhân vật 1: ${a1 || 'Tự tạo'}\nNhân vật 2: ${a2 || 'Tự tạo'}`;
-            } else {
-                enriched += '\n\n[Yêu cầu: Tạo kịch bản có 2 nhân vật AI với tính cách khác nhau]';
-            }
-        } else if (agent1.name || agent1.persona) {
+        if (agent1.name || agent1.persona) {
             enriched += `\n\n[CẤU HÌNH NHÂN VẬT AI]\nTên: ${agent1.name || 'Tự tạo'}, Giới tính: ${agent1.gender === 'male' ? 'nam' : 'nữ'}, Tính cách: ${agent1.persona || 'Tự tạo'}`;
         }
         return enriched;
@@ -129,22 +118,8 @@ export default function ContextBuilderPage() {
             const result = await apiClient.setupScenario(enrichedGoal);
 
             const scenarioObj = result.scenario || result as any;
-            if (agentCount === 2) {
-                // Inject characters if LLM didn't generate them
-                if (!scenarioObj?.characters?.length) {
-                    const chars = [
-                        { id: 'char_1', name: agent1.name || 'Nhân vật 1', persona: agent1.persona || scenarioObj.interviewerPersona || '', gender: agent1.gender, color: 'teal' },
-                        { id: 'char_2', name: agent2.name || 'Nhân vật 2', persona: agent2.persona || 'Đồng nghiệp thân thiện', gender: agent2.gender, color: 'indigo' },
-                    ];
-                    scenarioObj.characters = chars;
-                    if (!result.scenario) {
-                        (result as any).scenario = scenarioObj;
-                    }
-                }
-            } else {
-                // Single agent — remove characters to ensure AUDIO mode
-                delete scenarioObj.characters;
-            }
+            // Single agent — remove characters to ensure AUDIO mode
+            delete scenarioObj.characters;
 
             setScenario(result);
             setHistory([]);
@@ -192,10 +167,7 @@ export default function ContextBuilderPage() {
         setHistory([]);
         setAudioFileKeys([]);
         setAdjustmentText('');
-        setAgentCount(1);
         setAgent1({ ...DEFAULT_AGENT });
-        setAgent2({ ...DEFAULT_AGENT, gender: 'female' });
-        setActiveCharIndex(0);
     };
 
     return (
@@ -308,89 +280,34 @@ export default function ContextBuilderPage() {
                             </div>
                         )}
 
-                        {/* Agent Config — choose 1 or 2 AI characters */}
+                        {/* Agent Config */}
                         <div className="mb-4 relative z-10">
-                            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Số nhân vật AI</label>
-                            <div className="flex gap-3 mb-4">
-                                <button
-                                    onClick={() => setAgentCount(1)}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all border ${agentCount === 1
-                                        ? 'bg-teal-500/20 border-teal-500 text-teal-300'
-                                        : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:border-slate-500'}`}
-                                >
-                                    <User className="w-4 h-4" /> 1 nhân vật
-                                </button>
-                                <button
-                                    onClick={() => setAgentCount(2)}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all border ${agentCount === 2
-                                        ? 'bg-teal-500/20 border-teal-500 text-teal-300'
-                                        : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:border-slate-500'}`}
-                                >
-                                    <Users className="w-4 h-4" /> 2 nhân vật
-                                </button>
-                            </div>
-
-                            {/* Agent cards */}
-                            <div className={`grid gap-4 ${agentCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                {/* Agent 1 */}
-                                <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-600/40">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
-                                        <span className="text-sm font-semibold text-teal-300">Nhân vật {agentCount === 2 ? '1' : 'AI'}</span>
-                                        <select
-                                            value={agent1.gender}
-                                            onChange={e => setAgent1(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
-                                            className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
-                                        >
-                                            <option value="male">Nam</option>
-                                            <option value="female">Nữ</option>
-                                        </select>
-                                    </div>
-                                    <input
-                                        value={agent1.name}
-                                        onChange={e => setAgent1(a => ({ ...a, name: e.target.value }))}
-                                        placeholder="Tên (VD: Anh Minh)"
-                                        className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 mb-3"
-                                    />
-                                    <textarea
-                                        value={agent1.persona}
-                                        onChange={e => setAgent1(a => ({ ...a, persona: e.target.value }))}
-                                        placeholder="Tính cách (VD: Giám đốc nghiêm túc, hay đưa ra những câu hỏi sắc bén và tình huống khó)"
-                                        rows={4}
-                                        className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 resize-none leading-relaxed"
-                                    />
+                            <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-600/40">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+                                    <span className="text-sm font-semibold text-teal-300">Nhân vật AI</span>
+                                    <select
+                                        value={agent1.gender}
+                                        onChange={e => setAgent1(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
+                                        className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
+                                    >
+                                        <option value="male">Nam</option>
+                                        <option value="female">Nữ</option>
+                                    </select>
                                 </div>
-
-                                {/* Agent 2 */}
-                                {agentCount === 2 && (
-                                    <div className="bg-slate-800/60 rounded-2xl p-5 border border-indigo-500/30">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
-                                            <span className="text-sm font-semibold text-indigo-300">Nhân vật 2</span>
-                                            <select
-                                                value={agent2.gender}
-                                                onChange={e => setAgent2(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
-                                                className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
-                                            >
-                                                <option value="male">Nam</option>
-                                                <option value="female">Nữ</option>
-                                            </select>
-                                        </div>
-                                        <input
-                                            value={agent2.name}
-                                            onChange={e => setAgent2(a => ({ ...a, name: e.target.value }))}
-                                            placeholder="Tên (VD: Chị Lan)"
-                                            className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-indigo-500/20 focus:border-indigo-500/50 mb-3"
-                                        />
-                                        <textarea
-                                            value={agent2.persona}
-                                            onChange={e => setAgent2(a => ({ ...a, persona: e.target.value }))}
-                                            placeholder="Tính cách (VD: HR thân thiện, hay động viên ứng viên và đặt câu hỏi về văn hóa công ty)"
-                                            rows={4}
-                                            className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-indigo-500/20 focus:border-indigo-500/50 resize-none leading-relaxed"
-                                        />
-                                    </div>
-                                )}
+                                <input
+                                    value={agent1.name}
+                                    onChange={e => setAgent1(a => ({ ...a, name: e.target.value }))}
+                                    placeholder="Tên (VD: Anh Minh)"
+                                    className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 mb-3"
+                                />
+                                <textarea
+                                    value={agent1.persona}
+                                    onChange={e => setAgent1(a => ({ ...a, persona: e.target.value }))}
+                                    placeholder="Tính cách (VD: Giám đốc nghiêm túc, hay đưa ra những câu hỏi sắc bén và tình huống khó)"
+                                    rows={3}
+                                    className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 resize-none leading-relaxed"
+                                />
                             </div>
                             <p className="text-[10px] text-slate-500 mt-2">Để trống để AI tự tạo nhân vật phù hợp với bối cảnh.</p>
                         </div>
@@ -443,7 +360,7 @@ export default function ContextBuilderPage() {
                 <div className="flex-[1.2] flex flex-col min-w-0">
                     <h1 className="text-2xl font-bold text-slate-800 mb-6">Bối cảnh giao tiếp</h1>
 
-                    <div className="flex gap-6 relative flex-1">
+                    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 relative flex-1">
 
                         {/* Main Context Card */}
                         <div className="flex-1 bg-white rounded-3xl p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col text-[15px] leading-relaxed">
@@ -498,58 +415,30 @@ export default function ContextBuilderPage() {
                         </div>
 
                         {/* Character Panel */}
-                        <div className="w-[240px] shrink-0 flex flex-col">
+                        <div className="w-full lg:w-[240px] shrink-0 flex flex-col">
                             <h3 className="text-sm font-bold text-slate-800 pt-2 mb-4 flex items-center gap-2">
-                                <Users className="w-4 h-4 text-teal-500" />
+                                <User className="w-4 h-4 text-teal-500" />
                                 Nhân vật AI
                             </h3>
 
                             {scenario ? (() => {
                                 const scenarioData = scenario.scenario || scenario as any;
-                                const chars = scenarioData?.characters || [];
-                                const hasDual = chars.length >= 2;
-
-                                // Build display list: from characters array or fallback from interviewerPersona
-                                const displayChars = hasDual
-                                    ? chars
-                                    : [{ id: 'char_1', name: scenarioData?.interviewerPersona?.split(',')[0]?.trim() || 'Nhân vật AI', persona: scenarioData?.interviewerPersona || '', gender: 'male', color: 'teal' }];
-
-                                const current = displayChars[activeCharIndex] || displayChars[0];
-                                const colorTheme = activeCharIndex === 0
-                                    ? { bg: 'bg-teal-50', border: 'border-teal-200', dot: 'bg-teal-400', text: 'text-teal-700', badge: 'bg-teal-100 text-teal-600' }
-                                    : { bg: 'bg-indigo-50', border: 'border-indigo-200', dot: 'bg-indigo-400', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-600' };
+                                const char = { name: scenarioData?.interviewerPersona?.split(',')[0]?.trim() || 'Nhân vật AI', persona: scenarioData?.interviewerPersona || '', gender: 'male' };
 
                                 return (
                                     <div className="space-y-3">
-                                        {/* Active character card */}
-                                        <div className={`${colorTheme.bg} ${colorTheme.border} border rounded-2xl p-5 shadow-sm`}>
+                                        <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 shadow-sm">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className={`w-2.5 h-2.5 rounded-full ${colorTheme.dot}`} />
-                                                <span className={`text-sm font-bold ${colorTheme.text}`}>{current.name}</span>
+                                                <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+                                                <span className="text-sm font-bold text-teal-700">{char.name}</span>
                                             </div>
                                             <div className="flex gap-2 mb-3">
-                                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${colorTheme.badge}`}>
-                                                    {current.gender === 'female' ? 'Nữ' : 'Nam'}
+                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-600">
+                                                    {char.gender === 'female' ? 'Nữ' : 'Nam'}
                                                 </span>
-                                                {hasDual && (
-                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                                                        {activeCharIndex + 1}/{displayChars.length}
-                                                    </span>
-                                                )}
                                             </div>
-                                            <p className="text-xs text-slate-600 leading-relaxed">{current.persona}</p>
+                                            <p className="text-xs text-slate-600 leading-relaxed">{char.persona}</p>
                                         </div>
-
-                                        {/* Toggle button for dual characters */}
-                                        {hasDual && (
-                                            <button
-                                                onClick={() => setActiveCharIndex(i => i === 0 ? 1 : 0)}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-all shadow-sm hover:shadow-md"
-                                            >
-                                                <RefreshCw className="w-3.5 h-3.5" />
-                                                <span>Chuyển nhân vật</span>
-                                            </button>
-                                        )}
                                     </div>
                                 );
                             })() : (
