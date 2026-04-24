@@ -3,7 +3,6 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import AuthGate from "@/components/AuthGate";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -123,7 +122,7 @@ export default function StoriesPage() {
             <main className="flex flex-col flex-1 overflow-hidden">
                 <Topbar />
                 <AuthGate feature="Kho Chuyện">
-                <section className="flex-1 overflow-y-auto px-4 sm:px-[5%] xl:px-[12%] py-8 pb-24 md:pb-8 bg-[#f8fafc]">
+                <section className="flex-1 overflow-y-auto px-4 sm:px-[5%] xl:px-[12%] py-8 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-8">
 
                         {/* Header */}
@@ -283,7 +282,6 @@ export default function StoriesPage() {
                 </section>
                 </AuthGate>
             </main>
-            <MobileBottomNav />
         </div>
     );
 }

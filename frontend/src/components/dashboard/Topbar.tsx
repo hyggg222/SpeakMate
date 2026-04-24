@@ -22,7 +22,7 @@ export default function Topbar({ variant = "brand" }: TopbarProps) {
             )}
             style={isLight ? {} : { backgroundColor: "var(--navy)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
         >
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 pl-12 md:pl-0">
                 <button
                     onClick={() => router.back()}
                     className="flex items-center gap-1.5 text-[13px] font-medium opacity-80 hover:opacity-100 transition-opacity"
