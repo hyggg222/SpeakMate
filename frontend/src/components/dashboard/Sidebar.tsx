@@ -44,7 +44,7 @@ export default function Sidebar() {
     || "?";
 
   return (
-    <aside className="flex flex-col items-center w-20 min-h-screen py-4 gap-1"
+    <aside className="hidden md:flex flex-col items-center w-20 min-h-screen py-4 gap-1"
       style={{ backgroundColor: "var(--navy)", borderRight: "1px solid var(--sidebar-border)" }}>
 
       {/* Logo */}
