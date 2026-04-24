@@ -48,12 +48,12 @@ export default function Sidebar() {
       style={{ backgroundColor: "var(--navy)", borderRight: "1px solid var(--sidebar-border)" }}>
 
       {/* Logo */}
-      <Link href="/" className="flex items-center justify-center w-12 h-12 mb-3 rounded-xl overflow-hidden mt-2 border border-slate-700/50 bg-[#0f1b2d] hover:border-teal-500/50 transition-colors">
+      <Link href="/" className="flex items-center justify-center w-12 h-12 p-1.5 mb-3 rounded-xl overflow-hidden mt-2 border border-slate-700/50 bg-[#0f1b2d] hover:border-teal-500/50 transition-colors shadow-inner">
         <Image
           src="/brand-logo.png"
           alt="SpeakMate"
-          width={48}
-          height={48}
+          width={40}
+          height={40}
           style={{ width: '100%', height: '100%' }}
           className="object-contain"
           priority
