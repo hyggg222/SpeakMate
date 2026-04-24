@@ -4,20 +4,20 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 
-type Level = 'beginner' | 'intermediate' | 'advanced'
-type Goal = 'interview' | 'business' | 'daily' | 'academic'
+type Level = 'nervous' | 'okay' | 'confident'
+type Goal = 'interview' | 'presentation' | 'meeting' | 'debate'
 
 const LEVELS: { value: Level; label: string; desc: string; emoji: string }[] = [
-    { value: 'beginner', label: 'Mới bắt đầu', desc: 'Tôi chưa quen giao tiếp tiếng Anh', emoji: '🌱' },
-    { value: 'intermediate', label: 'Trung cấp', desc: 'Tôi có thể giao tiếp nhưng muốn cải thiện', emoji: '🚀' },
-    { value: 'advanced', label: 'Nâng cao', desc: 'Tôi giao tiếp tốt, muốn luyện chuyên sâu', emoji: '🏆' },
+    { value: 'nervous', label: 'Còn run', desc: 'Tôi hay hồi hộp, nói vấp khi giao tiếp chuyên nghiệp', emoji: '😅' },
+    { value: 'okay', label: 'Ổn ổn', desc: 'Tôi giao tiếp được nhưng chưa tự tin, chưa rõ ràng', emoji: '🙂' },
+    { value: 'confident', label: 'Khá tốt', desc: 'Tôi tự tin nhưng muốn nâng lên tầm cao hơn', emoji: '💪' },
 ]
 
 const GOALS: { value: Goal; label: string; desc: string; emoji: string }[] = [
-    { value: 'interview', label: 'Phỏng vấn', desc: 'Luyện phỏng vấn xin việc bằng tiếng Anh', emoji: '💼' },
-    { value: 'business', label: 'Business', desc: 'Họp, thuyết trình, giao tiếp công việc', emoji: '📊' },
-    { value: 'daily', label: 'Hằng ngày', desc: 'Giao tiếp tự nhiên, tự tin hơn', emoji: '💬' },
-    { value: 'academic', label: 'Học thuật', desc: 'Seminar, bảo vệ đề tài, IELTS speaking', emoji: '🎓' },
+    { value: 'interview', label: 'Phỏng vấn', desc: 'Trả lời tự tin, rõ ràng, thuyết phục HR/tech lead', emoji: '💼' },
+    { value: 'presentation', label: 'Thuyết trình', desc: 'Demo dự án, pitching ý tưởng trước nhóm hoặc khách hàng', emoji: '🎤' },
+    { value: 'meeting', label: 'Họp nhóm', desc: 'Nêu quan điểm, phản biện, đóng góp trong cuộc họp', emoji: '🤝' },
+    { value: 'debate', label: 'Tranh luận', desc: 'Lập luận sắc bén, bảo vệ quan điểm trước phản đối', emoji: '⚡' },
 ]
 
 export default function OnboardingPage() {
@@ -31,11 +31,10 @@ export default function OnboardingPage() {
         try {
             localStorage.setItem('speakmate_onboarding', JSON.stringify({
                 name: name.trim() || 'Bạn',
-                level: level || 'intermediate',
-                goal: goal || 'daily',
+                level: level || 'okay',
+                goal: goal || 'interview',
                 completedAt: new Date().toISOString(),
             }))
-            // Also save username for compatibility with existing components
             if (name.trim()) localStorage.setItem('speakmate_username', name.trim())
         } catch {
             // localStorage unavailable — skip silently
@@ -68,7 +67,10 @@ export default function OnboardingPage() {
                     <div className="p-8">
                         <div className="text-4xl mb-4 text-center">👋</div>
                         <h1 className="text-2xl font-bold text-slate-800 text-center mb-1">Chào mừng đến SpeakMate!</h1>
-                        <p className="text-slate-500 text-center text-sm mb-8">Bạn muốn Ni gọi bạn là gì?</p>
+                        <p className="text-slate-500 text-center text-sm mb-2 leading-relaxed">
+                            Nền tảng luyện kỹ năng giao tiếp cho người trẻ công nghệ
+                        </p>
+                        <p className="text-slate-400 text-center text-sm mb-8">Bạn muốn Ni gọi bạn là gì?</p>
 
                         <input
                             type="text"
@@ -79,20 +81,21 @@ export default function OnboardingPage() {
                             autoFocus
                             className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-teal-400 focus:outline-none text-slate-800 text-base font-medium transition-colors"
                         />
-
                         <p className="text-xs text-slate-400 text-center mt-3">
                             Bỏ trống nếu muốn Ni gọi là "Bạn"
                         </p>
                     </div>
                 )}
 
-                {/* Step 2: Level */}
+                {/* Step 2: Current level */}
                 {step === 2 && (
                     <div className="p-8">
                         <h1 className="text-xl font-bold text-slate-800 text-center mb-1">
-                            Trình độ của {name.trim() || 'bạn'}?
+                            {name.trim() || 'Bạn'} đang ở đâu?
                         </h1>
-                        <p className="text-slate-500 text-center text-sm mb-6">Ni sẽ điều chỉnh độ khó phù hợp</p>
+                        <p className="text-slate-500 text-center text-sm mb-6">
+                            Mức độ tự tin khi giao tiếp chuyên nghiệp hiện tại
+                        </p>
 
                         <div className="flex flex-col gap-3">
                             {LEVELS.map(l => (
@@ -106,12 +109,12 @@ export default function OnboardingPage() {
                                     }`}
                                 >
                                     <span className="text-2xl">{l.emoji}</span>
-                                    <div>
+                                    <div className="flex-1">
                                         <p className="font-semibold text-slate-800 text-sm">{l.label}</p>
                                         <p className="text-xs text-slate-500 mt-0.5">{l.desc}</p>
                                     </div>
                                     {level === l.value && (
-                                        <div className="ml-auto w-5 h-5 rounded-full bg-teal-400 flex items-center justify-center">
+                                        <div className="w-5 h-5 rounded-full bg-teal-400 flex items-center justify-center shrink-0">
                                             <div className="w-2 h-2 rounded-full bg-white" />
                                         </div>
                                     )}
@@ -124,8 +127,10 @@ export default function OnboardingPage() {
                 {/* Step 3: Goal */}
                 {step === 3 && (
                     <div className="p-8">
-                        <h1 className="text-xl font-bold text-slate-800 text-center mb-1">Mục tiêu của bạn?</h1>
-                        <p className="text-slate-500 text-center text-sm mb-6">Ni sẽ gợi ý chủ đề phù hợp</p>
+                        <h1 className="text-xl font-bold text-slate-800 text-center mb-1">Muốn cải thiện điều gì?</h1>
+                        <p className="text-slate-500 text-center text-sm mb-6">
+                            Ni sẽ thiết kế bài luyện phù hợp với bạn
+                        </p>
 
                         <div className="grid grid-cols-2 gap-3">
                             {GOALS.map(g => (
@@ -163,7 +168,7 @@ export default function OnboardingPage() {
                     {step < 3 ? (
                         <button
                             onClick={() => setStep(s => s + 1)}
-                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-40"
+                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold transition-all"
                             style={{ backgroundColor: 'var(--teal, #14b8a6)' }}
                         >
                             Tiếp theo <ChevronRight size={16} />
