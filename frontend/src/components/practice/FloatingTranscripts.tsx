@@ -26,11 +26,7 @@ interface FloatingTranscriptsProps {
     characters?: CharacterInfo[]
 }
 
-const CHARACTER_COLORS: Record<string, { bg: string; border: string; label: string }> = {
-    teal:   { bg: 'bg-teal-950/70',   border: 'border-teal-800/50',   label: 'text-teal-400/80' },
-    indigo: { bg: 'bg-indigo-950/70',  border: 'border-indigo-800/50', label: 'text-indigo-400/80' },
-}
-const DEFAULT_AI_STYLE = CHARACTER_COLORS.teal
+const AI_STYLE = { bg: 'bg-teal-950/70', border: 'border-teal-800/50' }
 
 export function FloatingTranscripts({
     history,
@@ -40,16 +36,6 @@ export function FloatingTranscripts({
     personaName = 'AI',
     characters = [],
 }: FloatingTranscriptsProps) {
-    const isDual = characters.length >= 2
-
-    // Map character id → color style
-    const charColorMap = new Map<string, typeof DEFAULT_AI_STYLE>()
-    if (isDual) {
-        const palette = ['teal', 'indigo']
-        characters.forEach((ch, i) => {
-            charColorMap.set(ch.id, CHARACTER_COLORS[ch.color || palette[i] || 'teal'] || DEFAULT_AI_STYLE)
-        })
-    }
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Auto-scroll to bottom when new messages arrive
@@ -86,19 +72,10 @@ export function FloatingTranscripts({
                                 className={`flex ${msg.speaker === 'User' ? 'justify-start' : 'justify-end'}`}
                             >
                                 <div className={`max-w-[85%] flex flex-col ${msg.confirmed === false ? 'opacity-50 grayscale-[0.5]' : 'opacity-100 grayscale-0'}`}>
-                                    {/* Character name label (dual mode, AI only) */}
-                                    {isDual && msg.speaker === 'AI' && msg.character_name && (
-                                        <span className={`text-xs font-semibold mb-1 px-1 ${(msg.character_id && charColorMap.get(msg.character_id)?.label) || DEFAULT_AI_STYLE.label}`}>
-                                            {msg.character_name}
-                                        </span>
-                                    )}
                                     <div
                                         className={`px-5 py-3.5 rounded-2xl text-base leading-relaxed transition-all duration-300 shadow-md ${msg.speaker === 'User'
                                             ? 'bg-slate-700/70 text-slate-200 rounded-tl-sm border border-slate-600/50'
-                                            : (() => {
-                                                const style = (msg.character_id && charColorMap.get(msg.character_id)) || DEFAULT_AI_STYLE
-                                                return `${style.bg} text-white rounded-tr-sm border ${style.border}`
-                                            })()
+                                            : `${AI_STYLE.bg} text-white rounded-tr-sm border ${AI_STYLE.border}`
                                         }`}
                                     >
                                         {msg.speaker === 'User' ? `"${msg.line}"` : msg.line}
