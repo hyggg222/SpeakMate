@@ -65,15 +65,16 @@ export default function FeaturedScenarios() {
                                     </span>
                                 </div>
 
-                                {/* Typography Section */}
-                                <h3 className="text-[26px] font-black text-white leading-[1.1] mb-6">
+                                {/* Title — reserve 3 lines worth of height so every
+                                    card has its description box at the same Y position */}
+                                <h3 className="text-[26px] font-black text-white leading-[1.1] mb-6 line-clamp-3 min-h-[86px]">
                                     {s.title}
                                 </h3>
 
                                 <div className="space-y-4">
                                     <div className="w-12 h-1.5 bg-white/40 rounded-full group-hover:w-20 transition-all" />
                                     <div className="bg-black/10 backdrop-blur-sm rounded-2xl p-4 border border-white/5">
-                                        <p className="text-[14px] text-white/90 leading-relaxed font-medium line-clamp-6">
+                                        <p className="text-[14px] text-white/90 leading-relaxed font-medium line-clamp-4">
                                             {s.requirement}
                                         </p>
                                     </div>
