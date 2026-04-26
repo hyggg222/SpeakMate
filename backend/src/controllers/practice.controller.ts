@@ -410,15 +410,23 @@ export class PracticeController {
 
             const report = await analystAgent.evaluateSession(rubric, signedUrls[0] || '', fullTranscript);
 
+            // Compute avgResponseTime synchronously so it can be included in response
+            let avgResponseTime = 0;
+            if (sessionId) {
+                avgResponseTime = await databaseService.computeAvgResponseTime(sessionId).catch(() => 0);
+                // Attach to report so frontend can display it
+                if (report.sessionMetrics) {
+                    (report.sessionMetrics as any).avgResponseTime = avgResponseTime;
+                }
+            }
+
             // Fire-and-forget: save SessionMetrics + update UserProgress
             if (sessionId && req.user?.id) {
                 const userId = req.user.id;
                 (async () => {
                     try {
-                        const avgResponseTime = await databaseService.computeAvgResponseTime(sessionId);
                         await databaseService.saveSessionMetrics(sessionId, userId, report.sessionMetrics, avgResponseTime);
                         await databaseService.updateUserProgress(userId, report.sessionMetrics, report);
-                        // Save evaluation to DB
                         await databaseService.saveEvaluation(sessionId, report);
                     } catch (e) {
                         console.error('[PracticeController] Metrics/progress save failed (non-blocking):', e);
@@ -426,16 +434,21 @@ export class PracticeController {
                 })();
             }
 
-            // Also return previous metrics for comparison
-            let previousMetrics = null;
-            if (req.user?.id && sessionId) {
-                previousMetrics = await databaseService.getPreviousSessionMetrics(req.user.id, sessionId);
-            }
-
-            res.status(200).json({ evaluationReport: report, previousMetrics });
+            res.status(200).json({ evaluationReport: report });
         } catch (err) {
             console.error("[PracticeController] Evaluation failed:", err);
             res.status(500).json({ error: 'Analysis failed' });
+        }
+    }
+
+    public async getPreviousMetrics(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+            const { sessionId } = req.query;
+            const data = await databaseService.getPreviousSessionMetrics(req.user.id, String(sessionId || '')).catch(() => null);
+            res.status(200).json({ data });
+        } catch (err) {
+            res.status(200).json({ data: null });
         }
     }
 

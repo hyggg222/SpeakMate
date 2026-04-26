@@ -1,6 +1,6 @@
 "use client";
 
-import { History, FileText, MessageCircle, Settings, LogOut, Share2, Target, Menu, X } from "lucide-react";
+import { History, FileText, MessageCircle, Settings, LogOut, Share2, Target, Menu, X, Headphones } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,6 +14,7 @@ const navItems = [
   { icon: Share2, label: "Chia sẻ", href: "/feedback/new" },
   { icon: Target, label: "Thử thách", href: "/challenges" },
   { icon: FileText, label: "Kho Chuyện", href: "/stories" },
+  { icon: Headphones, label: "Thực tế", href: "/realworld" },
   { icon: History, label: "Lịch sử", href: "/history" },
   { icon: Settings, label: "Cài đặt", href: "/settings" },
 ];

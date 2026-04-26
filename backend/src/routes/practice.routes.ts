@@ -114,5 +114,6 @@ router.get('/stats', authRequired, (req, res) => practiceController.getUserStats
 // 8. Progress tracking
 router.get('/progress', authRequired, (req, res) => practiceController.getUserProgress(req, res));
 router.get('/progress/detail', authRequired, (req, res) => practiceController.getProgressDetail(req, res));
+router.get('/previous-metrics', authRequired, (req, res) => practiceController.getPreviousMetrics(req, res));
 
 export default router;
