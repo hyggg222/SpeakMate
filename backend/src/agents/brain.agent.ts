@@ -1,39 +1,6 @@
 import { FullScenarioContext } from '../contracts/data.contracts';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
-
-/**
- * BrainAgent is responsible for processing user requirements into structured JSON scenarios.
- * It uses the Gemini 2.0 Flash model to generate contexts for practice sessions.
- */
-
-/**
- * Strips bracketed placeholders like [tên của bạn] from any string.
- */
-function sanitizePlaceholders(text: string): string {
-  // Replace name-related bracketed placeholders with "bạn"
-  let result = text.replace(/\[(?:tên của bạn|tên bạn|tên người dùng|your name|tên|name|họ tên|user name|người dùng)[^\]]*\]/gi, 'bạn');
-  // Remove any remaining bracketed placeholders (addresses, topics, etc.)
-  result = result.replace(/\[[^\]]{1,40}\]/g, '');
-  result = result.replace(/\s{2,}/g, ' ').trim();
-  return result;
-}
-
-/**
- * Recursively sanitizes all string values in a scenario object.
- */
-function sanitizeScenario(obj: any): any {
-  if (typeof obj === 'string') return sanitizePlaceholders(obj);
-  if (Array.isArray(obj)) return obj.map(sanitizeScenario);
-  if (obj && typeof obj === 'object') {
-    const result: any = {};
-    for (const key of Object.keys(obj)) {
-      result[key] = sanitizeScenario(obj[key]);
-    }
-    return result;
-  }
-  return obj;
-}
-
+import { sanitizeObj } from '../utils/sanitize';
 import { PromptService } from '../services/prompt.service';
 
 export class BrainAgent {
@@ -67,7 +34,7 @@ export class BrainAgent {
           }
         });
         const jsonStr = response.text || "{}";
-        const raw = sanitizeScenario(JSON.parse(jsonStr));
+        const raw = sanitizeObj(JSON.parse(jsonStr));
         // Normalize: prompt returns flat object, but FullScenarioContext needs { scenario, evalRules }
         const configObj: FullScenarioContext = (raw.scenario && raw.evalRules)
           ? raw  // already correct shape
@@ -158,7 +125,7 @@ NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], e
         }
       });
       const jsonStr = response.text || "{}";
-      const raw = sanitizeScenario(JSON.parse(jsonStr));
+      const raw = sanitizeObj(JSON.parse(jsonStr));
       const adjustedScenario: FullScenarioContext = (raw.scenario && raw.evalRules)
         ? raw
         : {

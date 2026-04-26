@@ -4,7 +4,8 @@
  */
 export function seedDemoDataIfNeeded() {
     if (typeof window === 'undefined') return;
-    if (localStorage.getItem('speakmate_demo_seeded')) return;
+    if (localStorage.getItem('speakmate_demo_seeded_v2')) return;
+    localStorage.removeItem('speakmate_demo_seeded'); // clear old version
 
     // 5 lượt realworld trước (để FeedbackResults hiện mũi tên so sánh)
     const realworldHistory = [
@@ -26,7 +27,16 @@ export function seedDemoDataIfNeeded() {
 
     localStorage.setItem('speakmate_realworld_history', JSON.stringify(realworldHistory));
     localStorage.setItem('speakmate_gym_history', JSON.stringify(gymHistory));
-    localStorage.setItem('speakmate_demo_seeded', '1');
+    // Hardcoded baseline for evaluation comparison arrows
+    localStorage.setItem('speakmate_previous_metrics', JSON.stringify({
+        coherence_score: 65,
+        jargon_count: 2,
+        jargon_list: [{ word: 'soft skill', suggestion: 'kỹ năng mềm' }],
+        filler_per_minute: 2,
+        filler_list: [{ word: 'ờ', count: 2 }],
+        avg_response_time: 1.5,
+    }));
+    localStorage.setItem('speakmate_demo_seeded_v2', '1');
 }
 
 function daysAgo(n: number) {
