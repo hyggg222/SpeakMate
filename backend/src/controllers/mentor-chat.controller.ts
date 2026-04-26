@@ -69,7 +69,7 @@ export class MentorChatController {
             const contextStr = contextService.formatContextForPrompt(userContext);
 
             // 7. Call LLM (Gemini)
-            const response = await mentorAgent.generalChat(message, conversationHistory, contextStr);
+            const response = await mentorAgent.generalChat(message, conversationHistory, contextStr, req.language);
 
             // 8. Enrich dataCards with matched stories if intent is query and no stories already
             if (matchedStories.length > 0 && (!response.dataCards?.stories || response.dataCards.stories.length === 0)) {

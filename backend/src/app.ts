@@ -68,6 +68,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Health check (used by Railway)
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
+// Language middleware — reads X-Language header and attaches to req.language
+app.use((req, _res, next) => {
+    req.language = (req.headers['x-language'] as string) || 'vi';
+    next();
+});
+
 // Routes
 app.use('/api/practice', practiceRoutes);
 app.use('/api/internal', internalRoutes);

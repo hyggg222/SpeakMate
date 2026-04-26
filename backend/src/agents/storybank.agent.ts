@@ -41,11 +41,15 @@ export class StoryBankAgent {
     inputMethod: string,
     followUpAnswers?: string[],
     chatHistory?: { role: string; content: string; fieldTargeted?: string | null }[],
-    framework?: string
+    framework?: string,
+    language = 'vi'
   ): Promise<StoryStructureResponse> {
     const maxAttempts = 3;
     let lastError: unknown;
     const fw = (framework || 'STAR').toUpperCase();
+    const langInstr = language === 'en'
+      ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
+      : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -70,7 +74,7 @@ export class StoryBankAgent {
           model: this.modelName,
           contents: [{ role: 'user', parts: [{ text: contents }] }],
           config: {
-            systemInstruction: this.promptService.getStoryBankSystemPrompt(),
+            systemInstruction: this.promptService.getStoryBankSystemPrompt() + langInstr,
             responseMimeType: 'application/json',
             temperature: 0.6,
           },
