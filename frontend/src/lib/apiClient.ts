@@ -80,6 +80,13 @@ function getTokenFromCookie(): string | null {
     }
 }
 
+function getLangHeader(): Record<string, string> {
+    const lang = typeof window !== 'undefined'
+        ? localStorage.getItem('speakmate_language') || 'vi'
+        : 'vi'
+    return { 'X-Language': lang }
+}
+
 /**
  * Gets the current Supabase session token for authenticated API calls.
  * Returns auth headers if logged in, empty object for guest mode.
@@ -91,10 +98,11 @@ function getTokenFromCookie(): string | null {
  */
 async function getAuthHeaders(): Promise<Record<string, string>> {
     ensureAuthListener();
+    const langHeader = getLangHeader();
     try {
         // Strategy 1: cached token from auth state listener
         if (_cachedToken) {
-            return { 'Authorization': `Bearer ${_cachedToken}` };
+            return { 'Authorization': `Bearer ${_cachedToken}`, ...langHeader };
         }
 
         // Strategy 2: supabase getSession
@@ -102,19 +110,19 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
             _cachedToken = session.access_token;
-            return { 'Authorization': `Bearer ${session.access_token}` };
+            return { 'Authorization': `Bearer ${session.access_token}`, ...langHeader };
         }
 
         // Strategy 3: parse cookie directly
         const cookieToken = getTokenFromCookie();
         if (cookieToken) {
             _cachedToken = cookieToken;
-            return { 'Authorization': `Bearer ${cookieToken}` };
+            return { 'Authorization': `Bearer ${cookieToken}`, ...langHeader };
         }
     } catch {
         // Guest mode — no auth
     }
-    return {};
+    return langHeader;
 }
 
 export const apiClient = {
