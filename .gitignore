@@ -1,72 +1,51 @@
-# Environment & Secrets
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Local Environment Variables
 .env
 .env.*
 !.env.example
-.runpod_token
 *.token
 *.pem
 *.key
 
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build outputs
+# Build & Output Directories
 dist/
 build/
 .next/
 out/
+coverage/
 
-# AI Metadata & Agent Artifacts
-.ai/
-.claude/
-.agent/
-.kilo/
-.ai-data/
-.gemini/
-_bmad/
-_bmad-output/
-CLAUDE.md
-GEMINI.md
-.cursorrules
-.kilorules
-*.md.ai
+# Logs & Diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# System & IDE files
-.vscode/
-.idea/
+# System & IDE Files
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
 *.suo
-*.ntvs*
-*.njsproj
 *.sln
-*.sw?
-.signals/
+*.swp
 
-# Python & ML Models
+# Language & Runtime Artifacts
 __pycache__/
-venv/
 *.pyc
-*.gguf
-models/
-F5-tts/
-MiAI_VoiceClone_VoxCPM/
-dia2/
-valtec-tts-repo/
-Modelfile.*
-
-# Binaries & Media Dumps
+venv/
+.venv/
 *.exe
-runpodctl
+*.dll
+*.so
+
+# Media & Temporary Files
 *.wav
 *.mp3
 debug_audio/
 vad_segments/
 sample_voice/
-
-# Deprecated local services
-backend-stt/
-backend-tts/
+temp/
+tmp/
