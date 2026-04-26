@@ -1,59 +1,121 @@
-# SpeakMate: AI-Powered English Practice
+# SpeakMate: AI-Powered English Conversation Platform
 
-SpeakMate is a full-stack web application designed to help Vietnamese students practice spoken English through interactive, low-pressure AI conversations. 
+SpeakMate is a full-stack AI-driven web application designed to help learners practice spoken English through low-pressure, realistic scenarios with multi-agent dynamic AI feedback.
 
-## 🏗️ Architecture
+---
 
-The project is built on a modern, professional TypeScript stack:
-- **Frontend**: Next.js, Tailwind CSS v4, Framer Motion
-- **Backend**: Node.js, Express, TypeScript
-- **AI Integration**: `@google/genai` (Gemini 2.0 Flash)
-- **Storage**: Supabase (Audio blobs with 1-hour Zero-PII TTL)
+## 🏗️ System Architecture
 
-### Core AI Agents (`backend/src/agents/`)
-The system follows a modular agent-based architecture with strong separation of concerns:
-1. **BrainAgent**: Context Creator. Processes user requirements into a structured JSON scenario (persona, goals, starting turns) and provides dynamic scaffolding hints ("Ni ơi, cứu!").
-2. **VoiceAgent**: Interactive Conversationalist. Handles low-latency audio/text interactions using Gemini's multi-modal capabilities.
-3. **AnalystAgent**: Performance Evaluator. Conducts a deep analysis of the completed session transcript against a standard rubric to provide actionable feedback and scoring.
+SpeakMate is structured as a scalable monorepo comprising:
 
-## 🚀 Getting Started
+- **Frontend**: Next.js (App Router), React 19, Tailwind CSS, Framer Motion, LiveKit Web SDK / Gemini Direct audio worklets.
+- **Backend Service (Control Plane)**: Node.js, Express, TypeScript, Zod, Supabase (PostgreSQL + Auth + Storage).
+- **AI Engine (Data Plane)**: Modal Cloud Python worker pipeline (PhoWhisper STT, NeuTTS, Gemini 2.0/2.5 Flash LLM).
+- **Shared Contracts**: `@speakmate/contracts` package sharing Zod schemas and TypeScript interfaces across frontend and backend.
 
-### Prerequisites
-- Node.js (v18+)
-- FFmpeg (must be installed and available in your system PATH for audio transcoding)
-
-### Environment Variables
-Duplicate the `.env.example` in the `backend/` directory to `.env` and fill in your keys. Make sure you NEVER commit your `.env` file!
-
-### Running the Application (Windows)
-We provide batch scripts to manage local development:
-1. Run `.\run-all.bat` from the root directory to start everything.
-2. The frontend development server will be available at `http://localhost:3000`.
-3. The backend API server runs on `http://localhost:3001`.
-
-*Note: To safely clear ports and stop the servers, run `.\stop-all.bat`.*
-
-## 📂 Project Structure
 ```text
-SpeakMate/
-├── backend/                  # Node.js/Express server
-│   ├── src/
-│   │   ├── agents/           # Core AI logic (Brain, Voice, Analyst)
-│   │   ├── controllers/      # API Request Handlers (Practice flow orchestration)
-│   │   ├── routes/           # Express Routers
-│   │   ├── services/         # External integrations (Storage, Audio processing)
-│   │   └── config/           # Environment validation
-├── frontend/                 # Next.js Application
-│   ├── src/
-│   │   ├── app/              # Next.js App Router (Pages & Layouts)
-│   │   ├── components/       # Reusable React components (UI, Dashboard)
-│   │   ├── lib/              # API clients and utilities
-│   │   └── hooks/            # Custom React hooks (e.g., Audio capture logic)
-├── docs/                     # Technical documentation & architecture specs
-└── README.md                 # Project documentation
+               ┌──────────────────────────────────────────────┐
+               │              SpeakMate Frontend              │
+               │            (Next.js App Router)              │
+               └──────────────────────┬───────────────────────┘
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+            ┌─────────────────────────┐  ┌──────────────────┐
+            │ Backend Service (Express│  │ Gemini Direct /  │
+            │      Control Plane)     │  │ LiveKit WebSockets│
+            └────────────┬────────────┘  └─────────┬────────┘
+                         │                         │
+                         ▼                         ▼
+            ┌─────────────────────────┐  ┌──────────────────┐
+            │   Supabase DB & Storage │  │  Modal Cloud AI  │
+            └─────────────────────────┘  └──────────────────┘
 ```
 
-## 🛡️ Best Practices Applied
-- **SOLID & DRY**: Logic isolated by responsibility (Agents vs Services vs Controllers).
-- **Documentation**: All core backend classes feature JSDoc/Google-style docstrings. Internal Vietnamese logic comments have been translated to professional English.
-- **Error Handling**: Implemented robust `try-catch` structures with descriptive contextual logging across all orchestration layers.
+---
+
+## 📁 Repository Structure
+
+```text
+SpeakMate/
+├── ai/                       # Modal Cloud Python AI worker code & pipelines
+├── backend/                  # Node.js/Express API control plane server
+│   ├── src/
+│   │   ├── agents/           # Domain agents (Brain, Voice, Analyst, Mentor, StoryBank)
+│   │   ├── controllers/      # Route controllers & orchestration
+│   │   ├── middleware/       # Auth, rate limiting & error handling
+│   │   ├── routes/           # Express API endpoints
+│   │   └── services/         # Storage, audio, & Gemini SDK integration
+├── frontend/                 # Next.js web application
+│   ├── src/
+│   │   ├── app/              # App Router pages (/practice, /stories, /evaluation)
+│   │   ├── components/       # UI components & practice room modules
+│   │   ├── context/          # React contexts (Language, Auth)
+│   │   └── hooks/            # Custom hooks (Audio recording, LiveKit, Gemini Direct)
+├── packages/
+│   └── contracts/            # Shared TypeScript contracts & schemas
+├── docs/                     # Architecture & feature documentation
+│   └── presentation/         # Pitch deck & presentation material
+├── scripts/                  # Development & utility scripts
+└── package.json              # Monorepo root workspace configuration
+```
+
+---
+
+## 🚀 Quick Start & Development
+
+### Prerequisites
+- **Node.js**: v18 or later
+- **npm**: v9 or later
+- **FFmpeg**: Installed and available in PATH (required for server-side audio processing)
+
+### Installation & Setup
+
+1. **Install dependencies across monorepo**:
+   ```bash
+   npm install
+   ```
+
+2. **Configure Environment Variables**:
+   - Copy `.env.example` to `.env` inside `backend/`:
+     ```bash
+     cp backend/.env.example backend/.env
+     ```
+   - Copy `.env.local.example` (or set up required variables) in `frontend/`.
+
+3. **Build Shared Packages**:
+   ```bash
+   npm run build --workspace=@speakmate/contracts
+   ```
+
+4. **Start Development Servers**:
+   - Run both frontend and backend concurrently:
+     ```bash
+     npm run dev
+     ```
+   - Or start individually:
+     - Frontend: `npm run dev --workspace=frontend` (Runs on `http://localhost:3000`)
+     - Backend: `npm run dev --workspace=backend` (Runs on `http://localhost:3001`)
+
+---
+
+## 🛠️ Build & Verification
+
+To verify full build integrity:
+
+```bash
+# Build contracts
+npm run build --workspace=@speakmate/contracts
+
+# Build backend
+npm run build --workspace=backend
+
+# Build frontend
+npm run build --workspace=frontend
+```
+
+---
+
+## 📄 License
+
+Private & Proprietary - SpeakMate Team.

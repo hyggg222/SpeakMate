@@ -149,7 +149,13 @@ class LiveKitAgentWorker:
 
 
 def _livekit_prewarm(proc: object):
-    """Called in each agent subprocess to load models before any job arrives."""
+    """Called in each agent subprocess to load English stack before any job arrives.
+
+    Loads:
+      - faster-whisper large-v3-turbo (STT)  ← /models/whisper
+      - F5-TTS v1 Base + Vocos (TTS)         ← /models/f5tts
+      - Gemma 4 E2B via vLLM (LLM)           ← /models/gemma4-e2b
+    """
     import logging
     import warnings
     import traceback
@@ -159,17 +165,49 @@ def _livekit_prewarm(proc: object):
         warnings.filterwarnings("ignore")
         os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
         os.environ["HF_HUB_CACHE"] = "/hf_cache"
+        pid = os.getpid()
 
-        from ai.livekit_plugins.neutts import NeuTTS
+        # ── 1. Whisper STT ───────────────────────────────────────────────────
+        print(f"[LiveKit pid={pid}] Loading faster-whisper from /models/whisper...", flush=True)
+        from faster_whisper import WhisperModel
+        proc.userdata["stt_model"] = WhisperModel(
+            "/models/whisper",
+            device="cuda",
+            compute_type="float16",
+        )
 
-        print(f"[LiveKit] Loading TTS model (pid={os.getpid()})...", flush=True)
-        proc.userdata["tts_model"] = NeuTTS()
-
-        voice_ref = "/valtec_models/voice_clone/voice2.mp3"
-        if not os.path.exists(voice_ref):
-            print(f"[LiveKit] WARNING: voice ref NOT FOUND: {voice_ref}", flush=True)
+        # ── 2. F5-TTS ────────────────────────────────────────────────────────
+        print(f"[LiveKit pid={pid}] Loading F5-TTS from /models/f5tts...", flush=True)
+        from ai.livekit_plugins.f5tts import F5TTSEngine
+        proc.userdata["tts_model"] = F5TTSEngine(
+            ckpt_file="/models/f5tts/F5TTS_v1_Base/model_1250000.safetensors",
+            vocab_file="/models/f5tts/F5TTS_v1_Base/vocab.txt",
+            device="cuda",
+        )
+        # Pre-encode voice reference (warm cache)
+        voice_ref = "/models/voice_refs/voice_en.wav"
+        if os.path.exists(voice_ref):
+            proc.userdata["tts_model"].synthesize("Hello.", voice_ref)
         proc.userdata["voice_ref"] = voice_ref
-        print(f"[LiveKit] Subprocess ready (pid={os.getpid()}).", flush=True)
+
+        # ── 3. Gemma 4 E2B via vLLM ─────────────────────────────────────────
+        # Prefer local volume copy; fall back to HF download (cached on volume)
+        gemma_local = "/models/gemma4-e2b"
+        gemma_source = gemma_local if (os.path.isdir(gemma_local) and os.listdir(gemma_local)) else "google/gemma-4-E2B-it"
+        print(f"[LiveKit pid={pid}] Loading Gemma 4 E2B via vLLM from {gemma_source}...", flush=True)
+        from vllm import LLM
+        from ai.llm import GemmaClient
+        gemma_engine = LLM(
+            model=gemma_source,
+            dtype="bfloat16",
+            max_model_len=4096,
+            gpu_memory_utilization=0.55,   # leave room for Whisper + F5-TTS
+            enforce_eager=True,             # faster startup, slightly slower inference
+            download_dir="/hf_cache",       # cache HF download to persistent volume
+        )
+        proc.userdata["llm_client"] = GemmaClient(backend="vllm", vllm_engine=gemma_engine)
+
+        print(f"[LiveKit pid={pid}] Subprocess ready (Whisper + F5-TTS + Gemma loaded).", flush=True)
 
     except Exception as e:
         print(f"[LiveKit Subprocess] CRITICAL ERROR during prewarm: {e}", flush=True)
@@ -193,13 +231,20 @@ async def _livekit_entrypoint(ctx):
     """Module-level entrypoint (picklable) for LiveKit agent jobs."""
     import asyncio
     from livekit.plugins import silero
-    from google import genai
 
-    tts_model    = ctx.proc.userdata["tts_model"]
-    voice_ref    = ctx.proc.userdata["voice_ref"]
-    genai_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    vad_model    = silero.VAD.load()
+    tts_model  = ctx.proc.userdata["tts_model"]
+    voice_ref  = ctx.proc.userdata["voice_ref"]
+    stt_model  = ctx.proc.userdata["stt_model"]
+    llm_client = ctx.proc.userdata["llm_client"]
+    vad_model  = silero.VAD.load()
 
-    agent = ManualBridgeAgent(ctx, vad_model, tts_model, voice_ref, genai_client)
+    agent = ManualBridgeAgent(
+        ctx,
+        vad_model=vad_model,
+        tts_model=tts_model,
+        voice_ref=voice_ref,
+        stt_model=stt_model,
+        llm_client=llm_client,
+    )
     await agent.start()
     await asyncio.Future()  # keep alive until framework cancels

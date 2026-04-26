@@ -1,17 +1,17 @@
-node_modules/
+# Environment & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+.runpod_token
+*.token
+*.pem
+*.key
 
-# AI Tooling / Agents Context
-.gemini/
-.claude/
-.agent/
-_bmad/
-_bmad-output/
-.ai-data/
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Build outputs
 dist/
@@ -19,36 +19,38 @@ build/
 .next/
 out/
 
-# IDE files
+# AI Metadata & Agent Artifacts
+.ai/
+.claude/
+.agent/
+.kilo/
+.ai-data/
+.gemini/
+_bmad/
+_bmad-output/
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.kilorules
+*.md.ai
+
+# System & IDE files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.signals/
 
-# System files
-.DS_Store
-Thumbs.db
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-*.log
-
-# Python
+# Python & ML Models
 __pycache__/
 venv/
 *.pyc
-
-# Large binary files
 *.gguf
-*.exe
-*.wav
-
-# Model files & cloned repos
 models/
 F5-tts/
 MiAI_VoiceClone_VoxCPM/
@@ -56,16 +58,15 @@ dia2/
 valtec-tts-repo/
 Modelfile.*
 
+# Binaries & Media Dumps
+*.exe
+runpodctl
+*.wav
+*.mp3
+debug_audio/
+vad_segments/
+sample_voice/
+
 # Deprecated local services
 backend-stt/
 backend-tts/
-
-# Voice data & VAD output
-sample_voice/
-vad_segments/
-
-# Misc
-.cursorrules
-.kilorules
-GEMINI.md
-config.json
