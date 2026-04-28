@@ -8,11 +8,13 @@ import { apiClient } from "@/lib/apiClient";
 import Link from "next/link";
 import { ArrowLeft, Clock, Edit3, Trash2, Loader2, Save, X, Check, Volume2, VolumeX, Dumbbell } from "lucide-react";
 import { STATUS_LABELS, FRAMEWORK_COLORS, STRUCTURED_FIELDS } from "@/lib/storybank-constants";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function StoryDetailPage() {
     const params = useParams();
     const router = useRouter();
     const storyId = params.id as string;
+    const { t } = useLanguage();
 
     const [story, setStory] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ export default function StoryDetailPage() {
     };
 
     const cancelEditing = () => {
-        if (hasChanges && !confirm("Bạn có thay đổi chưa lưu. Hủy chỉnh sửa?")) return;
+        if (hasChanges && !confirm(t('stories.detail.unsaved'))) return;
         setEditing(false);
         setHasChanges(false);
     };
@@ -91,9 +93,9 @@ export default function StoryDetailPage() {
             setStory(updated);
             setEditing(false);
             setHasChanges(false);
-            showToast("Đã lưu thay đổi!", "success");
+            showToast(t('stories.detail.savedOk'), "success");
         } catch {
-            showToast("Không thể lưu. Vui lòng thử lại.", "error");
+            showToast(t('stories.detail.saveError'), "error");
         } finally { setSaving(false); }
     };
 
@@ -103,7 +105,7 @@ export default function StoryDetailPage() {
             await apiClient.deleteStory(storyId);
             router.push('/stories');
         } catch {
-            showToast("Không thể xóa.", "error");
+            showToast(t('stories.detail.deleteError'), "error");
             setDeleting(false);
         }
     };
@@ -156,6 +158,7 @@ export default function StoryDetailPage() {
     if (!story) return null;
 
     const statusInfo = STATUS_LABELS[story.status] || STATUS_LABELS.draft;
+    const statusLabelText = { draft: t('confirm.status.draft'), ready: t('confirm.status.ready'), 'battle-tested': t('confirm.status.battleTested') }[story.status as string] ?? t('confirm.status.draft');
     const frameworkColor = FRAMEWORK_COLORS[story.framework] || "#6b7280";
     const structured = story.structured || {};
     const fields = STRUCTURED_FIELDS[story.framework] || STRUCTURED_FIELDS.STAR;
@@ -169,7 +172,7 @@ export default function StoryDetailPage() {
                     <div className="max-w-5xl mx-auto space-y-6">
 
                         <Link href="/stories" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
-                            <ArrowLeft size={16} /> Quay lại Kho Chuyện
+                            <ArrowLeft size={16} /> {t('stories.detail.backToBank')}
                         </Link>
 
                         {/* Header Card */}
@@ -189,14 +192,14 @@ export default function StoryDetailPage() {
                                     {editing ? (
                                         <select value={editStatus} onChange={e => { setEditStatus(e.target.value); setHasChanges(true); }}
                                             className="text-xs border rounded-lg px-2 py-1 outline-none">
-                                            <option value="draft">Bản nháp</option>
-                                            <option value="ready">Sẵn sàng</option>
-                                            <option value="battle-tested">Thực chiến</option>
+                                            <option value="draft">{t('confirm.status.draft')}</option>
+                                            <option value="ready">{t('confirm.status.ready')}</option>
+                                            <option value="battle-tested">{t('confirm.status.battleTested')}</option>
                                         </select>
                                     ) : (
                                         <span className="text-xs font-medium px-2.5 py-1 rounded-full"
                                             style={{ backgroundColor: `${statusInfo.color}15`, color: statusInfo.color }}>
-                                            {statusInfo.label}
+                                            {statusLabelText}
                                         </span>
                                     )}
                                 </div>
@@ -230,9 +233,9 @@ export default function StoryDetailPage() {
                             {/* Meta */}
                             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
                                 <span className="flex items-center gap-1"><Clock size={12} /> ~{story.estimated_duration || 30}s</span>
-                                {story.practice_count > 0 && <span>{story.practice_count}x luyện tập</span>}
-                                {story.last_score != null && <span>Điểm: {story.last_score}%</span>}
-                                <span>Tạo: {new Date(story.created_at).toLocaleDateString('vi-VN')}</span>
+                                {story.practice_count > 0 && <span>{story.practice_count}{t('stories.detail.practiceTimes')}</span>}
+                                {story.last_score != null && <span>{t('stories.detail.score')} {story.last_score}%</span>}
+                                <span>{t('stories.detail.created')} {new Date(story.created_at).toLocaleDateString('vi-VN')}</span>
                             </div>
 
                             {/* Actions */}
@@ -242,23 +245,23 @@ export default function StoryDetailPage() {
                                         <button onClick={handleSave} disabled={saving}
                                             className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-medium disabled:opacity-50"
                                             style={{ backgroundColor: "var(--teal)" }}>
-                                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Lưu thay đổi
+                                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {saving ? t('stories.detail.saving') : t('stories.detail.saveChanges')}
                                         </button>
-                                        <button onClick={cancelEditing} className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100">Hủy</button>
+                                        <button onClick={cancelEditing} className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100">{t('stories.detail.cancel')}</button>
                                     </>
                                 ) : (
                                     <>
                                         <button onClick={startEditing} className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium border hover:bg-slate-50 transition-colors">
-                                            <Edit3 size={14} /> Chỉnh sửa
+                                            <Edit3 size={14} /> {t('stories.edit')}
                                         </button>
                                         <Link href={`/setup?topic=${encodeURIComponent(story.title)}`}
                                             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium text-white transition-colors"
                                             style={{ backgroundColor: "var(--teal)" }}>
-                                            <Dumbbell size={14} /> Luyện tập ngay
+                                            <Dumbbell size={14} /> {t('stories.detail.practice')}
                                         </Link>
                                         <button onClick={() => setShowDeleteConfirm(true)}
                                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors ml-auto">
-                                            <Trash2 size={14} /> Xóa
+                                            <Trash2 size={14} /> {t('stories.delete')}
                                         </button>
                                     </>
                                 )}
@@ -267,7 +270,7 @@ export default function StoryDetailPage() {
 
                         {/* Structure */}
                         <div className="bg-white border rounded-2xl p-6 space-y-4">
-                            <h2 className="font-semibold text-slate-800">Cấu trúc {story.framework}</h2>
+                            <h2 className="font-semibold text-slate-800">{t('stories.structure')} {story.framework}</h2>
                             {fields.map(({ key, label, emoji }: { key: string; label: string; emoji: string }) => (
                                 <div key={key} className="border-l-4 pl-4 py-2" style={{ borderColor: frameworkColor }}>
                                     <p className="text-xs font-medium text-slate-400 mb-1">{emoji} {label}</p>
@@ -285,13 +288,13 @@ export default function StoryDetailPage() {
                         {/* Full Script */}
                         <div className="bg-white border rounded-2xl p-6 space-y-3">
                             <div className="flex items-center justify-between">
-                                <h2 className="font-semibold text-slate-800">Đoạn nói hoàn chỉnh</h2>
+                                <h2 className="font-semibold text-slate-800">{t('stories.fullScript')}</h2>
                                 <div className="flex items-center gap-3">
                                     <span className="text-xs text-slate-400">~{story.estimated_duration || 30}s</span>
-                                    <button onClick={toggleTTS} title={isSpeaking ? "Dừng" : "Nghe thử"}
+                                    <button onClick={toggleTTS} title={isSpeaking ? t('stories.detail.stop') : t('stories.detail.listen')}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${isSpeaking ? 'bg-red-50 border-red-300 text-red-500' : 'border-slate-200 text-slate-500 hover:text-[var(--teal)] hover:border-[var(--teal)]'}`}>
                                         {isSpeaking ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                                        {isSpeaking ? 'Dừng' : 'Nghe'}
+                                        {isSpeaking ? t('stories.detail.stop') : t('stories.detail.listen')}
                                     </button>
                                 </div>
                             </div>
@@ -309,7 +312,7 @@ export default function StoryDetailPage() {
                         {/* Practice History Timeline */}
                         {story.practiceHistory && story.practiceHistory.length > 0 && (
                             <div className="bg-white border rounded-2xl p-6">
-                                <h2 className="font-semibold text-slate-800 mb-4">Lịch sử luyện tập</h2>
+                                <h2 className="font-semibold text-slate-800 mb-4">{t('stories.detail.practiceHistory')}</h2>
                                 <div className="relative pl-6 space-y-6">
                                     {/* Timeline line */}
                                     <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-slate-200" />
@@ -362,17 +365,17 @@ export default function StoryDetailPage() {
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Xóa câu chuyện?</h3>
+                        <h3 className="text-lg font-semibold text-slate-900">{t('stories.detail.deleteTitle')}</h3>
                         <p className="text-sm text-slate-600">
-                            Bạn có chắc muốn xóa &ldquo;{story.title}&rdquo;? Hành động này không thể hoàn tác.
+                            {t('stories.detail.deleteDesc')}
                         </p>
                         <div className="flex items-center gap-3 pt-2">
                             <button onClick={handleDelete} disabled={deleting}
                                 className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-medium bg-red-500 disabled:opacity-50">
-                                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Xóa
+                                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {t('stories.detail.confirmDelete')}
                             </button>
                             <button onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100">Hủy</button>
+                                className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100">{t('common.cancel')}</button>
                         </div>
                     </div>
                 </div>

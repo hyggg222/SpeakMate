@@ -12,19 +12,7 @@ import { apiClient } from '@/lib/apiClient'
 import { getPreviousRealworldMetrics } from '@/lib/seedDemoData'
 import FeedbackResults from '@/components/challenge/FeedbackResults'
 import type { RealWorldEvaluation } from '@/types/api.contracts'
-
-const EMOTION_BEFORE = [
-    { value: 'anxious', label: 'Lo lắng' },
-    { value: 'slightly_anxious', label: 'Hơi lo' },
-    { value: 'neutral', label: 'Bình thường' },
-    { value: 'excited', label: 'Hào hứng' },
-]
-const EMOTION_AFTER = [
-    { value: 'less_confident', label: 'Tự ti hơn' },
-    { value: 'same', label: 'Như cũ' },
-    { value: 'more_confident', label: 'Tự tin hơn' },
-    { value: 'very_confident', label: 'Rất tự tin' },
-]
+import { useLanguage } from '@/context/LanguageContext'
 
 function EmotionRadio({ label, options, value, onChange }: {
     label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void;
@@ -57,6 +45,20 @@ function FeedbackPageInner() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const preselectedChallengeId = searchParams.get('challengeId')
+    const { t } = useLanguage()
+
+    const EMOTION_BEFORE = [
+        { value: 'anxious', label: t('feedback.emotion.anxious') },
+        { value: 'slightly_anxious', label: t('feedback.emotion.slightlyAnxious') },
+        { value: 'neutral', label: t('feedback.emotion.neutral') },
+        { value: 'excited', label: t('feedback.emotion.excited') },
+    ]
+    const EMOTION_AFTER = [
+        { value: 'less_confident', label: t('feedback.emotion.lessConfident') },
+        { value: 'same', label: t('feedback.emotion.same') },
+        { value: 'more_confident', label: t('feedback.emotion.moreConfident') },
+        { value: 'very_confident', label: t('feedback.emotion.veryConfident') },
+    ]
 
     // Challenge linking
     const [activeChallenges, setActiveChallenges] = useState<any[]>([])
@@ -125,8 +127,8 @@ function FeedbackPageInner() {
             mr.start()
             setIsRecording(true)
             timerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000)
-        } catch { alert('Không thể truy cập microphone') }
-    }, [])
+        } catch { alert(t('common.micError') || 'Cannot access microphone') }
+    }, [t])
 
     const stopRecording = useCallback(() => {
         mediaRecorderRef.current?.stop()
@@ -137,7 +139,7 @@ function FeedbackPageInner() {
 
     // File upload
     const handleFileSelect = (file: File) => {
-        if (file.size > 10 * 1024 * 1024) { alert('File quá lớn. Tối đa 10MB.'); return }
+        if (file.size > 10 * 1024 * 1024) { alert(t('stories.create.errorFileTooLarge')); return }
         setUploadedFile(file)
     }
 
@@ -217,12 +219,12 @@ function FeedbackPageInner() {
                     <button onClick={() => router.push('/')} className="p-2 rounded-lg hover:opacity-70 transition-opacity">
                         <ArrowLeft size={20} style={{ color: 'var(--foreground)' }} />
                     </button>
-                    <h1 className="font-bold text-[16px]" style={{ color: 'var(--foreground)' }}>Kết quả</h1>
+                    <h1 className="font-bold text-[16px]" style={{ color: 'var(--foreground)' }}>{t('feedback.result')}</h1>
                 </header>
                 <main className="flex-1 overflow-y-auto px-6 py-6 max-w-lg mx-auto w-full">
                     <FeedbackResults
                         analysis={analysis}
-                        challengeTitle={linkedChallenge?.title || 'Trải nghiệm thực tế'}
+                        challengeTitle={linkedChallenge?.title || t('feedback.title')}
                         completed={completed ?? false}
                     />
                 </main>
@@ -238,9 +240,9 @@ function FeedbackPageInner() {
                     <ArrowLeft size={20} style={{ color: 'var(--foreground)' }} />
                 </button>
                 <div className="flex-1">
-                    <h1 className="font-bold text-[16px]" style={{ color: 'var(--foreground)' }}>Chia sẻ trải nghiệm</h1>
+                    <h1 className="font-bold text-[16px]" style={{ color: 'var(--foreground)' }}>{t('feedback.title')}</h1>
                     <p className="text-[12px]" style={{ color: 'var(--muted-foreground)' }}>
-                        Gửi bất kỳ thứ gì — giọng nói, file, hay vài dòng chữ — Ni sẽ phân tích tất cả cùng lúc
+                        {t('feedback.subtitle')}
                     </p>
                 </div>
             </header>
@@ -258,8 +260,8 @@ function FeedbackPageInner() {
                             <span className="flex items-center gap-2">
                                 <Target size={14} />
                                 {linkedChallengeId && linkedChallenge
-                                    ? `Gắn với: ${linkedChallenge.title}`
-                                    : 'Liên kết thử thách? (tuỳ chọn)'}
+                                    ? `${t('feedback.challengeLinked')}: ${linkedChallenge.title}`
+                                    : t('feedback.challengeLink')}
                             </span>
                             {challengeLinkOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
@@ -268,9 +270,9 @@ function FeedbackPageInner() {
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                     <div className="px-4 pb-4 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
                                         {loadingChallenges
-                                            ? <p className="text-[12px] pt-3" style={{ color: 'var(--muted-foreground)' }}>Đang tải...</p>
+                                            ? <p className="text-[12px] pt-3" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.loadingChallenges')}</p>
                                             : activeChallenges.length === 0
-                                                ? <p className="text-[12px] pt-3" style={{ color: 'var(--muted-foreground)' }}>Chưa có thử thách nào. Chia sẻ tự do cũng được nhé!</p>
+                                                ? <p className="text-[12px] pt-3" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.noChallenges')}</p>
                                                 : activeChallenges.map(c => (
                                                     <button key={c.id} onClick={() => setLinkedChallengeId(linkedChallengeId === c.id ? null : c.id)}
                                                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 text-left mt-2 transition-all ${linkedChallengeId === c.id ? 'border-teal-500 bg-teal-500/10' : 'border-transparent'}`}
@@ -294,17 +296,17 @@ function FeedbackPageInner() {
                     {/* ── Completed toggle — only when challenge linked ── */}
                     {linkedChallengeId && (
                         <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                            <SectionLabel>Bạn đã thực hiện thử thách chưa?</SectionLabel>
+                            <SectionLabel>{t('feedback.completedQuestion')}</SectionLabel>
                             <div className="flex gap-3">
                                 <button onClick={() => setCompleted(completed === true ? null : true)}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${completed === true ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600' : 'border-transparent text-slate-500'}`}
                                     style={completed !== true ? { backgroundColor: 'var(--muted)', borderColor: 'var(--border)' } : {}}>
-                                    <CheckCircle2 size={16} /> Đã làm!
+                                    <CheckCircle2 size={16} /> {t('feedback.done')}
                                 </button>
                                 <button onClick={() => setCompleted(completed === false ? null : false)}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${completed === false ? 'border-amber-500 bg-amber-500/10 text-amber-600' : 'border-transparent text-slate-500'}`}
                                     style={completed !== false ? { backgroundColor: 'var(--muted)', borderColor: 'var(--border)' } : {}}>
-                                    <XCircle size={16} /> Chưa làm được
+                                    <XCircle size={16} /> {t('feedback.notDone')}
                                 </button>
                             </div>
                         </div>
@@ -312,7 +314,7 @@ function FeedbackPageInner() {
 
                     {/* ── Audio section: Ghi âm + Upload song song ── */}
                     <div className="rounded-2xl border p-4 space-y-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                        <SectionLabel>Âm thanh (tuỳ chọn) — có thể gửi cả ghi âm lẫn file</SectionLabel>
+                        <SectionLabel>{t('feedback.audioSection')}</SectionLabel>
 
                         {/* Mic recording */}
                         <div className="flex items-center gap-3">
@@ -336,7 +338,7 @@ function FeedbackPageInner() {
                                     </button>
                                 )}
                                 <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
-                                    {isRecording ? formatTime(recordingDuration) : voiceBlob ? 'Đã ghi' : 'Ghi âm'}
+                                    {isRecording ? formatTime(recordingDuration) : voiceBlob ? t('feedback.recorded') : t('feedback.record')}
                                 </span>
                             </div>
 
@@ -369,8 +371,8 @@ function FeedbackPageInner() {
                                     <>
                                         <Upload size={18} style={{ color: 'var(--muted-foreground)' }} />
                                         <div>
-                                            <p className="text-[12px] font-medium" style={{ color: 'var(--foreground)' }}>Upload file audio</p>
-                                            <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>MP3, WAV, M4A · ≤ 10MB</p>
+                                            <p className="text-[12px] font-medium" style={{ color: 'var(--foreground)' }}>{t('feedback.uploadAudio')}</p>
+                                            <p className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.uploadAudio.sub')}</p>
                                         </div>
                                     </>
                                 )}
@@ -382,7 +384,7 @@ function FeedbackPageInner() {
                             <div className="flex gap-2 flex-wrap">
                                 {voiceBlob && (
                                     <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 flex items-center gap-1">
-                                        <Mic size={11} /> Giọng nói ({formatTime(recordingDuration)})
+                                        <Mic size={11} /> {t('feedback.voice')} ({formatTime(recordingDuration)})
                                     </span>
                                 )}
                                 {uploadedFile && (
@@ -391,7 +393,7 @@ function FeedbackPageInner() {
                                     </span>
                                 )}
                                 <span className="px-2.5 py-1 rounded-full text-[11px] bg-teal-100 text-teal-700">
-                                    Ni sẽ phân tích {[voiceBlob, uploadedFile].filter(Boolean).length > 1 ? 'cả hai' : 'file này'}
+                                    {[voiceBlob, uploadedFile].filter(Boolean).length > 1 ? t('feedback.niWillAnalyzeBoth') : t('feedback.niWillAnalyzeThis')}
                                 </span>
                             </div>
                         )}
@@ -399,53 +401,53 @@ function FeedbackPageInner() {
 
                     {/* ── Text fields ── */}
                     <div className="rounded-2xl border p-4 space-y-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                        <SectionLabel>Kể thêm bằng chữ (tuỳ chọn)</SectionLabel>
+                        <SectionLabel>{t('feedback.textSection')}</SectionLabel>
 
-                        <EmotionRadio label="Cảm xúc trước" options={EMOTION_BEFORE} value={formData.emotionBefore} onChange={v => setFormData(p => ({ ...p, emotionBefore: v }))} />
-                        <EmotionRadio label="Cảm xúc sau" options={EMOTION_AFTER} value={formData.emotionAfter} onChange={v => setFormData(p => ({ ...p, emotionAfter: v }))} />
+                        <EmotionRadio label={t('feedback.emotionBefore')} options={EMOTION_BEFORE} value={formData.emotionBefore} onChange={v => setFormData(p => ({ ...p, emotionBefore: v }))} />
+                        <EmotionRadio label={t('feedback.emotionAfter')} options={EMOTION_AFTER} value={formData.emotionAfter} onChange={v => setFormData(p => ({ ...p, emotionAfter: v }))} />
 
                         <div>
-                            <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Diễn biến</p>
+                            <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.situation')}</p>
                             <textarea rows={2} value={formData.situation}
                                 onChange={e => setFormData(p => ({ ...p, situation: e.target.value }))}
-                                placeholder="Bạn đang ở đâu, nói chuyện với ai, về chủ đề gì?"
+                                placeholder={t('feedback.situation.placeholder')}
                                 className="w-full rounded-xl px-4 py-3 text-[13px] resize-none border focus:outline-none"
                                 style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                         </div>
 
                         <div>
-                            <p className="text-[12px] font-semibold mb-1" style={{ color: 'var(--muted-foreground)' }}>Bạn đã nói gì?</p>
-                            <p className="text-[11px] text-teal-600 mb-1.5">✨ Ni sẽ phân tích câu này và gợi ý cách hay hơn</p>
+                            <p className="text-[12px] font-semibold mb-1" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.whatSaid')}</p>
+                            <p className="text-[11px] text-teal-600 mb-1.5">{t('feedback.whatSaid.hint')}</p>
                             <textarea rows={2} value={formData.whatUserSaid}
                                 onChange={e => setFormData(p => ({ ...p, whatUserSaid: e.target.value }))}
-                                placeholder="Kể lại 1-2 câu bạn đã nói..."
+                                placeholder={t('feedback.whatSaid.placeholder')}
                                 className="w-full rounded-xl px-4 py-3 text-[13px] resize-none border focus:outline-none"
                                 style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                         </div>
 
                         <div>
-                            <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Người kia phản ứng sao?</p>
+                            <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.othersReaction')}</p>
                             <textarea rows={2} value={formData.othersReaction}
                                 onChange={e => setFormData(p => ({ ...p, othersReaction: e.target.value }))}
-                                placeholder="Họ trả lời thế nào, thái độ ra sao?"
+                                placeholder={t('feedback.othersReaction.placeholder')}
                                 className="w-full rounded-xl px-4 py-3 text-[13px] resize-none border focus:outline-none"
                                 style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Suôn sẻ ở đâu?</p>
+                                <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.whatWorked')}</p>
                                 <textarea rows={2} value={formData.whatWorked}
                                     onChange={e => setFormData(p => ({ ...p, whatWorked: e.target.value }))}
-                                    placeholder="Phần nào ổn..."
+                                    placeholder={t('feedback.whatWorked.placeholder')}
                                     className="w-full rounded-xl px-3 py-2.5 text-[12px] resize-none border focus:outline-none"
                                     style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                             </div>
                             <div>
-                                <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Kẹt ở đâu?</p>
+                                <p className="text-[12px] font-semibold mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.whatStuck')}</p>
                                 <textarea rows={2} value={formData.whatStuck}
                                     onChange={e => setFormData(p => ({ ...p, whatStuck: e.target.value }))}
-                                    placeholder="Phần nào còn vướng..."
+                                    placeholder={t('feedback.whatStuck.placeholder')}
                                     className="w-full rounded-xl px-3 py-2.5 text-[12px] resize-none border focus:outline-none"
                                     style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                             </div>
@@ -456,7 +458,7 @@ function FeedbackPageInner() {
                     <div className="pb-8">
                         {!hasAnyData && (
                             <p className="text-[12px] text-center mb-3" style={{ color: 'var(--muted-foreground)' }}>
-                                Ghi âm, upload file, hoặc điền ít nhất một ô để gửi
+                                {t('feedback.submitHint')}
                             </p>
                         )}
                         <button
@@ -466,18 +468,18 @@ function FeedbackPageInner() {
                             style={{ backgroundColor: 'var(--teal)' }}
                         >
                             {isSubmitting
-                                ? <><Loader2 size={18} className="animate-spin" /> Ni đang phân tích...</>
-                                : <><Send size={18} /> Gửi cho Ni phân tích</>
+                                ? <><Loader2 size={18} className="animate-spin" /> {t('feedback.analyzing')}</>
+                                : <><Send size={18} /> {t('feedback.submit')}</>
                             }
                         </button>
 
                         {/* Summary of what will be sent */}
                         {hasAnyData && !isSubmitting && (
                             <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
-                                {voiceBlob && <span className="text-[11px] text-emerald-600 flex items-center gap-1"><Mic size={10} /> Giọng nói</span>}
-                                {uploadedFile && <span className="text-[11px] text-blue-600 flex items-center gap-1"><FileAudio size={10} /> File audio</span>}
-                                {Object.values(formData).some(v => v.trim()) && <span className="text-[11px] text-teal-600">Nội dung text</span>}
-                                <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>→ Ni sẽ phân tích tất cả</span>
+                                {voiceBlob && <span className="text-[11px] text-emerald-600 flex items-center gap-1"><Mic size={10} /> {t('feedback.voice')}</span>}
+                                {uploadedFile && <span className="text-[11px] text-blue-600 flex items-center gap-1"><FileAudio size={10} /> {t('feedback.fileAudio')}</span>}
+                                {Object.values(formData).some(v => v.trim()) && <span className="text-[11px] text-teal-600">{t('feedback.textContent')}</span>}
+                                <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.niWillAnalyzeAll')}</span>
                             </div>
                         )}
                     </div>

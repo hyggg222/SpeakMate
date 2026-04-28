@@ -13,6 +13,7 @@ import {
     estimateDuration, wordCount, MAX_FULLSCRIPT_WORDS, MAX_TAGS, MAX_TAG_LENGTH,
 } from "@/lib/storybank-constants";
 import { useStoryChat } from "@/hooks/useStoryChat";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Stage = 'input' | 'chatting' | 'preview';
 
@@ -112,7 +113,7 @@ export default function CreateStoryPage() {
 
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            setError("Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy dùng Chrome hoặc Edge.");
+            setError(t('stories.create.errorBrowserNoVoice'));
             return;
         }
 
@@ -149,7 +150,7 @@ export default function CreateStoryPage() {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 5 * 1024 * 1024) {
-            setError("File quá lớn (tối đa 5MB).");
+            setError(t('stories.create.errorFileTooLarge'));
             return;
         }
         try {
@@ -159,10 +160,10 @@ export default function CreateStoryPage() {
                 setInputMethod('upload');
                 setUploadedFileName(file.name);
             } else {
-                setError("Chỉ hỗ trợ file .txt.");
+                setError(t('stories.create.errorOnlyTxt'));
             }
         } catch {
-            setError("Không thể đọc file.");
+            setError(t('stories.create.errorReadFile'));
         }
         e.target.value = '';
     };
@@ -185,7 +186,7 @@ export default function CreateStoryPage() {
     // --- Save Story ---
     const handleSave = async () => {
         if (scriptWordCount > MAX_FULLSCRIPT_WORDS) {
-            setError(`Đoạn nói tối đa ${MAX_FULLSCRIPT_WORDS} từ (hiện có ${scriptWordCount} từ).`);
+            setError(`${t('stories.create.fullScript')}: max ${MAX_FULLSCRIPT_WORDS} ${t('stories.create.words')} (${scriptWordCount})`);
             return;
         }
         setSaveLoading(true);
@@ -210,7 +211,7 @@ export default function CreateStoryPage() {
                 router.push(`/stories/${story.id}`);
             }
         } catch (err: any) {
-            setError(err.message || "Không thể lưu. Vui lòng thử lại.");
+            setError(err.message || t('stories.create.errorSave'));
             setSaveLoading(false);
         }
     };
@@ -241,6 +242,7 @@ export default function CreateStoryPage() {
         setShowResumePrompt(false);
     };
 
+    const { t } = useLanguage();
     const fields = STRUCTURED_FIELDS[session?.framework || framework] || STRUCTURED_FIELDS.STAR;
     const frameworkColor = FRAMEWORK_COLORS[session?.framework || framework] || FRAMEWORK_COLORS.STAR;
     const isLoading = chatLoading || saveLoading;
@@ -260,19 +262,19 @@ export default function CreateStoryPage() {
                                     <Image src="/ni-avatar.png" alt="Ni" width={40} height={40} className="object-cover" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-slate-800">Phiên tạo chuyện đang dở</h3>
-                                    <p className="text-xs text-slate-500">Bạn có muốn tiếp tục?</p>
+                                    <h3 className="font-semibold text-slate-800">{t('stories.create.resume.title')}</h3>
+                                    <p className="text-xs text-slate-500">{t('stories.create.resume.sub')}</p>
                                 </div>
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={handleResumeSession}
                                     className="flex-1 px-4 py-2 rounded-xl text-white font-medium"
                                     style={{ backgroundColor: "var(--teal)" }}>
-                                    Tiếp tục
+                                    {t('stories.create.resume.continue')}
                                 </button>
                                 <button onClick={handleDiscardSession}
                                     className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
-                                    Tạo mới
+                                    {t('stories.create.resume.discard')}
                                 </button>
                             </div>
                         </div>
@@ -284,11 +286,11 @@ export default function CreateStoryPage() {
 
                         {/* Back link */}
                         <Link href="/stories" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
-                            <ArrowLeft size={16} /> Quay lại Kho Chuyện
+                            <ArrowLeft size={16} /> {t('stories.create.backToBank')}
                         </Link>
 
                         <h1 className="text-2xl font-bold font-serif" style={{ color: "var(--foreground)" }}>
-                            Tạo Chuyện Mới
+                            {t('stories.create.title')}
                         </h1>
 
                         {error && (
@@ -329,10 +331,10 @@ export default function CreateStoryPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700">
-                                                Kể cho Ni nghe trải nghiệm của bạn
+                                                {t('stories.create.inputLabel')}
                                             </label>
                                             <p className="text-xs text-slate-400 mt-1">
-                                                Viết tự do, nói bằng giọng, hoặc upload file — Ni sẽ hỏi thêm để làm giàu câu chuyện.
+                                                {t('stories.create.inputSub')}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -343,12 +345,12 @@ export default function CreateStoryPage() {
                                                         ? 'bg-red-50 border-red-300 text-red-500 animate-pulse'
                                                         : 'border-slate-200 text-slate-400 hover:text-[var(--teal)] hover:border-[var(--teal)]'
                                                 }`}
-                                                title={isRecording ? "Dừng ghi âm" : "Nói bằng giọng"}
+                                                title={isRecording ? t('stories.create.stopRecording') : t('stories.create.startVoice')}
                                             >
                                                 {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
                                             </button>
                                             <label className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-[var(--teal)] hover:border-[var(--teal)] transition-all cursor-pointer"
-                                                title="Upload file (.txt)">
+                                                title={t('stories.create.uploadTxt')}>
                                                 <UploadCloud size={18} />
                                                 <input type="file" accept=".txt" className="hidden" onChange={handleFileUpload} />
                                             </label>
@@ -359,7 +361,7 @@ export default function CreateStoryPage() {
                                         <div className="flex items-center justify-between text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                                Đang nghe... Nói xong bấm mic để dừng.
+                                                {t('stories.create.listening')}
                                             </div>
                                             <span className="font-mono font-bold text-red-600">
                                                 {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
@@ -382,17 +384,17 @@ export default function CreateStoryPage() {
                                     <textarea
                                         value={rawInput}
                                         onChange={e => { setRawInput(e.target.value); setInputMethod('text'); }}
-                                        placeholder='Kể ngắn về một trải nghiệm bạn tự hào — ví dụ: đồ án, cuộc thi, lần giải quyết vấn đề...'
+                                        placeholder={t('stories.create.placeholder')}
                                         rows={8}
                                         className="w-full border rounded-xl px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[var(--teal)]/30 min-h-[150px]"
                                     />
                                     <div className="flex items-center justify-between">
                                         <p className="text-xs text-slate-400">
-                                            {rawInput.length} ký tự {rawInput.length > 0 && rawInput.length < 10 && "— cần ít nhất 10"}
+                                            {rawInput.length} {t('stories.create.chars')} {rawInput.length > 0 && rawInput.length < 10 && t('stories.create.charsMin')}
                                         </p>
                                         {inputMethod !== 'text' && (
                                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                                                {inputMethod === 'voice' ? 'Nhập bằng giọng' : 'Upload file'}
+                                                {inputMethod === 'voice' ? t('stories.create.inputVoice') : t('stories.create.inputUpload')}
                                             </span>
                                         )}
                                     </div>
@@ -403,7 +405,7 @@ export default function CreateStoryPage() {
                                         className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                         style={{ backgroundColor: "var(--teal)" }}
                                     >
-                                        <MessageCircle size={18} /> Khởi tạo câu chuyện
+                                        <MessageCircle size={18} /> {t('stories.create.start')}
                                     </button>
                                 </div>
                             </div>
@@ -419,13 +421,13 @@ export default function CreateStoryPage() {
                                             <Image src="/ni-avatar.png" alt="Ni" width={36} height={36} className="object-cover" />
                                         </div>
                                         <div>
-                                            <span className="text-sm font-semibold text-slate-800">Tạo câu chuyện mới</span>
+                                            <span className="text-sm font-semibold text-slate-800">{t('stories.create.chatHeader')}</span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-bold px-1.5 py-0.5 rounded text-white"
                                                     style={{ backgroundColor: frameworkColor }}>
                                                     {session.framework}
                                                 </span>
-                                                <span className="text-[11px] text-slate-400">{session.totalTurns} lượt chat</span>
+                                                <span className="text-[11px] text-slate-400">{session.totalTurns} {t('stories.create.chatTurns')}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -440,7 +442,7 @@ export default function CreateStoryPage() {
                                     {/* Initial input context bubble */}
                                     <div className="flex justify-end">
                                         <div className="max-w-[75%] bg-[var(--teal)]/10 border border-[var(--teal)]/20 rounded-2xl rounded-tr-md px-4 py-3">
-                                            <p className="text-[11px] text-[var(--teal)] font-medium mb-1">Ý tưởng ban đầu</p>
+                                            <p className="text-[11px] text-[var(--teal)] font-medium mb-1">{t('stories.create.initialIdea')}</p>
                                             <p className="text-sm text-slate-700">{session.initialInput}</p>
                                         </div>
                                     </div>
@@ -488,7 +490,7 @@ export default function CreateStoryPage() {
                                         <div className="flex items-center justify-center py-6">
                                             <div className="flex items-center gap-3 text-sm text-slate-500">
                                                 <Loader2 size={20} className="animate-spin text-[var(--teal)]" />
-                                                Đang cấu trúc hóa câu chuyện...
+                                                {t('stories.create.structuring')}
                                             </div>
                                         </div>
                                     )}
@@ -507,7 +509,7 @@ export default function CreateStoryPage() {
                                                     handleSendMessage();
                                                 }
                                             }}
-                                            placeholder="Trả lời Ni..."
+                                            placeholder={t('stories.create.chatPlaceholder')}
                                             rows={1}
                                             disabled={chatLoading || session.status === 'structuring'}
                                             className="flex-1 border rounded-xl px-4 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-[var(--teal)]/30 disabled:opacity-50 max-h-[100px]"
@@ -530,9 +532,9 @@ export default function CreateStoryPage() {
                                         style={{ backgroundColor: "var(--teal)" }}
                                     >
                                         {session.status === 'structuring' ? (
-                                            <><Loader2 size={20} className="animate-spin" /> Đang cấu trúc hóa...</>
+                                            <><Loader2 size={20} className="animate-spin" /> {t('stories.create.structuringBtn')}</>
                                         ) : (
-                                            <><Sparkles size={20} /> Cấu trúc hóa câu chuyện</>
+                                            <><Sparkles size={20} /> {t('stories.create.structureBtn')}</>
                                         )}
                                     </button>
                                 </div>
@@ -552,7 +554,7 @@ export default function CreateStoryPage() {
                                             </p>
                                             <button onClick={backToChat}
                                                 className="text-sm text-amber-700 font-medium hover:underline mt-1">
-                                                Quay lại chat để bổ sung
+                                                {t('stories.create.backToChat')}
                                             </button>
                                         </div>
                                     </div>
@@ -560,7 +562,7 @@ export default function CreateStoryPage() {
 
                                 {/* Title */}
                                 <div className="bg-white border rounded-2xl p-6 space-y-3">
-                                    <label className="block text-sm font-medium text-slate-700">Tiêu đề</label>
+                                    <label className="block text-sm font-medium text-slate-700">{t('stories.create.titleLabel')}</label>
                                     <input
                                         type="text"
                                         value={title}
@@ -577,14 +579,14 @@ export default function CreateStoryPage() {
                                         <span className="text-xs font-bold px-2 py-0.5 rounded-md text-white" style={{ backgroundColor: frameworkColor }}>
                                             {session?.framework || framework}
                                         </span>
-                                        Cấu trúc
+                                        {t('stories.create.structure')}
                                     </h3>
                                     {fields.map(({ key, label, emoji }) => {
                                         const isMissing = structuredResult?.missingFields?.includes(key);
                                         return (
                                             <div key={key}>
                                                 <label className={`block text-xs font-medium mb-1 ${isMissing ? 'text-amber-600' : 'text-slate-500'}`}>
-                                                    {emoji} {label} {isMissing && <span className="text-amber-500">(thiếu)</span>}
+                                                    {emoji} {label} {isMissing && <span className="text-amber-500">{t('stories.create.missing')}</span>}
                                                 </label>
                                                 <textarea
                                                     value={structured?.[key] || ""}
@@ -602,7 +604,7 @@ export default function CreateStoryPage() {
                                 {/* Full Script */}
                                 <div className="bg-white border rounded-2xl p-6 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="font-semibold text-slate-800">Đoạn nói hoàn chỉnh</h3>
+                                        <h3 className="font-semibold text-slate-800">{t('stories.create.fullScript')}</h3>
                                         <span className="text-xs text-slate-400">~{duration}s</span>
                                     </div>
                                     <textarea
@@ -612,8 +614,8 @@ export default function CreateStoryPage() {
                                         className="w-full border rounded-xl px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[var(--teal)]/30 leading-relaxed min-h-[180px]"
                                     />
                                     <p className={`text-xs ${scriptWordCount > MAX_FULLSCRIPT_WORDS ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
-                                        {scriptWordCount}/{MAX_FULLSCRIPT_WORDS} từ
-                                        {scriptWordCount > MAX_FULLSCRIPT_WORDS && " — vượt giới hạn!"}
+                                        {scriptWordCount}/{MAX_FULLSCRIPT_WORDS} {t('stories.create.words')}
+                                        {scriptWordCount > MAX_FULLSCRIPT_WORDS && ` ${t('stories.create.wordLimit')}`}
                                     </p>
                                 </div>
 
@@ -650,11 +652,11 @@ export default function CreateStoryPage() {
                                 {/* Status & Save */}
                                 <div className="bg-white border rounded-2xl p-6 space-y-4">
                                     <div className="flex items-center gap-4">
-                                        <label className="text-sm font-medium text-slate-700">Trạng thái:</label>
+                                        <label className="text-sm font-medium text-slate-700">{t('stories.create.status')}</label>
                                         <select value={status} onChange={e => setStatus(e.target.value)}
                                             className="border rounded-xl px-4 py-2 text-sm outline-none bg-white cursor-pointer">
-                                            <option value="draft">Bản nháp</option>
-                                            <option value="ready">Sẵn sàng</option>
+                                            <option value="draft">{t('stories.create.statusDraft')}</option>
+                                            <option value="ready">{t('stories.create.statusReady')}</option>
                                         </select>
                                     </div>
 
@@ -665,15 +667,15 @@ export default function CreateStoryPage() {
                                             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium disabled:opacity-50 transition-all"
                                             style={{ backgroundColor: "var(--teal)" }}
                                         >
-                                            {saveLoading ? <><Loader2 size={18} className="animate-spin" /> Đang lưu...</> : <><Save size={18} /> Lưu vào Kho Chuyện</>}
+                                            {saveLoading ? <><Loader2 size={18} className="animate-spin" /> {t('stories.create.saving')}</> : <><Save size={18} /> {t('stories.create.save')}</>}
                                         </button>
                                         <button onClick={backToChat}
                                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 transition-colors">
-                                            <MessageCircle size={16} /> Quay lại chat
+                                            <MessageCircle size={16} /> {t('stories.create.backToChatBtn')}
                                         </button>
                                         <button onClick={() => { setStage('input'); clearSession(); }}
                                             className="px-4 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 transition-colors">
-                                            Làm lại
+                                            {t('stories.create.restart')}
                                         </button>
                                     </div>
                                 </div>
