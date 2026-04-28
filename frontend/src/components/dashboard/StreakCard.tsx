@@ -3,8 +3,10 @@
 import { CalendarDays } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function StreakCard() {
+  const { t, lang } = useLanguage();
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -61,12 +63,10 @@ export default function StreakCard() {
           ) : (
             <>
               <p className="text-[18px] font-bold" style={{ color: "var(--foreground)" }}>
-                <span style={{ color: "var(--teal)" }}>{streak}</span> Day(s) Streak
+                <span style={{ color: "var(--teal)" }}>{streak}</span> {t('streak.label')}
               </p>
               <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                {streak > 0
-                  ? `Tuyệt vời! Tiếp tục duy trì nhé! 🔥`
-                  : 'Hoàn thành nhiệm vụ để bắt đầu streak nè :)'}
+                {streak > 0 ? t('streak.great') : t('streak.start')}
               </p>
             </>
           )}
@@ -78,7 +78,7 @@ export default function StreakCard() {
 
       <div className="flex items-center justify-between">
         <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-          Đóng đá streak: còn <span className="font-semibold">{streak}</span> (ngày)
+          {t('streak.footer')} <span className="font-semibold">{streak}</span>
         </p>
         <div
           className="w-5 h-5 rounded-sm flex-shrink-0"

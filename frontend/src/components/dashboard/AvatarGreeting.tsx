@@ -3,22 +3,21 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function AvatarGreeting() {
-  const [greeting, setGreeting] = useState('');
-  const [userName, setUserName] = useState('bạn');
+  const { t } = useLanguage();
+  const [userName, setUserName] = useState('');
   const [imgSrc, setImgSrc] = useState('/ni-avatar.png');
+  const [msgIndex] = useState(() => Math.floor(Math.random() * 4));
+
+  // Computed directly so they update on language change
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? t('greeting.morning') : hour < 18 ? t('greeting.afternoon') : t('greeting.evening');
+  const messages = [t('greeting.msg1'), t('greeting.msg2'), t('greeting.msg3'), t('greeting.msg4')];
+  const message = messages[msgIndex];
 
   useEffect(() => {
-    // Dynamic greeting based on time of day
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Chào buổi sáng');
-    else if (hour < 18) setGreeting('Chào buổi chiều');
-    else setGreeting('Chào buổi tối');
-
-    // Randomize message on client only (avoid SSR/client mismatch)
-    setMessage(messages[Math.floor(Math.random() * messages.length)]);
-
     // Cache-bust image on client only
     const h = new Date().getHours();
     const m = Math.floor(new Date().getMinutes() / 5);
@@ -41,19 +40,10 @@ export default function AvatarGreeting() {
         // Not authenticated
       }
       const savedName = localStorage.getItem('speakmate_username');
-      if (savedName) setUserName(savedName);
+      setUserName(savedName || '');
     }
     loadUserName();
   }, []);
-
-  // Motivational messages rotate
-  const messages = [
-    'Hôm nay luyện tập chút nhé? 💪',
-    'Mỗi ngày một bước, bạn sẽ tự tin hơn!',
-    'Ni sẵn sàng đồng hành cùng bạn rồi!',
-    'Thử nói vài câu hôm nay nhé? 🎤',
-  ];
-  const [message, setMessage] = useState(messages[0]);
 
   return (
     <div className="flex items-end gap-6 py-2 group">
@@ -93,7 +83,7 @@ export default function AvatarGreeting() {
           <div className="flex flex-col gap-2">
             <h3 className="text-[16px] font-black tracking-tight text-slate-800 flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]" />
-              {greeting}, <span className="text-emerald-500">{userName}</span>
+              {greeting}{userName ? `, ` : ''}<span className="text-emerald-500">{userName || t('greeting.you')}</span>
             </h3>
             <p className="text-[17px] font-medium text-slate-500 leading-relaxed">
               {message}

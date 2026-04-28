@@ -3,10 +3,12 @@
 import { Radio } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useLanguage } from "@/context/LanguageContext";
 
 const TOTAL = 25;
 
 export default function DailyTask() {
+  const { t, lang } = useLanguage();
   const [done, setDone] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +60,7 @@ export default function DailyTask() {
           <Radio size={13} className="text-white" />
         </div>
         <span className="text-[11px] font-medium" style={{ color: "var(--muted-foreground)" }}>
-          Nhiệm vụ hôm nay
+          {t('daily.title')}
         </span>
       </div>
 
@@ -74,13 +76,17 @@ export default function DailyTask() {
             <>
               <p className="text-[18px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>
                 {done >= TOTAL ? (
-                  <>🎉 Hoàn thành<br />xuất sắc!</>
+                  t('daily.done')
                 ) : (
-                  <>Luyện {TOTAL} lần để<br />đạt aim nhé!</>
+                  lang === 'en'
+                    ? <>Practice {TOTAL} times<br />to hit your goal!</>
+                    : <>Luyện {TOTAL} lần để<br />đạt aim nhé!</>
                 )}
               </p>
               <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-                {done > 0 ? `Đã luyện ${done} lần hôm nay 💪` : 'Nói nhiều mới tiến bộ á :)'}
+                {done > 0
+                  ? (lang === 'en' ? `Practiced ${done} times today 💪` : `Đã luyện ${done} lần hôm nay 💪`)
+                  : t('daily.encourage')}
               </p>
             </>
           )}

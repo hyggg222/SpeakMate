@@ -6,15 +6,16 @@ import AuthGate from '@/components/AuthGate'
 import { ArrowLeft, Target, Clock, CheckCircle2, XCircle, Loader2, Plus, Zap } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DifficultyStars from '@/components/challenge/DifficultyStars'
+import { useLanguage } from '@/context/LanguageContext'
 
 type FilterTab = 'active' | 'completed' | 'all'
 
-const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-    pending:   { label: 'Đang chờ', color: 'text-amber-600 bg-amber-50 border-amber-200' },
-    in_progress: { label: 'Đang làm', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-    completed: { label: 'Hoàn thành', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-    skipped:   { label: 'Đã bỏ qua', color: 'text-slate-400 bg-slate-50 border-slate-200' },
-    expired:   { label: 'Hết hạn', color: 'text-red-500 bg-red-50 border-red-200' },
+const STATUS_COLOR: Record<string, string> = {
+    pending:    'text-amber-600 bg-amber-50 border-amber-200',
+    in_progress:'text-blue-600 bg-blue-50 border-blue-200',
+    completed:  'text-emerald-600 bg-emerald-50 border-emerald-200',
+    skipped:    'text-slate-400 bg-slate-50 border-slate-200',
+    expired:    'text-red-500 bg-red-50 border-red-200',
 }
 
 function getDaysLeft(deadline: string | null) {
@@ -25,10 +26,19 @@ function getDaysLeft(deadline: string | null) {
 
 export default function ChallengesPage() {
     const router = useRouter()
+    const { t, lang } = useLanguage()
     const [challenges, setChallenges] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<FilterTab>('active')
     const [skippingId, setSkippingId] = useState<string | null>(null)
+
+    const statusLabel = (s: string) => ({
+        pending:    t('challenges.statusPending'),
+        in_progress:t('challenges.statusDoing'),
+        completed:  t('challenges.statusCompleted'),
+        skipped:    t('challenges.statusSkipped'),
+        expired:    t('challenges.statusExpired'),
+    }[s] ?? t('challenges.statusPending'))
 
     useEffect(() => {
         loadChallenges()
@@ -83,24 +93,24 @@ export default function ChallengesPage() {
                     <ArrowLeft size={20} className="text-slate-600" />
                 </button>
                 <div className="flex-1">
-                    <h1 className="text-[17px] font-bold text-[#0b1325]">Kho Thử thách</h1>
-                    <p className="text-[12px] text-slate-400">{activeCount} đang chờ · {completedCount} hoàn thành</p>
+                    <h1 className="text-[17px] font-bold text-[#0b1325]">{t('challenges.store')}</h1>
+                    <p className="text-[12px] text-slate-400">{activeCount} {t('challenges.pendingCount')} · {completedCount} {t('challenges.completedCount')}</p>
                 </div>
                 <button
                     onClick={() => router.push('/setup')}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white"
                     style={{ backgroundColor: 'var(--teal)' }}
                 >
-                    <Plus size={15} /> Luyện tập mới
+                    <Plus size={15} /> {t('challenges.newPractice')}
                 </button>
             </header>
 
             {/* Filter tabs */}
             <div className="flex gap-1 px-6 py-4">
                 {([
-                    { key: 'active', label: 'Đang chờ', count: activeCount },
-                    { key: 'completed', label: 'Hoàn thành', count: completedCount },
-                    { key: 'all', label: 'Tất cả', count: challenges.length },
+                    { key: 'active', label: t('challenges.active'), count: activeCount },
+                    { key: 'completed', label: t('challenges.completed'), count: completedCount },
+                    { key: 'all', label: t('challenges.tabAll'), count: challenges.length },
                 ] as { key: FilterTab; label: string; count: number }[]).map(tab => (
                     <button key={tab.key} onClick={() => setFilter(tab.key)}
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all ${filter === tab.key ? 'bg-[#0b1325] text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
@@ -124,15 +134,15 @@ export default function ChallengesPage() {
                             <Target size={28} className="text-slate-300" />
                         </div>
                         <p className="text-[15px] font-semibold text-slate-500">
-                            {filter === 'active' ? 'Chưa có thử thách nào đang chờ' : 'Chưa có thử thách nào'}
+                            {filter === 'active' ? t('challenges.emptyActive') : t('challenges.empty')}
                         </p>
                         <p className="text-[13px] text-slate-400 text-center max-w-xs">
-                            Hoàn thành một phiên luyện tập để nhận thử thách thực tế từ Ni
+                            {t('challenges.empty.desc')}
                         </p>
                         <button onClick={() => router.push('/setup')}
                             className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-white mt-2"
                             style={{ backgroundColor: 'var(--teal)' }}>
-                            <Plus size={16} /> Bắt đầu luyện tập
+                            <Plus size={16} /> {t('challenges.startPractice')}
                         </button>
                     </div>
                 ) : (
@@ -141,8 +151,9 @@ export default function ChallengesPage() {
                             const daysLeft = getDaysLeft(challenge.deadline)
                             const isOverdue = daysLeft !== null && daysLeft <= 0
                             const isUrgent = daysLeft !== null && daysLeft <= 2 && !isOverdue
-                            const statusInfo = STATUS_LABEL[challenge.status] || STATUS_LABEL.pending
+                            const statusInfo = { label: statusLabel(challenge.status), color: STATUS_COLOR[challenge.status] || STATUS_COLOR.pending }
                             const isActive = challenge.status === 'pending' || challenge.status === 'in_progress'
+                            const statusColor = STATUS_COLOR[challenge.status] || STATUS_COLOR.pending
 
                             return (
                                 <div key={challenge.id}
@@ -173,7 +184,7 @@ export default function ChallengesPage() {
                                             {daysLeft !== null && (
                                                 <span className={`flex items-center gap-1 text-[11px] font-semibold ${isOverdue ? 'text-red-500' : isUrgent ? 'text-amber-600' : 'text-slate-400'}`}>
                                                     <Clock size={11} />
-                                                    {isOverdue ? 'Đã quá hạn' : `Còn ${daysLeft} ngày`}
+                                                    {isOverdue ? t('challenges.overdue') : (lang === 'en' ? `${daysLeft} days left` : `Còn ${daysLeft} ngày`)}
                                                 </span>
                                             )}
                                         </div>
@@ -181,7 +192,7 @@ export default function ChallengesPage() {
                                         {/* Opener hints (collapsible on active) */}
                                         {isActive && challenge.opener_hints?.length > 0 && (
                                             <div className="mt-3 space-y-1.5">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gợi ý mở đầu</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('challenges.openerHints')}</p>
                                                 {challenge.opener_hints.slice(0, 2).map((hint: string, i: number) => (
                                                     <p key={i} className="text-[12px] text-slate-600 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
                                                         "{hint}"
@@ -198,7 +209,7 @@ export default function ChallengesPage() {
                                                 onClick={() => router.push(`/feedback/new?challengeId=${challenge.id}`)}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-white"
                                                 style={{ backgroundColor: 'var(--teal)' }}>
-                                                <CheckCircle2 size={15} /> Báo cáo kết quả
+                                                <CheckCircle2 size={15} /> {t('challenges.reportResult')}
                                             </button>
                                             <button
                                                 onClick={() => handleSkip(challenge.id)}
@@ -207,7 +218,7 @@ export default function ChallengesPage() {
                                                 {skippingId === challenge.id
                                                     ? <Loader2 size={14} className="animate-spin" />
                                                     : <XCircle size={14} />}
-                                                Bỏ qua
+                                                {t('challenges.skip')}
                                             </button>
                                         </div>
                                     )}

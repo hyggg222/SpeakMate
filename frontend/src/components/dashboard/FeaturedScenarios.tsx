@@ -6,8 +6,10 @@ import { useScenario } from "@/context/ScenarioContext";
 import { apiClient } from "@/lib/apiClient";
 import { motion } from "framer-motion";
 import { hotScenarios } from "@/data/scenarios";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function FeaturedScenarios() {
+    const { t } = useLanguage();
     const router = useRouter();
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -24,14 +26,14 @@ export default function FeaturedScenarios() {
             <div className="flex justify-between items-center mb-6 px-1">
                 <div>
                     <h2 className="text-[20px] font-bold text-foreground font-sans">
-                        Thư viện Bối cảnh 🔥
+                        {t('featured.title')}
                     </h2>
                     <p className="text-[13px] text-muted-foreground mt-1">
-                        Hơn 50+ tình huống giao tiếp Tiếng Việt thực tế
+                        {t('featured.subtitle')}
                     </p>
                 </div>
                 <button className="text-[13px] text-primary font-bold hover:underline">
-                    Xem tất cả
+                    {t('featured.viewAll')}
                 </button>
             </div>
 
@@ -80,7 +82,7 @@ export default function FeaturedScenarios() {
                             {/* Action Row */}
                             <div className="flex items-center justify-between mt-auto">
                                 <span className="text-[13px] font-bold text-white/80 group-hover:text-white transition-colors underline underline-offset-4 decoration-white/30">
-                                    Bắt đầu tập luyện
+                                    {t('featured.startPractice')}
                                 </span>
                                 <div
                                     className={`bg-white text-black h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all group-hover:scale-110 group-hover:rotate-6 ${loadingId === s.id ? 'animate-pulse' : ''}`}

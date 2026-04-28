@@ -5,8 +5,10 @@ import Topbar from "@/components/dashboard/Topbar";
 import AuthGate from "@/components/AuthGate";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function HistoryPage() {
+    const { t } = useLanguage();
     const [sessions, setSessions] = useState<any[]>([]);
 
     useEffect(() => {
@@ -48,17 +50,17 @@ export default function HistoryPage() {
                         {/* Header section with Stats */}
                         <div className="flex items-center justify-between px-2">
                             <h1 className="text-3xl font-bold font-serif" style={{ color: "var(--foreground)" }}>
-                                Lịch sử luyện tập
+                                {t('history.title')}
                             </h1>
 
                             <div className="flex items-center gap-4">
                                 <div className="bg-white border text-center px-5 py-2 rounded-xl shadow-sm min-w-[120px]">
-                                    <p className="text-xs text-slate-500 mb-1">Tổng số buổi</p>
+                                    <p className="text-xs text-slate-500 mb-1">{t('history.total')}</p>
                                     <p className="text-3xl font-bold" style={{ color: "var(--navy)" }}>{sessions.length}</p>
                                 </div>
                                 <div className="bg-white border px-5 py-2 rounded-xl shadow-sm min-w-[160px] flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs text-slate-500 mb-1">Điểm trung bình</p>
+                                        <p className="text-xs text-slate-500 mb-1">{t('history.avgScore')}</p>
                                         <p className="text-3xl font-bold" style={{ color: "var(--navy)" }}>
                                             {sessions.length > 0
                                                 ? (sessions.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0) / sessions.length).toFixed(1)
@@ -82,11 +84,11 @@ export default function HistoryPage() {
                                 <FilterPill label="Tranh biện" color="#f59e0b" />
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="text-[15px] font-medium text-slate-600">Khoảng thời gian</span>
+                                <span className="text-[15px] font-medium text-slate-600">{t('history.period')}</span>
                                 <select className="border text-[15px] rounded-xl px-4 py-2 outline-none shadow-sm cursor-pointer bg-white">
-                                    <option>📅 Tất cả</option>
-                                    <option>Tuần này</option>
-                                    <option>Tháng này</option>
+                                    <option>{t('history.allTime')}</option>
+                                    <option>{t('history.thisWeek')}</option>
+                                    <option>{t('history.thisMonth')}</option>
                                 </select>
                             </div>
                         </div>
@@ -94,7 +96,7 @@ export default function HistoryPage() {
                         {/* History List */}
                         <div className="space-y-6 px-2">
                             {sessions.length === 0 ? (
-                                <p className="text-center text-slate-500 py-10">Bạn chưa có phiên luyện tập nào được lưu trữ.</p>
+                                <p className="text-center text-slate-500 py-10">{t('history.noPractice')}</p>
                             ) : sessions.map((session, i) => (
                                 <div key={i} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
                                     <div className="space-y-4">
@@ -108,7 +110,7 @@ export default function HistoryPage() {
                                             </span>
                                         </div>
                                         <p className="text-[15px] text-slate-600">
-                                            <span className="text-slate-500 mr-2">Chủ đề:</span>
+                                            <span className="text-slate-500 mr-2">{t('history.topic')}</span>
                                             {session.topic}
                                         </p>
                                     </div>
@@ -116,7 +118,7 @@ export default function HistoryPage() {
                                         href={'/evaluation/conversation'}
                                         className="text-[15px] font-semibold text-[var(--teal)] opacity-90 group-hover:opacity-100 px-4 py-2 border border-transparent group-hover:border-[var(--teal)] group-hover:bg-[var(--teal)]/5 rounded-full transition-all text-center"
                                     >
-                                        Xem chi tiết
+                                        {t('history.viewDetail')}
                                     </Link>
                                 </div>
                             ))}
@@ -126,13 +128,13 @@ export default function HistoryPage() {
                         {sessions.length > 5 && (
                             <div className="flex items-center justify-center gap-6 pt-10 pb-16">
                                 <button className="text-[15px] border rounded-xl px-5 py-2 font-medium text-slate-500 hover:bg-slate-50 transition-colors shadow-sm bg-white cursor-not-allowed">
-                                    Trang trước
+                                    {t('history.prevPage')}
                                 </button>
                                 <span className="text-[15px] font-medium text-slate-600">
                                     1 of {Math.ceil(sessions.length / 5) || 1}
                                 </span>
                                 <button className="text-[15px] border rounded-xl px-5 py-2 font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm bg-white cursor-not-allowed">
-                                    Trang sau
+                                    {t('history.nextPage')}
                                 </button>
                             </div>
                         )}
