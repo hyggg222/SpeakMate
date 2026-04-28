@@ -9,6 +9,7 @@ import { apiClient } from '@/lib/apiClient'
 import { useScenario } from '@/context/ScenarioContext'
 import { FullScenarioContext } from '@/types/api.contracts'
 import { User } from 'lucide-react'
+import { useLanguage } from '@/context/LanguageContext'
 
 const STORAGE_KEY = 'speakmate_saved_context';
 interface AgentConfig {
@@ -35,6 +36,7 @@ function detectPII(text: string): string | null {
 }
 
 export default function ContextBuilderPage() {
+    const { t } = useLanguage()
     const [userGoal, setUserGoal] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
     const [isAdjusting, setIsAdjusting] = useState(false)
@@ -210,14 +212,14 @@ export default function ContextBuilderPage() {
                 {/* Left Panel: Input Data */}
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-2xl font-bold text-[#0f172a]">Dữ liệu đầu vào</h1>
+                        <h1 className="text-2xl font-bold text-[#0f172a]">{t('setup.title')}</h1>
                         {hasCreatedFirst && (
                             <button
                                 onClick={handleCreateNew}
                                 className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-medium transition-all border border-red-200 hover:border-red-300 hover:shadow-sm group"
                             >
                                 <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                <span>Tạo Bối Cảnh Mới</span>
+                                <span>{t('setup.createNewScenario')}</span>
                             </button>
                         )}
                     </div>
@@ -228,12 +230,12 @@ export default function ContextBuilderPage() {
                         <div className="bg-white rounded-2xl p-5 lg:p-6 mb-4 shadow-sm border border-slate-100 flex flex-col min-h-[140px]">
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                    {hasCreatedFirst ? 'Nội dung gốc' : 'Nhập mục tiêu'}
+                                    {hasCreatedFirst ? t('setup.originalContent') : t('setup.enterGoal')}
                                 </label>
                                 {hasCreatedFirst && (
                                     <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
                                         <Save className="w-3 h-3" />
-                                        Đã lưu trong bộ nhớ
+                                        {t('setup.savedMemory')}
                                     </span>
                                 )}
                             </div>
@@ -268,7 +270,7 @@ export default function ContextBuilderPage() {
                             <div className="bg-gradient-to-br from-slate-800/80 to-slate-700/50 rounded-2xl p-5 lg:p-6 mb-4 border border-slate-600/50 flex flex-col min-h-[120px] backdrop-blur-sm">
                                 <label className="text-xs font-semibold text-teal-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <RefreshCw className="w-3 h-3" />
-                                    Điều chỉnh bối cảnh
+                                    {t('setup.adjust')}
                                 </label>
                                 <textarea
                                     value={adjustmentText}
@@ -322,12 +324,12 @@ export default function ContextBuilderPage() {
                                     {isGenerating ? (
                                         <>
                                             <Loader2 className="w-5 h-5 animate-spin" />
-                                            <span>Đang phân tích cùng Gemini Brain (AI)...</span>
+                                            <span>{t('setup.analyzingGemini')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <Sparkles className="w-5 h-5" />
-                                            <span>Phân Tích Tạo Bối Cảnh</span>
+                                            <span>{t('setup.generate')}</span>
                                         </>
                                     )}
                                 </button>
@@ -340,12 +342,12 @@ export default function ContextBuilderPage() {
                                     {isAdjusting ? (
                                         <>
                                             <Loader2 className="w-5 h-5 animate-spin" />
-                                            <span>Đang điều chỉnh bối cảnh...</span>
+                                            <span>{t('setup.applyingAdjust')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <RefreshCw className="w-5 h-5" />
-                                            <span>Áp Dụng Điều Chỉnh</span>
+                                            <span>{t('setup.applyAdjust')}</span>
                                         </>
                                     )}
                                 </button>
@@ -358,7 +360,7 @@ export default function ContextBuilderPage() {
 
                 {/* Right Panel: Context Details */}
                 <div className="flex-[1.2] flex flex-col min-w-0">
-                    <h1 className="text-2xl font-bold text-slate-800 mb-6">Bối cảnh giao tiếp</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-6">{t('setup.contextTitle')}</h1>
 
                     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 relative flex-1">
 
@@ -369,33 +371,33 @@ export default function ContextBuilderPage() {
                                     const s = (scenario.scenario || scenario) as any;
                                     return (<>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1.5">Tên kịch bản:</strong>
+                                            <strong className="text-slate-900 block mb-1.5">{t('setup.scenarioName.label')}</strong>
                                             <p className="text-sm font-medium text-slate-800">{s.scenarioName || s.title || ''}</p>
                                         </div>
                                         {(s.topic || s.description) && (
                                             <div>
-                                                <strong className="text-slate-900 block mb-1.5">Chủ đề:</strong>
+                                                <strong className="text-slate-900 block mb-1.5">{t('setup.topic.label')}</strong>
                                                 <p className="text-sm text-slate-600 leading-relaxed">{s.topic || s.description}</p>
                                             </div>
                                         )}
                                         <div>
-                                            <strong className="text-slate-900 block mb-1.5">Bối cảnh & vai trò:</strong>
+                                            <strong className="text-slate-900 block mb-1.5">{t('setup.context.label')}</strong>
                                             <p className="text-sm text-slate-600 leading-relaxed">{s.interviewerPersona || ''}</p>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-2">Mục tiêu luyện tập:</strong>
+                                            <strong className="text-slate-900 block mb-2">{t('setup.goals.label')}</strong>
                                             <ul className="list-disc pl-5 text-sm space-y-1.5 text-slate-600">
                                                 {(s.goals || []).map((goal: string, i: number) => <li key={i}>{goal}</li>)}
                                             </ul>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-1.5">Câu mở đầu:</strong>
+                                            <strong className="text-slate-900 block mb-1.5">{t('setup.opener.label')}</strong>
                                             <div className="text-sm italic bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600 leading-relaxed">
                                                 &ldquo;{(s.startingTurns || [])[0]?.line || ''}&rdquo;
                                             </div>
                                         </div>
                                         <div>
-                                            <strong className="text-slate-900 block mb-2">Tiêu chí đánh giá:</strong>
+                                            <strong className="text-slate-900 block mb-2">{t('setup.evalRules.label')}</strong>
                                             <div className="flex flex-wrap gap-2">
                                                 {(scenario.evalRules?.categories || []).map((cat: any, i: number) => (
                                                     <span key={i} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium border border-teal-100">
@@ -408,7 +410,7 @@ export default function ContextBuilderPage() {
                                 })() : (
                                     <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                                         <Sparkles className="w-8 h-8 opacity-50" />
-                                        <p className="text-center text-sm">Chưa có kịch bản.<br />Hãy điền thông tin bên trái và bấm <b>Phân Tích</b>.</p>
+                                        <p className="text-center text-sm">{t('setup.noScenario').split('\n').map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</p>
                                     </div>
                                 )}
                             </div>
@@ -430,7 +432,7 @@ export default function ContextBuilderPage() {
                                         <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 shadow-sm">
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
-                                                <span className="text-sm font-bold text-teal-700">{char.name}</span>
+                                                <span className="text-sm font-bold text-teal-700">{char.name || t('setup.aiCharacter')}</span>
                                             </div>
                                             <div className="flex gap-2 mb-3">
                                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-600">
@@ -455,7 +457,7 @@ export default function ContextBuilderPage() {
                             disabled={!scenario}
                             onClick={() => router.push('/setup/confirm')}
                             className="px-10 py-3.5 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-full font-bold shadow-lg shadow-teal-500/30 transition-all hover:scale-105 active:scale-95">
-                            {scenario ? 'Xác nhận & Bắt đầu Luyện Tập' : 'Vui lòng Phân Tích Kịch Bản trước'}
+                            {scenario ? t('setup.confirmStart') : t('setup.analyzeFirst')}
                         </button>
                     </div>
                 </div>
