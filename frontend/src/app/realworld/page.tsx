@@ -5,6 +5,7 @@ import { Upload, Mic, FileAudio, Loader2, ArrowLeft, CheckCircle } from 'lucide-
 import Link from 'next/link'
 import Image from 'next/image'
 import { apiClient } from '@/lib/apiClient'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface SubScores {
     [key: string]: number
@@ -27,18 +28,6 @@ interface EvalResult {
     emotion: StageFeedback
 }
 
-const SUB_SCORE_LABELS: Record<string, string> = {
-    vocabularyRange: 'Từ vựng',
-    grammarAccuracy: 'Ngữ pháp',
-    honorificUsage: 'Xưng hô',
-    persuasion: 'Thuyết phục',
-    clarity: 'Rõ ràng',
-    professionalism: 'Chuyên nghiệp',
-    empathy: 'Đồng cảm',
-    confidence: 'Tự tin',
-    toneControl: 'Giọng điệu',
-}
-
 const PROFICIENCY_COLORS: Record<string, string> = {
     A1: 'bg-red-100 text-red-700 border-red-200',
     A2: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -51,6 +40,8 @@ const PROFICIENCY_COLORS: Record<string, string> = {
 type Phase = 'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'done' | 'error'
 
 export default function RealWorldPage() {
+    const { t } = useLanguage();
+    const subScoreLabel = (key: string) => t(`eval.subscore.${key}`) || key;
     const [file, setFile] = useState<File | null>(null)
     const [context, setContext] = useState('')
     const [phase, setPhase] = useState<Phase>('idle')
@@ -119,9 +110,9 @@ export default function RealWorldPage() {
                 <div className="flex items-center gap-4">
                     <Link href="/" className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-slate-300 hover:text-white">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Trang chủ</span>
+                        <span className="text-sm font-medium">{t('nav.home')}</span>
                     </Link>
-                    <h1 className="text-lg font-bold">Phân tích hội thoại thực tế</h1>
+                    <h1 className="text-lg font-bold">{t('realworld.title')}</h1>
                 </div>
                 <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-600">
                     <Image src="/ni-avatar.png" alt="User" width={32} height={32} className="object-cover" />
@@ -133,9 +124,9 @@ export default function RealWorldPage() {
                     /* Results View */
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-slate-800">Kết quả phân tích</h2>
+                            <h2 className="text-2xl font-bold text-slate-800">{t('realworld.result.title')}</h2>
                             <button onClick={handleReset} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium transition-colors">
-                                Phân tích file khác
+                                {t('realworld.analyzeAnother')}
                             </button>
                         </div>
 
@@ -167,9 +158,9 @@ export default function RealWorldPage() {
                         {/* 3-Stage Scores */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {[
-                                { label: 'Ngôn ngữ', stage: evaluation.language, color: '#3b82f6', bgClass: 'bg-blue-500' },
-                                { label: 'Nội dung', stage: evaluation.content, color: '#f59e0b', bgClass: 'bg-amber-500' },
-                                { label: 'Cảm xúc', stage: evaluation.emotion, color: '#f87171', bgClass: 'bg-red-400' },
+                                { label: t('eval.language'), stage: evaluation.language, color: '#3b82f6', bgClass: 'bg-blue-500' },
+                                { label: t('eval.content'), stage: evaluation.content, color: '#f59e0b', bgClass: 'bg-amber-500' },
+                                { label: t('eval.emotion'), stage: evaluation.emotion, color: '#f87171', bgClass: 'bg-red-400' },
                             ].map(({ label, stage, color, bgClass }) => (
                                 <div key={label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                                     <div className="flex justify-between items-center mb-3">
@@ -185,7 +176,7 @@ export default function RealWorldPage() {
                                         <div className="space-y-1.5 mb-3">
                                             {Object.entries(stage.subScores).map(([key, val]) => (
                                                 <div key={key} className="flex items-center gap-2">
-                                                    <span className="text-[10px] text-slate-500 w-20 text-right">{SUB_SCORE_LABELS[key] || key}</span>
+                                                    <span className="text-[10px] text-slate-500 w-20 text-right">{subScoreLabel(key)}</span>
                                                     <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
                                                         <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: color }} />
                                                     </div>
@@ -198,7 +189,7 @@ export default function RealWorldPage() {
                                     {/* Strengths */}
                                     {stage.strengths?.length > 0 && (
                                         <div className="mb-2">
-                                            <p className="text-[10px] font-semibold text-emerald-600 mb-1">Điểm sáng:</p>
+                                            <p className="text-[10px] font-semibold text-emerald-600 mb-1">{t('eval.strengths')}:</p>
                                             <ul className="text-[11px] text-slate-600 space-y-0.5 pl-3 list-disc marker:text-emerald-400">
                                                 {stage.strengths.slice(0, 3).map((s, i) => <li key={i}>{s}</li>)}
                                             </ul>
@@ -208,7 +199,7 @@ export default function RealWorldPage() {
                                     {/* Weaknesses */}
                                     {stage.weaknesses?.length > 0 && (
                                         <div>
-                                            <p className="text-[10px] font-semibold text-rose-500 mb-1">Cần cải thiện:</p>
+                                            <p className="text-[10px] font-semibold text-rose-500 mb-1">{t('eval.improvements')}:</p>
                                             <ul className="text-[11px] text-slate-600 space-y-0.5 pl-3 list-disc marker:text-rose-400">
                                                 {stage.weaknesses.slice(0, 3).map((w, i) => <li key={i}>{w.issue}</li>)}
                                             </ul>
@@ -220,7 +211,7 @@ export default function RealWorldPage() {
 
                         {/* Transcript */}
                         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3">Bản ghi lời nói</h3>
+                            <h3 className="text-lg font-bold text-slate-800 mb-3">{t('realworld.transcript')}</h3>
                             <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
                                 {transcript}
                             </div>
@@ -230,8 +221,8 @@ export default function RealWorldPage() {
                     /* Upload Form */
                     <div className="space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Phân tích hội thoại thực tế</h2>
-                            <p className="text-sm text-slate-500">Tải lên file ghi âm cuộc hội thoại ngoài đời thực để AI phân tích và đánh giá kỹ năng giao tiếp của bạn.</p>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-2">{t('realworld.title')}</h2>
+                            <p className="text-sm text-slate-500">{t('realworld.desc')}</p>
                         </div>
 
                         {/* Drop Zone */}
@@ -253,7 +244,7 @@ export default function RealWorldPage() {
                                         onClick={(e) => { e.stopPropagation(); setFile(null) }}
                                         className="text-xs text-rose-500 hover:text-rose-700 font-medium"
                                     >
-                                        Xóa và chọn file khác
+                                        {t('realworld.removeFile')}
                                     </button>
                                 </>
                             ) : (
@@ -262,8 +253,8 @@ export default function RealWorldPage() {
                                         <FileAudio className="w-8 h-8 text-slate-400" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-bold text-slate-700">Kéo thả file audio vào đây</p>
-                                        <p className="text-xs text-slate-500 mt-1">hoặc click để chọn file (MP3, WAV, M4A — tối đa 10MB)</p>
+                                        <p className="text-sm font-bold text-slate-700">{t('realworld.dropzone')}</p>
+                                        <p className="text-xs text-slate-500 mt-1">{t('realworld.dropzone.sub')}</p>
                                     </div>
                                 </>
                             )}
@@ -278,11 +269,11 @@ export default function RealWorldPage() {
 
                         {/* Context Description */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Mô tả ngữ cảnh</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">{t('realworld.context.label')}</label>
                             <textarea
                                 value={context}
                                 onChange={(e) => setContext(e.target.value)}
-                                placeholder="Ví dụ: Cuộc họp với sếp về dự án mới, Thuyết trình trước lớp, Phỏng vấn xin việc..."
+                                placeholder={t('realworld.context.placeholder')}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 resize-none"
                                 rows={3}
                             />
@@ -304,14 +295,14 @@ export default function RealWorldPage() {
                             {phase === 'idle' || phase === 'error' ? (
                                 <>
                                     <Upload className="w-5 h-5" />
-                                    Phân tích
+                                    {t('realworld.analyze')}
                                 </>
                             ) : (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    {phase === 'uploading' && 'Đang tải lên...'}
-                                    {phase === 'transcribing' && 'Đang nhận diện giọng nói...'}
-                                    {phase === 'analyzing' && 'Đang phân tích và đánh giá...'}
+                                    {phase === 'uploading' && t('realworld.uploading')}
+                                    {phase === 'transcribing' && t('realworld.transcribing')}
+                                    {phase === 'analyzing' && t('realworld.analyzing')}
                                 </>
                             )}
                         </button>
