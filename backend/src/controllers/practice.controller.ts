@@ -59,7 +59,7 @@ export class PracticeController {
     public async createLivekitSession(req: Request, res: Response): Promise<void> {
         try {
             const { scenarioStr, conversationHistoryStr } = req.body;
-            const userName = req.user?.email?.split('@')[0] || 'bạn';
+            const userName = req.user?.email?.split('@')[0] || (req.language === 'en' ? 'you' : 'bạn');
             const identity = `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
             const roomName = `speakmate-${Date.now()}`;
 
@@ -85,11 +85,14 @@ export class PracticeController {
 
             const token = await livekitService.generateToken(roomName, identity, sessionId);
 
-            // Fire-and-forget: wake Modal LiveKit agent worker
-            if (config.modalWakeAgentUrl) {
-                fetch(config.modalWakeAgentUrl, { method: 'POST' })
+            // Fire-and-forget: wake LiveKit agent worker (Modal or RunPod)
+            const wakeUrl = config.voicePipelineProvider === 'runpod' && config.runpodWakeAgentUrl
+                ? config.runpodWakeAgentUrl
+                : config.modalWakeAgentUrl;
+            if (wakeUrl) {
+                fetch(wakeUrl, { method: 'POST' })
                     .then(r => {
-                        if (!r.ok) console.error(`[LiveKit] Wake agent returned ${r.status}. App may be stopped — run: modal deploy modal_pipeline.py`);
+                        if (!r.ok) console.error(`[LiveKit] Wake agent returned ${r.status} (${config.voicePipelineProvider})`);
                     })
                     .catch(e => console.warn('[LiveKit] Wake agent call failed:', e));
             }
@@ -152,13 +155,13 @@ export class PracticeController {
             const { scenarioStr } = req.body;
             const scenario = JSON.parse(scenarioStr || '{}');
 
-            const userName = req.user?.email?.split('@')[0] || 'bạn';
+            const userName = req.user?.email?.split('@')[0] || (req.language === 'en' ? 'you' : 'bạn');
             const characters = scenario.characters || [];
             const isDual = characters.length >= 2;
 
             // Build system prompt — single or dual character
             const promptService = new (await import('../services/prompt.service')).PromptService();
-            const systemPrompt = promptService.buildConversationPrompt(scenario, userName);
+            const systemPrompt = promptService.buildConversationPrompt(scenario, userName, (req.language === 'en' ? 'en' : 'vi'));
 
             // Voice selection based on character gender
             // Gemini voices: Kore (female), Aoede (female), Puck (male), Charon (male)
@@ -317,7 +320,7 @@ export class PracticeController {
 
             const userName = req.user?.email?.split('@')[0] || undefined;
             const result = await voiceAgent.interactDualCharText(
-                scenario, characters, history, userMessage, userName
+                scenario, characters, history, userMessage, userName, req.language
             );
 
             res.status(200).json({
@@ -381,7 +384,7 @@ export class PracticeController {
 
             const userName = req.user?.email?.split('@')[0] || undefined;
             const result = await voiceAgent.interactDualCharacter(
-                scenario, characters, history, finalBuffer, mimeType, userName
+                scenario, characters, history, finalBuffer, mimeType, userName, req.language
             );
 
             res.status(200).json({
@@ -1046,7 +1049,7 @@ export class PracticeController {
 
             // Step 2: Evaluate
             console.log(`[RealWorld] Evaluating transcript (${transcript.length} chars)...`);
-            const evaluation = await analystAgent.evaluateRealWorldConversation(transcript, contextDescription);
+            const evaluation = await analystAgent.evaluateRealWorldConversation(transcript, contextDescription, req.language);
 
             res.status(200).json({
                 transcript,

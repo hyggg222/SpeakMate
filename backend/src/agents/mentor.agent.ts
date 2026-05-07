@@ -1,6 +1,11 @@
-import { PromptService } from '../services/prompt.service';
+import { PromptService, Lang } from '../services/prompt.service';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
 import type { FeedbackAnalysis, RealWorldEvaluation, RealWorldMetrics } from '../contracts/data.contracts';
+
+type LangParam = Lang | string;
+function toLang(language?: LangParam): Lang {
+    return language === 'en' ? 'en' : 'vi';
+}
 
 export interface MentorChatResponse {
     reply: string;
@@ -48,13 +53,11 @@ export class MentorAgent {
         evaluationReport: any,
         userMessage: string,
         conversationHistory: { role: string, content: string }[],
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<MentorChatResponse> {
+        const lang = toLang(language);
         try {
-            const langInstr = language === 'en'
-                ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
-            const systemPrompt = this.promptService.getMentorSystemPrompt() + langInstr;
+            const systemPrompt = this.promptService.getMentorSystemPrompt(lang);
             const context = `
 Context:
 Scenario: ${JSON.stringify(scenario)}
@@ -98,8 +101,9 @@ User Message: "${userMessage}"
         storyCoverage?: any[],
         streak?: number,
         previousScore?: number,
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<string> {
+        const lang = toLang(language);
         const maxAttempts = 2;
         let lastError: unknown;
 
@@ -122,14 +126,11 @@ Streak hiện tại: ${streak ?? 0} tuần
 ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây là phiên đầu tiên.'}
 `;
 
-                const langInstr = language === 'en'
-                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: context }] }],
                     config: {
-                        systemInstruction: this.promptService.getEvalCommentPrompt() + langInstr,
+                        systemInstruction: this.promptService.getEvalCommentPrompt(lang),
                         temperature: 0.8,
                         safetySettings: SAFETY_SETTINGS,
                     }
@@ -156,17 +157,15 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
         initialInput: string,
         chatMessages: StoryChatMessage[],
         inputMethod: string,
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<StoryChatResponse> {
+        const lang = toLang(language);
         const maxAttempts = 3;
         let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const langInstr = language === 'en'
-                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
-                const systemPrompt = this.promptService.getStoryChatSystemPrompt(framework, initialInput) + langInstr;
+                const systemPrompt = this.promptService.getStoryChatSystemPrompt(framework, initialInput, lang);
 
                 // Build multi-turn conversation
                 const messages: { role: string; parts: { text: string }[] }[] = [];
@@ -208,8 +207,11 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
                 const parsed: StoryChatResponse = JSON.parse(jsonStr);
 
                 // Ensure valid response shape
+                const fallbackMsg = lang === 'en'
+                    ? "Sorry, I didn't quite catch that. Could you say it again?"
+                    : 'Xin lỗi, Ni chưa hiểu. Bạn nói lại nhé?';
                 return {
-                    chatMessage: parsed.chatMessage || 'Xin lỗi, Ni chưa hiểu. Bạn nói lại nhé?',
+                    chatMessage: parsed.chatMessage || fallbackMsg,
                     fieldTargeted: parsed.fieldTargeted || null,
                 };
             } catch (error) {
@@ -239,8 +241,9 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
         },
         voiceTranscript?: string | null,
         prevWeakness?: string | null,
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<FeedbackAnalysis> {
+        const lang = toLang(language);
         const maxAttempts = 2;
         let lastError: unknown;
 
@@ -265,10 +268,7 @@ Feedback từ user:
 ${voiceTranscript ? `\nVoice transcript: ${voiceTranscript}` : ''}
 ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
 `;
-                const langInstr = language === 'en'
-                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
-                const systemPrompt = this.promptService.getFeedbackAnalysisPrompt() + langInstr;
+                const systemPrompt = this.promptService.getFeedbackAnalysisPrompt(lang);
 
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
@@ -348,8 +348,9 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
         },
         transcript: string | null,
         previousMetrics?: RealWorldMetrics | null,
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<RealWorldEvaluation> {
+        const lang = toLang(language);
         const maxAttempts = 2;
         let lastError: unknown;
 
@@ -371,14 +372,11 @@ ${previousMetrics ? `5 lượt thực tế gần nhất:\n- coherenceScore trung
 
 completed: ${feedbackData.completed}
 `;
-                const langInstrFull = language === 'en'
-                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: context }] }],
                     config: {
-                        systemInstruction: this.promptService.getRealWorldFeedbackPrompt() + langInstrFull,
+                        systemInstruction: this.promptService.getRealWorldFeedbackPrompt(lang),
                         responseMimeType: 'application/json',
                         temperature: 0.7,
                         safetySettings: SAFETY_SETTINGS,
@@ -455,17 +453,15 @@ completed: ${feedbackData.completed}
         userMessage: string,
         conversationHistory: { role: string; content: string }[],
         userContext: string,
-        language = 'vi'
+        language: LangParam = 'vi'
     ): Promise<GeneralChatResponse> {
+        const lang = toLang(language);
         const maxAttempts = 3;
         let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const langInstrGeneral = language === 'en'
-                    ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-                    : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
-                const systemPrompt = this.promptService.getMentorChatSystemPrompt(userContext) + langInstrGeneral;
+                const systemPrompt = this.promptService.getMentorChatSystemPrompt(userContext, lang);
 
                 const messages = [
                     ...conversationHistory.map(m => ({
@@ -519,7 +515,9 @@ completed: ${feedbackData.completed}
 
         // Fallback if all attempts fail
         return {
-            reply: 'Xin lỗi, Ni đang gặp trục trặc. Bạn thử lại sau nhé!',
+            reply: lang === 'en'
+                ? "Sorry, I'm having a hiccup right now. Please try again later!"
+                : 'Xin lỗi, Ni đang gặp trục trặc. Bạn thử lại sau nhé!',
             intent: 'support',
             actionTaken: null,
             dataCards: null,
