@@ -115,8 +115,33 @@ function OverallContent() {
     const { selectedStoryIds, scenario, history, audioFileKeys } = useScenario();
     const [storyCoverage, setStoryCoverage] = useState<any[]>([]);
     const [coverageLoading, setCoverageLoading] = useState(false);
+    const [sessionTurns, setSessionTurns] = useState<any[]>([]);
 
     const isDemo = searchParams.get('demo') === 'true';
+
+    /** Normalize either in-memory history or DB turns into a uniform list. */
+    const unifiedHistory: { speaker: 'User' | 'AI'; line: string }[] = (() => {
+        if (sessionTurns.length > 0) {
+            const out: { speaker: 'User' | 'AI'; line: string }[] = [];
+            for (const t of sessionTurns) {
+                if (t.user_transcript) out.push({ speaker: 'User', line: t.user_transcript });
+                if (t.ai_response) out.push({ speaker: 'AI', line: t.ai_response });
+            }
+            return out;
+        }
+        return (history || []).filter((h: any) => h?.line).map((h: any) => ({
+            speaker: h.speaker === 'User' ? 'User' : 'AI',
+            line: String(h.line),
+        }));
+    })();
+
+    /** Avg words per User turn — deterministic, computed from transcript. */
+    const avgWordsPerTurn = (() => {
+        const userTurns = unifiedHistory.filter(h => h.speaker === 'User');
+        if (userTurns.length === 0) return 0;
+        const totalWords = userTurns.reduce((acc, h) => acc + h.line.trim().split(/\s+/).filter(Boolean).length, 0);
+        return Math.round(totalWords / userTurns.length);
+    })();
 
     useEffect(() => {
         // Demo mode: inject mock data, skip API
@@ -142,13 +167,13 @@ function OverallContent() {
                     score: 75, feedback: '',
                     strengths: ['Trả lời đúng trọng tâm câu hỏi', 'Đưa ra ví dụ cụ thể từ trải nghiệm'],
                     weaknesses: [{ issue: 'Chưa phản biện sâu khi bị hỏi ngược', fix: 'Chuẩn bị counterarguments' }, { issue: 'Thiếu lập luận có cấu trúc STAR', fix: 'Ôn lại Story Bank' }],
-                    subScores: { persuasion: 70, clarity: 80, professionalism: 75 },
+                    subScores: { goalCompletion: 70, responseRelevance: 80, informationDepth: 75 },
                 },
-                emotion: {
+                fluency: {
                     score: 70, feedback: '',
-                    strengths: ['Giọng nói tự tin ở phần mở đầu'],
-                    weaknesses: [{ issue: 'Mất tự tin khi bị hỏi ngược', fix: 'Tập pause trước khi trả lời' }, { issue: 'Ngập ngừng khi diễn đạt ý phức tạp', fix: 'Luyện filler phrases' }],
-                    subScores: { empathy: 65, confidence: 72, toneControl: 68 },
+                    strengths: ['Mạch lạc, không lan man'],
+                    weaknesses: [{ issue: 'Dùng nhiều từ đệm (ờ, à)', fix: 'Tập pause 2 giây thay vì dùng từ đệm' }, { issue: 'Câu trả lời đôi khi bỏ dở', fix: 'Luyện hoàn thành ý trước khi chuyển chủ đề' }],
+                    subScores: { fillerControl: 65, responseCoherence: 72, answerCompleteness: 68 },
                 },
                 sessionMetrics: {
                     coherenceScore: 71,
@@ -192,7 +217,7 @@ function OverallContent() {
                                 coherence_score: m.coherenceScore,
                                 jargon_count: m.jargonCount,
                                 filler_per_minute: m.fillerPerMinute,
-                                avg_response_time: m.avgResponseTime ?? 0,
+                                avg_words_per_turn: avgWordsPerTurn,
                             }));
                         }
                         setLoading(false);
@@ -205,6 +230,7 @@ function OverallContent() {
         }
         apiClient.getSessionById(sessionId).then(data => {
             if (data?.session) setFullSession(data.session);
+            if (Array.isArray(data?.turns)) setSessionTurns(data.turns);
             if (data?.evaluation?.report_data) {
                 setEvalReport(data.evaluation.report_data);
             } else if (data?.evaluation) {
@@ -214,7 +240,7 @@ function OverallContent() {
                     overallFeedback: "Kết quả bài làm của bạn",
                     language: { score: raw.score || 0, feedback: '', strengths: raw.strengths || [], weaknesses: [] },
                     content: { score: raw.score || 0, feedback: '', strengths: [], weaknesses: [] },
-                    emotion: { score: raw.score || 0, feedback: '', strengths: [], weaknesses: [] },
+                    fluency: { score: raw.score || 0, feedback: '', strengths: [], weaknesses: [] },
                 });
             }
             setLoading(false);
@@ -253,23 +279,27 @@ function OverallContent() {
     }
 
     // Lấy Strength gộp chung lại cho hiển thị nổi bật
+    const fluencyStage = evalReport.fluency || evalReport.emotion;
     const allStrengths = [
         ...(evalReport.language?.strengths || []),
         ...(evalReport.content?.strengths || []),
-        ...(evalReport.emotion?.strengths || [])
+        ...(fluencyStage?.strengths || [])
     ];
 
     // Lấy Weakness gộp chung lại
     const allWeaknesses = [
         ...(evalReport.language?.weaknesses || []).map(w => w.issue),
         ...(evalReport.content?.weaknesses || []).map(w => w.issue),
-        ...(evalReport.emotion?.weaknesses || []).map(w => w.issue)
+        ...(fluencyStage?.weaknesses || []).map(w => w.issue)
     ];
 
     return (
-        <main className="flex-1 flex flex-col bg-transparent relative">
+        <main className="flex-1 flex flex-col bg-transparent relative min-w-0">
             <h1 className="text-2xl font-bold text-slate-800 mb-6 font-serif">{t('eval.overall')}</h1>
 
+            <div className="flex flex-col xl:flex-row gap-6 items-start">
+            {/* ───── LEFT COLUMN: full evaluation ───── */}
+            <div className="flex-1 min-w-0 w-full">
             {/* Score and Comment Box */}
             <div className="flex items-center gap-8 mb-6">
                 <div className="flex flex-col items-center gap-2 shrink-0 min-w-[110px]">
@@ -316,7 +346,7 @@ function OverallContent() {
                     </div>
                     <div className="bg-[#0b1325] text-white p-4 rounded-2xl rounded-tl-none border border-[#1e293b] w-full relative before:content-[''] before:absolute before:top-4 before:-left-2 before:w-4 before:h-4 before:bg-[#0b1325] before:rotate-45 before:border-l before:border-b before:border-[#1e293b] shadow-xl">
                         <p className="text-[15px] font-medium leading-relaxed">
-                            {evalReport.overallFeedback || 'Bạn đã làm rất tốt, hãy xem chi tiết bên dưới nhé!'}
+                            {evalReport.overallFeedback || t('eval.defaultComment')}
                         </p>
                     </div>
                 </div>
@@ -341,12 +371,11 @@ function OverallContent() {
                         inverse
                     />
                     <MetricCard
-                        label={t('eval.metric.reflex')}
-                        icon="⚡"
-                        value={(evalReport as any).sessionMetrics.avgResponseTime ?? 0}
-                        unit={t('eval.unit.seconds')}
-                        previous={previousMetrics?.avg_response_time}
-                        inverse
+                        label={t('eval.metric.wpt')}
+                        icon="✍️"
+                        value={avgWordsPerTurn}
+                        unit={t('eval.unit.wpt')}
+                        previous={previousMetrics?.avg_words_per_turn}
                     />
                     <MetricCard
                         label={t('eval.metric.filler')}
@@ -394,69 +423,25 @@ function OverallContent() {
                 </div>
             )}
 
-            {/* Details Grid */}
+            {/* Strengths + Weaknesses (2-col) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                {/* Left Column: Progress Bars */}
-                <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col gap-6">
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">{t('eval.title')}</h3>
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
+                    <h3 className="text-base font-bold text-teal-600 mb-3">🔥 {t('eval.strengths')}</h3>
+                    <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-teal-400">
+                        {allStrengths.length > 0 ? allStrengths.slice(0, 4).map((s, i) => (
+                            <li key={i}>{s}</li>
+                        )) : <li>{t('eval.noData')}</li>}
+                    </ul>
+                </div>
 
-                    <ProgressBar label={t('eval.lang.label')} score={evalReport.language?.score || 0} colorClass="bg-blue-500" />
-                    {evalReport.language?.subScores && (
-                        <div className="flex flex-col gap-1 pl-2 -mt-3">
-                            {Object.entries(evalReport.language.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#3b82f6" />
-                            ))}
-                        </div>
-                    )}
-
-                    <ProgressBar label={t('eval.content.label')} score={evalReport.content?.score || 0} colorClass="bg-amber-500" />
-                    {evalReport.content?.subScores && (
-                        <div className="flex flex-col gap-1 pl-2 -mt-3">
-                            {Object.entries(evalReport.content.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#f59e0b" />
-                            ))}
-                        </div>
-                    )}
-
-                    <ProgressBar label={t('eval.emotion.label')} score={evalReport.emotion?.score || 0} colorClass="bg-red-400" />
-                    {evalReport.emotion?.subScores && (
-                        <div className="flex flex-col gap-1 pl-2 -mt-3">
-                            {Object.entries(evalReport.emotion.subScores).map(([key, val]) => (
-                                <SubScoreBar key={key} label={subScoreLabel(key)} score={val as number} color="#f87171" />
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="mt-4">
-                        <button onClick={() => setIsMentorOpen(true)} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
-                            <MessageCircle className="w-4 h-4" />
-                            {t('eval.askNi')}
-                        </button>
-                    </div>
-                </section>
-
-                {/* Right Column Highlights / Strengths */}
-                <section className="flex flex-col gap-6">
-                    {/* Strengths */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
-                        <h3 className="text-base font-bold text-teal-600 mb-3">🔥 {t('eval.strengths')}</h3>
-                        <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-teal-400">
-                            {allStrengths.length > 0 ? allStrengths.slice(0, 4).map((s, i) => (
-                                <li key={i}>{s}</li>
-                            )) : <li>{t('eval.noData')}</li>}
-                        </ul>
-                    </div>
-
-                    {/* Weaknesses */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
-                        <h3 className="text-base font-bold text-rose-500 mb-3">📈 {t('eval.improvements.label')}</h3>
-                        <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-rose-400">
-                            {allWeaknesses.length > 0 ? allWeaknesses.slice(0, 4).map((w, i) => (
-                                <li key={i}>{w}</li>
-                            )) : <li>{t('eval.noData')}</li>}
-                        </ul>
-                    </div>
-                </section>
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-1">
+                    <h3 className="text-base font-bold text-rose-500 mb-3">📈 {t('eval.improvements.label')}</h3>
+                    <ul className="list-disc pl-4 text-[13px] font-medium text-slate-600 space-y-2 marker:text-rose-400">
+                        {allWeaknesses.length > 0 ? allWeaknesses.slice(0, 4).map((w, i) => (
+                            <li key={i}>{w}</li>
+                        )) : <li>{t('eval.noData')}</li>}
+                    </ul>
+                </div>
             </div>
 
             {/* Story Bank Coverage */}
@@ -545,6 +530,41 @@ function OverallContent() {
                 evalReport={evalReport}
                 scenario={fullSession?.scenario}
             />
+
+            </div>
+            {/* ───── RIGHT COLUMN: Conversation history ───── */}
+            <aside className="w-full xl:w-[380px] shrink-0 xl:sticky xl:top-24">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col">
+                    <h3 className="text-base font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        💬 {t('eval.history.title')}
+                        {unifiedHistory.length > 0 && (
+                            <span className="text-[11px] font-medium text-slate-400">({unifiedHistory.length})</span>
+                        )}
+                    </h3>
+                    <div className="flex flex-col gap-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 -mr-1">
+                        {unifiedHistory.length === 0 ? (
+                            <p className="text-[13px] text-slate-400 italic py-4 text-center">{t('eval.history.empty')}</p>
+                        ) : unifiedHistory.map((turn, i) => {
+                            const isUser = turn.speaker === 'User';
+                            return (
+                                <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed
+                                        ${isUser
+                                            ? 'bg-teal-500 text-white rounded-tr-sm'
+                                            : 'bg-slate-100 text-slate-700 rounded-tl-sm'}`}
+                                    >
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isUser ? 'text-teal-50/80' : 'text-slate-500'}`}>
+                                            {isUser ? t('eval.history.you') : t('eval.history.partner')}
+                                        </p>
+                                        <p className="whitespace-pre-wrap break-words">{turn.line}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </aside>
+            </div>
 
             {/* Modals */}
             <MentorChatModal

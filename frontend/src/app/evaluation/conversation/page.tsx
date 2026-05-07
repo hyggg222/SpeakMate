@@ -81,6 +81,7 @@ function ConversationContent() {
     const [evalError, setEvalError] = useState<string | null>(null)
     const [isMentorOpen, setIsMentorOpen] = useState(false)
     const [showInlineChallenge, setShowInlineChallenge] = useState(false)
+    const [mobileTab, setMobileTab] = useState<'scores' | 'transcript'>('scores')
 
     // Use demo data or real context
     const scenario = isDemo ? MOCK_SCENARIO : ctxScenario
@@ -105,9 +106,9 @@ function ConversationContent() {
         const runEvaluation = async () => {
             try {
                 const rubric = (scenario as any)?.evalRules || { categories: [] }
-                const fullTranscript = history.map((t: any) => {
-                    if (t.speaker === 'AI' && t.character_name) return `[${t.character_name}]: ${t.line}`;
-                    return `${t.speaker === 'AI' ? 'Đối phương' : 'Bạn'}: ${t.line}`;
+                const fullTranscript = history.map((tn: any) => {
+                    if (tn.speaker === 'AI' && tn.character_name) return `[${tn.character_name}]: ${tn.line}`;
+                    return `${tn.speaker === 'AI' ? t('eval.opponent') : t('common.you')}: ${tn.line}`;
                 }
                 ).join('\n')
 
@@ -124,7 +125,7 @@ function ConversationContent() {
                 }
             } catch (err) {
                 console.error('[Evaluation] API call failed:', err)
-                setEvalError('Không thể phân tích. Đang hiển thị kết quả mẫu.')
+                setEvalError(t('eval.analysisFailed'))
                 setReport(MOCK_REPORT as any)
             } finally {
                 setIsEvaluating(false)
@@ -133,17 +134,18 @@ function ConversationContent() {
         runEvaluation()
     }, [scenario, router, isDemo])
 
-    // Derive strengths/weaknesses from multi-stage report
+    // Derive strengths/weaknesses from multi-stage report (fluency replaces emotion)
+    const fluencyStage = report?.fluency || report?.emotion
     const allStrengths = report ? [
         ...(report.language?.strengths || []),
         ...(report.content?.strengths || []),
-        ...(report.emotion?.strengths || []),
+        ...(fluencyStage?.strengths || []),
     ] : []
 
     const allWeaknesses = report ? [
         ...(report.language?.weaknesses || []).map((w: any) => typeof w === 'string' ? w : w.issue),
         ...(report.content?.weaknesses || []).map((w: any) => typeof w === 'string' ? w : w.issue),
-        ...(report.emotion?.weaknesses || []).map((w: any) => typeof w === 'string' ? w : w.issue),
+        ...(fluencyStage?.weaknesses || []).map((w: any) => typeof w === 'string' ? w : w.issue),
     ] : []
 
     // Build evalReport-like object for MentorChatModal context
@@ -152,10 +154,28 @@ function ConversationContent() {
         overallFeedback: report.overallFeedback,
         language: report.language,
         content: report.content,
+        fluency: report.fluency,
         emotion: report.emotion,
     } : null
 
     return (
+        <>
+        {/* Mobile tab switcher — only visible below XL */}
+        <div className="xl:hidden flex border-b border-slate-200 bg-white sticky top-[57px] z-40">
+            <button
+                onClick={() => setMobileTab('scores')}
+                className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'scores' ? 'text-teal-600 border-b-2 border-teal-500' : 'text-slate-500'}`}
+            >
+                {t('eval.conversation.title')}
+            </button>
+            <button
+                onClick={() => setMobileTab('transcript')}
+                className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'transcript' ? 'text-teal-600 border-b-2 border-teal-500' : 'text-slate-500'}`}
+            >
+                {t('eval.conversation.timeline')}
+            </button>
+        </div>
+
         <div className="flex flex-1 max-w-[1500px] mx-auto w-full p-4 md:p-6 gap-6 relative">
             {/* 1. Left Sidebar */}
             <aside className="hidden lg:flex w-[260px] shrink-0 flex-col gap-6">
@@ -170,7 +190,7 @@ function ConversationContent() {
                         const turnWeaknesses = [
                             ...(report?.language?.weaknesses || []),
                             ...(report?.content?.weaknesses || []),
-                            ...(report?.emotion?.weaknesses || []),
+                            ...(fluencyStage?.weaknesses || []),
                         ].filter((w: any) => w.turn != null);
                         return turnWeaknesses.length > 0 ? (
                             turnWeaknesses.map((w: any, index: number) => (
@@ -187,7 +207,7 @@ function ConversationContent() {
             </aside>
 
             {/* 2. Middle Stats Area */}
-            <main className="flex-1 flex flex-col min-w-0">
+            <main className={`flex-1 flex flex-col min-w-0 ${mobileTab === 'transcript' ? 'hidden xl:flex' : ''}`}>
                 <h1 className="text-[1.7rem] font-bold text-slate-800 mb-5 font-serif">{t('eval.conversation.title')}</h1>
 
                 {isEvaluating ? (
@@ -217,7 +237,7 @@ function ConversationContent() {
                                 </div>
                                 <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm relative before:content-[''] before:absolute before:top-4 before:-left-2 before:w-4 before:h-4 before:bg-white before:rotate-45 before:border-l before:border-b before:border-slate-200">
                                     <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                                        {report?.overallFeedback || "Không có phản hồi."}
+                                        {report?.overallFeedback || t('eval.noFeedback')}
                                     </p>
                                 </div>
                             </div>
@@ -248,11 +268,11 @@ function ConversationContent() {
                                 </div>
                                 <div className="flex flex-col gap-1 w-full">
                                     <div className="flex justify-between items-center text-[13px] font-bold text-slate-700">
-                                        <span>{t('eval.emotion.label')}</span>
-                                        <span>{report?.emotion?.score || 0}/100</span>
+                                        <span>{t('eval.fluency.label')}</span>
+                                        <span>{fluencyStage?.score || 0}/100</span>
                                     </div>
                                     <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full bg-red-400 transition-all duration-1000" style={{ width: `${report?.emotion?.score || 0}%` }} />
+                                        <div className="h-full rounded-full bg-red-400 transition-all duration-1000" style={{ width: `${fluencyStage?.score || 0}%` }} />
                                     </div>
                                 </div>
                             </section>
@@ -323,8 +343,8 @@ function ConversationContent() {
                 />
             </main>
 
-            {/* 3. Right Sidebar Timeline */}
-            <aside className="hidden xl:flex w-[340px] shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-col h-full self-start sticky top-24">
+            {/* 3. Right Sidebar Timeline — XL: sidebar, mobile: full-width when transcript tab active */}
+            <aside className={`${mobileTab === 'transcript' ? 'flex flex-1' : 'hidden'} xl:flex xl:flex-none xl:w-[340px] shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-col h-full self-start xl:sticky xl:top-24`}>
                 <h3 className="text-[15px] font-bold text-slate-800 mb-6 text-center border-b border-slate-100 pb-3">{t('eval.conversation.timeline')}</h3>
 
                 <div className="flex flex-col gap-6 relative">
@@ -358,6 +378,7 @@ function ConversationContent() {
                 </div>
             </aside>
         </div>
+        </>
     )
 }
 
