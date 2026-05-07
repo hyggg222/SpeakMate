@@ -5,24 +5,7 @@ import { useRouter } from 'next/navigation'
 import { X, Target, Clock, Loader2, Star, BookOpen, Zap } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiClient } from '@/lib/apiClient'
-
-// Fallback mock data when API is unavailable
-const MOCK_CHALLENGE = {
-    id: 'demo-challenge-001',
-    title: 'Hỏi giảng viên một câu phản biện sau bài giảng',
-    description: 'Sau buổi học tiếp theo, hãy chủ động hỏi giảng viên một câu hỏi về nội dung bài giảng. Tập trung vào việc diễn đạt rõ ràng và tự tin.',
-    opener_hints: [
-        'Thưa thầy/cô, em muốn hỏi thêm về phần...',
-        'Em có một góc nhìn khác về vấn đề này, liệu...',
-        'Em thấy điểm này rất thú vị, thầy/cô có thể giải thích thêm...',
-    ],
-    sourceWeakness: 'Chưa phản biện sâu',
-    difficulty: 3,
-    suggestedStories: [
-        { id: 'story-1', title: 'Lần đầu thuyết trình trước lớp' },
-        { id: 'story-2', title: 'Cuộc trò chuyện với mentor ở công ty' },
-    ],
-}
+import { useLanguage } from '@/context/LanguageContext'
 
 interface ChallengeModalProps {
     isOpen: boolean;
@@ -32,6 +15,40 @@ interface ChallengeModalProps {
 
 export default function ChallengeModal({ isOpen, onClose, sessionId }: ChallengeModalProps) {
     const router = useRouter()
+    const { t, lang } = useLanguage()
+
+    // Fallback mock data when API is unavailable (language-aware)
+    const MOCK_CHALLENGE = lang === 'en' ? {
+        id: 'demo-challenge-001',
+        title: 'Ask the lecturer a critical question after the lecture',
+        description: 'After the next class, take the initiative to ask the lecturer a question about the content. Focus on speaking clearly and with confidence.',
+        opener_hints: [
+            "Excuse me, I'd like to ask more about the part where...",
+            "I have a different perspective on this. Could it be that...",
+            "I found this point really interesting — could you elaborate on...",
+        ],
+        sourceWeakness: 'Lacking depth in counter-arguments',
+        difficulty: 3,
+        suggestedStories: [
+            { id: 'story-1', title: 'My first presentation in front of the class' },
+            { id: 'story-2', title: 'A conversation with my mentor at work' },
+        ],
+    } : {
+        id: 'demo-challenge-001',
+        title: 'Hỏi giảng viên một câu phản biện sau bài giảng',
+        description: 'Sau buổi học tiếp theo, hãy chủ động hỏi giảng viên một câu hỏi về nội dung bài giảng. Tập trung vào việc diễn đạt rõ ràng và tự tin.',
+        opener_hints: [
+            'Thưa thầy/cô, em muốn hỏi thêm về phần...',
+            'Em có một góc nhìn khác về vấn đề này, liệu...',
+            'Em thấy điểm này rất thú vị, thầy/cô có thể giải thích thêm...',
+        ],
+        sourceWeakness: 'Chưa phản biện sâu',
+        difficulty: 3,
+        suggestedStories: [
+            { id: 'story-1', title: 'Lần đầu thuyết trình trước lớp' },
+            { id: 'story-2', title: 'Cuộc trò chuyện với mentor ở công ty' },
+        ],
+    };
     const [loading, setLoading] = useState(false)
     const [challengeData, setChallengeData] = useState<any>(null)
     const [deadline, setDeadline] = useState("7")
@@ -97,15 +114,15 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                         <Target className="w-32 h-32" />
                     </div>
                     <Target className="w-9 h-9 mb-2 opacity-90" />
-                    <h2 className="text-2xl font-bold leading-tight">Nhiệm Vụ Thực Tế</h2>
-                    <p className="text-sm opacity-80 mt-0.5">Từ phòng gym ra đời thực</p>
+                    <h2 className="text-2xl font-bold leading-tight">{t('challenge.modal.title')}</h2>
+                    <p className="text-sm opacity-80 mt-0.5">{t('challenge.modal.subtitle')}</p>
                 </div>
 
                 <div className="p-6">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-12" style={{ color: 'var(--muted-foreground)' }}>
                             <Loader2 className="w-8 h-8 animate-spin mb-4" style={{ color: 'var(--teal)' }} />
-                            <p className="text-sm">Ni đang phân tích điểm yếu và tạo thử thách cho bạn...</p>
+                            <p className="text-sm">{t('challenge.modal.analyzing')}</p>
                         </div>
                     ) : challengeData ? (
                         <div className="flex flex-col gap-5">
@@ -139,7 +156,7 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                                 >
                                     <Zap size={14} className="text-amber-500" />
                                     <span className="text-[12px] font-medium" style={{ color: 'var(--foreground)' }}>
-                                        Điểm yếu cần rèn: <strong>{sourceWeakness}</strong>
+                                        {t('challenge.modal.weaknessLabel')} <strong>{sourceWeakness}</strong>
                                     </span>
                                 </div>
                             )}
@@ -148,7 +165,7 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                             {challengeData.opener_hints?.length > 0 && (
                                 <div>
                                     <h4 className="text-[12px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>
-                                        Gợi ý diễn đạt
+                                        {t('challenge.modal.hintsLabel')}
                                     </h4>
                                     <div className="flex flex-col gap-2">
                                         {challengeData.opener_hints.map((hint: string, i: number) => (
@@ -166,7 +183,7 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                             {suggestedStories.length > 0 && (
                                 <div>
                                     <h4 className="text-[12px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>
-                                        Story nên ôn trước
+                                        {t('challenge.modal.storiesLabel')}
                                     </h4>
                                     <div className="flex flex-col gap-1.5">
                                         {suggestedStories.map((s, i) => (
@@ -184,7 +201,7 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                             {/* Deadline selector */}
                             <div className="flex flex-col gap-2 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                                 <label className="text-[13px] font-bold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                                    <Clock className="w-4 h-4" style={{ color: 'var(--muted-foreground)' }} /> Chọn hạn chót
+                                    <Clock className="w-4 h-4" style={{ color: 'var(--muted-foreground)' }} /> {t('challenge.modal.deadlineLabel')}
                                 </label>
                                 <select
                                     className="w-full rounded-xl px-4 py-3 text-[14px] border focus:outline-none"
@@ -196,9 +213,9 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                                     value={deadline}
                                     onChange={(e) => setDeadline(e.target.value)}
                                 >
-                                    <option value="1">Trong vòng 24 giờ</option>
-                                    <option value="3">Trong 3 ngày tới</option>
-                                    <option value="7">Trong tuần này (mặc định)</option>
+                                    <option value="1">{t('challenge.modal.deadline24h')}</option>
+                                    <option value="3">{t('challenge.modal.deadline3d')}</option>
+                                    <option value="7">{t('challenge.modal.deadlineWeek')}</option>
                                 </select>
                             </div>
 
@@ -210,12 +227,12 @@ export default function ChallengeModal({ isOpen, onClose, sessionId }: Challenge
                                 style={{ backgroundColor: 'var(--teal)' }}
                             >
                                 {accepting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Target className="w-5 h-5" />}
-                                CHẤP NHẬN THỬ THÁCH
+                                {t('challenge.modal.acceptBtn')}
                             </button>
                         </div>
                     ) : (
                         <div className="py-12 text-center text-rose-500">
-                            Đã xảy ra lỗi khi tạo thử thách.
+                            {t('error.challengeGeneration')}
                         </div>
                     )}
                 </div>

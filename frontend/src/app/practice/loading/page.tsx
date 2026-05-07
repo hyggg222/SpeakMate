@@ -4,9 +4,11 @@ import { Lightbulb } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function LoadingTransitionPage() {
     const router = useRouter()
+    const { t } = useLanguage()
     const [progress, setProgress] = useState(0)
 
     useEffect(() => {
@@ -43,10 +45,10 @@ export default function LoadingTransitionPage() {
                                 <div className="absolute inset-0 bg-yellow-400 blur-md opacity-40 rounded-full" />
                                 <Lightbulb className="w-5 h-5 text-yellow-500 fill-yellow-400 relative z-10" />
                             </div>
-                            <h3 className="font-bold text-slate-800 text-[15px]">Tips nhanh của Ni</h3>
+                            <h3 className="font-bold text-slate-800 text-[15px]">{t('practice.loading.tipsTitle')}</h3>
                         </div>
                         <p className="text-[13px] text-slate-600 font-medium leading-relaxed pl-7">
-                            Mẹo nhỏ: Khoảng lặng (Pause) trước một con số quan trọng sẽ giúp khán giả nhớ lâu hơn gấp 2 lần.
+                            {t('practice.loading.tipContent')}
                         </p>
                     </div>
                 </div>
@@ -92,13 +94,13 @@ export default function LoadingTransitionPage() {
                     {/* Status Labels */}
                     <div className="grid grid-cols-3 gap-4 w-full">
                         <div className={`text-xs md:text-sm font-medium transition-opacity duration-300 ${progress >= 0 ? 'text-teal-400' : 'text-slate-500'}`}>
-                            Đang tải file âm thanh...
+                            {t('practice.loading.statusUploading')}
                         </div>
                         <div className={`text-xs md:text-sm font-medium text-center transition-opacity duration-300 ${progress > 33 ? 'text-teal-400' : 'text-slate-500'}`}>
-                            Đang phân tích ngữ điệu và cảm xúc...
+                            {t('practice.loading.statusTranscribing')}
                         </div>
                         <div className={`text-xs md:text-sm font-medium text-right transition-opacity duration-300 ${progress > 66 ? 'text-teal-400' : 'text-slate-500'}`}>
-                            Đang chấm điểm logic và cấu trúc...
+                            {t('practice.loading.statusEvaluating')}
                         </div>
                     </div>
                 </div>

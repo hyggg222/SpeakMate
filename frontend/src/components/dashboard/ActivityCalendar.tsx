@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useLanguage } from "@/context/LanguageContext";
 
 const WEEKS = 5;
 const DAYS_PER_WEEK = 7;
@@ -45,13 +46,16 @@ function emptyGrid(): number[][] {
 }
 
 export default function ActivityCalendar() {
+  const { t, lang } = useLanguage();
   const [activityRows, setActivityRows] = useState<number[][]>(emptyGrid());
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState("");
 
   useEffect(() => {
     const now = new Date();
-    const monthName = `Tháng ${now.getMonth() + 1}`;
+    const monthName = lang === 'en'
+      ? now.toLocaleDateString('en-US', { month: 'long' })
+      : `${t('activity.month')} ${now.getMonth() + 1}`;
     setCurrentMonth(monthName);
 
     async function fetchActivity() {
@@ -61,18 +65,18 @@ export default function ActivityCalendar() {
           setActivityRows(buildHeatmapFromSessions(sessions));
         }
       } catch (error) {
-        console.error("Lỗi fetch activity:", error);
+        console.error("Activity fetch error:", error);
       }
       setLoading(false);
     }
     fetchActivity();
-  }, []);
+  }, [lang, t]);
 
   return (
     <div className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: "var(--card)" }}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-[14px] font-bold" style={{ color: "var(--foreground)" }}>
-          Lịch hoạt động
+          {t('activity.title')}
         </h3>
         <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
           {currentMonth}
@@ -106,7 +110,7 @@ export default function ActivityCalendar() {
 
         {/* Legend */}
         <div className="flex items-center gap-2 mt-2 justify-end">
-          <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>Ít</span>
+          <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{t('activity.legend.few')}</span>
           <div className="flex items-center gap-1">
             {LEVEL_COLORS.map((color, i) => (
               <div
@@ -116,7 +120,7 @@ export default function ActivityCalendar() {
               />
             ))}
           </div>
-          <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>Nhiều</span>
+          <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{t('activity.legend.many')}</span>
         </div>
       </div>
     </div>

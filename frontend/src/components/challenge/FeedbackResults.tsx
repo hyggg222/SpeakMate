@@ -12,6 +12,7 @@ import {
 import DifficultyStars from './DifficultyStars'
 import { apiClient } from '@/lib/apiClient'
 import type { RealWorldEvaluation } from '@/types/api.contracts'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface FeedbackResultsProps {
     analysis: RealWorldEvaluation;
@@ -36,9 +37,10 @@ function useCountUp(target: number, duration = 1500) {
 }
 
 function ComparisonBadge({ current, previous, unit, inverse }: { current: number; previous?: number; unit?: string; inverse?: boolean }) {
-    if (previous == null) return <span className="text-[10px] text-slate-400 italic">Lần đầu</span>
+    const { t } = useLanguage()
+    if (previous == null) return <span className="text-[10px] text-slate-400 italic">{t('feedback.firstTime')}</span>
     const diff = current - previous
-    if (Math.abs(diff) < 0.5) return <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Minus size={9} />Giữ nguyên</span>
+    if (Math.abs(diff) < 0.5) return <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Minus size={9} />{t('feedback.noChange')}</span>
     const isGood = inverse ? diff < 0 : diff > 0
     const Icon = isGood ? TrendingUp : TrendingDown
     const color = isGood ? 'text-emerald-600' : 'text-rose-500'
@@ -68,6 +70,7 @@ interface ChatMessage { role: 'ni' | 'user'; text: string }
 
 export default function FeedbackResults({ analysis, challengeTitle, completed }: FeedbackResultsProps) {
     const router = useRouter()
+    const { t } = useLanguage()
     const xpDisplay = useCountUp(analysis.xpEarned)
 
     const [transcriptOpen, setTranscriptOpen] = useState(false)
@@ -79,17 +82,17 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
 
     // Auto-open chat after 1.5s
     useEffect(() => {
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             setChatOpen(true)
             setChatMessages([{
                 role: 'ni',
                 text: completed
-                    ? 'Bạn đã chia sẻ xong rồi! Cảm giác sau khi nhìn lại trải nghiệm đó thế nào?'
-                    : 'Lần này chưa được như ý — nhưng dám thử là đã tiến bộ rồi. Bạn gặp khó nhất ở đâu vậy?'
+                    ? t('feedback.botGreeting.completed')
+                    : t('feedback.botGreeting.incomplete')
             }])
         }, 1500)
-        return () => clearTimeout(t)
-    }, [completed])
+        return () => clearTimeout(timer)
+    }, [completed, t])
 
     useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatMessages])
 
@@ -101,10 +104,10 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
         setIsSending(true)
         try {
             const result = await apiClient.sendMentorChatMessage(text)
-            const reply = (result?.message as any)?.content || (result as any)?.reply || 'Mình nghe rồi!'
+            const reply = (result?.message as any)?.content || (result as any)?.reply || t('feedback.botFallback')
             setChatMessages(prev => [...prev, { role: 'ni', text: reply }])
         } catch {
-            setChatMessages(prev => [...prev, { role: 'ni', text: 'Xin lỗi, Ni đang bận. Thử lại sau nhé!' }])
+            setChatMessages(prev => [...prev, { role: 'ni', text: t('feedback.botError') }])
         } finally { setIsSending(false) }
     }
 
@@ -119,7 +122,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }}
                 className="flex flex-col items-center py-5">
                 <div className="text-5xl font-black" style={{ color: 'var(--teal)' }}>+{xpDisplay}</div>
-                <p className="text-sm font-semibold mt-1" style={{ color: 'var(--muted-foreground)' }}>XP nhận được</p>
+                <p className="text-sm font-semibold mt-1" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.xpEarned')}</p>
             </motion.div>
 
             {analysis.niComment && (
@@ -144,7 +147,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                     <button onClick={() => setTranscriptOpen(v => !v)}
                         className="w-full flex items-center justify-between px-4 py-3 text-[13px] font-semibold hover:opacity-80 transition-opacity"
                         style={{ color: 'var(--foreground)' }}>
-                        <span className="flex items-center gap-2"><MessageSquare size={14} /> Transcript bài kể lại</span>
+                        <span className="flex items-center gap-2"><MessageSquare size={14} /> {t('feedback.transcriptLabel')}</span>
                         {transcriptOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                     <AnimatePresence>
@@ -166,22 +169,22 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
                     className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
                     <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>
-                        Chỉ số diễn đạt <span className="normal-case font-normal">(đo từ bài kể lại)</span>
+                        {t('feedback.expressionMetrics')} <span className="normal-case font-normal">{t('feedback.measuredFrom')}</span>
                     </p>
                     <div className="grid grid-cols-2 gap-2 mb-3">
-                        <MetricCard label="Mạch lạc" value={exp.coherenceScore} unit="/100" icon="🎯"
+                        <MetricCard label={t('feedback.metric.coherence')} value={exp.coherenceScore} unit="/100" icon="🎯"
                             previous={prev?.coherenceScore} />
-                        <MetricCard label="Từ CM thừa" value={exp.jargonCount} unit="từ" icon="📝" inverse
+                        <MetricCard label={t('feedback.metric.jargon')} value={exp.jargonCount} unit={t('feedback.metric.unit.words')} icon="📝" inverse
                             previous={prev?.jargonCount} />
-                        <MetricCard label="Từ đệm" value={exp.fillerPerMinute} unit="/phút" icon="💬" inverse
+                        <MetricCard label={t('feedback.metric.filler')} value={exp.fillerPerMinute} unit={t('feedback.metric.unit.perMin')} icon="💬" inverse
                             previous={prev?.fillerPerMinute} />
-                        <MetricCard label="Lưu loát" value={exp.fluencyScore ?? '—'} unit={exp.fluencyScore != null ? '/100' : undefined} icon="🗣️"
+                        <MetricCard label={t('feedback.metric.fluency')} value={exp.fluencyScore ?? '—'} unit={exp.fluencyScore != null ? '/100' : undefined} icon="🗣️"
                             previous={prev?.fluencyScore} />
                     </div>
                     {prev && (
                         <p className="text-[10px] text-center mb-2" style={{ color: 'var(--muted-foreground)' }}>
-                            Mũi tên so sánh với trung bình {' '}
-                            <span className="font-semibold">5 lần chia sẻ trước</span>
+                            {t('feedback.compareNote.prefix')} {' '}
+                            <span className="font-semibold">{t('feedback.compareNote.suffix')}</span>
                         </p>
                     )}
                     {exp.fluencyNote && (
@@ -195,7 +198,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                     {/* Jargon list */}
                     {exp.jargonList?.length > 0 && (
                         <div className="mt-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Từ chuyên môn thừa</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.jargonLabel')}</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {exp.jargonList.map((j, i) => (
                                     <span key={i} className="px-2 py-1 rounded-lg text-[11px] bg-amber-50 border border-amber-200">
@@ -210,7 +213,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                     {/* Filler list */}
                     {exp.fillerList?.length > 0 && (
                         <div className="mt-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Từ đệm hay dùng</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.fillerLabel')}</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {exp.fillerList.map((f, i) => (
                                     <span key={i} className="px-2 py-1 rounded-full text-[11px] bg-rose-50 border border-rose-200 text-rose-700">
@@ -227,7 +230,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
             {(psych.emotionBefore || psych.emotionAfter || psych.trend !== 'unknown') && (
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}
                     className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                    <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>Tâm lý</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.psychologyLabel')}</p>
                     <div className="flex items-center gap-3 mb-2">
                         {psych.emotionBefore && (
                             <span className="px-3 py-1.5 rounded-xl text-[12px] font-medium border" style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }}>
@@ -257,7 +260,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                     className="rounded-2xl border p-4 space-y-3" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
                     {analysis.strengths?.length > 0 && (
                         <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>Điểm tốt</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.strengthsLabel')}</p>
                             <div className="space-y-1.5">
                                 {analysis.strengths.map((s, i) => (
                                     <div key={i} className="flex items-start gap-2 text-[13px]">
@@ -270,7 +273,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                     )}
                     {analysis.improvements?.length > 0 && (
                         <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>Cần cải thiện</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.improvementsLabel')}</p>
                             <div className="space-y-1.5">
                                 {analysis.improvements.map((imp, i) => (
                                     <div key={i} className="flex items-start gap-2 text-[13px]">
@@ -288,11 +291,11 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
             {analysis.dialogueAnalysis && (
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.35 }}
                     className="rounded-2xl p-4 border" style={{ backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.3)' }}>
-                    <p className="text-[11px] font-bold text-amber-600 mb-2 uppercase tracking-wider">Ni phân tích câu bạn nói</p>
+                    <p className="text-[11px] font-bold text-amber-600 mb-2 uppercase tracking-wider">{t('feedback.dialogueAnalysisLabel')}</p>
                     <p className="text-[13px] leading-relaxed" style={{ color: 'var(--foreground)' }}>{analysis.dialogueAnalysis}</p>
                     {analysis.betterPhrasing && (
                         <div className="mt-2 bg-white rounded-xl p-3 border border-amber-100">
-                            <p className="text-[11px] text-slate-400 mb-1">Gợi ý hay hơn:</p>
+                            <p className="text-[11px] text-slate-400 mb-1">{t('feedback.betterPhrasingLabel')}</p>
                             <p className="text-[13px] font-medium text-teal-700">"{analysis.betterPhrasing}"</p>
                         </div>
                     )}
@@ -304,11 +307,11 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                 className="rounded-2xl p-4 border" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-2 mb-2">
                     <Sparkles size={16} className="text-amber-500" />
-                    <h3 className="font-bold text-[14px]" style={{ color: 'var(--foreground)' }}>Tiếp theo</h3>
+                    <h3 className="font-bold text-[14px]" style={{ color: 'var(--foreground)' }}>{t('feedback.nextLabel')}</h3>
                 </div>
                 <p className="text-[13px] leading-relaxed mb-2" style={{ color: 'var(--muted-foreground)' }}>{analysis.nextChallengeHint}</p>
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>Độ khó đề xuất:</span>
+                    <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>{t('feedback.difficultyLabel')}</span>
                     <DifficultyStars level={analysis.nextDifficulty} size={11} />
                 </div>
             </motion.div>
@@ -321,13 +324,13 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                         onClick={() => router.push(`/stories/create?prefill=${encodeURIComponent(analysis.newStorySuggestion || '')}&source=feedback`)}
                         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm border-2 transition-colors"
                         style={{ borderColor: 'var(--teal)', color: 'var(--teal)', backgroundColor: 'transparent' }}>
-                        <BookOpen size={16} /> Lưu vào Story Bank
+                        <BookOpen size={16} /> {t('feedback.saveToStoryBank')}
                     </button>
                 )}
                 <button onClick={() => router.push('/setup')}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white"
                     style={{ backgroundColor: 'var(--teal)' }}>
-                    <Dumbbell size={16} /> Vào Phòng gym luyện tiếp <ArrowRight size={14} />
+                    <Dumbbell size={16} /> {t('feedback.goToGym')} <ArrowRight size={14} />
                 </button>
             </motion.div>
 
@@ -340,7 +343,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0">
                                 <Image src="/ni-avatar.png" alt="Ni" width={28} height={28} className="object-cover" />
                             </div>
-                            <span className="text-[13px] font-bold" style={{ color: 'var(--foreground)' }}>Chat với Ni</span>
+                            <span className="text-[13px] font-bold" style={{ color: 'var(--foreground)' }}>{t('feedback.chatWithNi')}</span>
                         </div>
                         <div className="px-4 py-3 flex flex-col gap-3 max-h-64 overflow-y-auto">
                             {chatMessages.map((msg, i) => (
@@ -374,7 +377,7 @@ export default function FeedbackResults({ analysis, challengeTitle, completed }:
                         <div className="px-4 py-3 border-t flex gap-2" style={{ borderColor: 'var(--border)' }}>
                             <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()}
-                                placeholder="Nhắn gì đó cho Ni..."
+                                placeholder={t('feedback.chatPlaceholder')}
                                 className="flex-1 rounded-xl px-3 py-2 text-[13px] border focus:outline-none"
                                 style={{ backgroundColor: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
                             <button onClick={sendChat} disabled={!chatInput.trim() || isSending}

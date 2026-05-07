@@ -35,8 +35,11 @@ export default function DailyTask() {
         const stored = localStorage.getItem('speakmate_history');
         if (stored) {
           const sessions = JSON.parse(stored);
-          const today = new Date().toLocaleDateString('vi-VN');
-          const todaySessions = sessions.filter((s: any) => s.date?.startsWith(today));
+          const todayLocale = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN');
+          const todayIso = new Date().toISOString().slice(0, 10);
+          const todaySessions = sessions.filter((s: any) =>
+            s.date?.startsWith(todayLocale) || s.date?.startsWith(todayIso)
+          );
           setDone(todaySessions.length);
         }
       } catch (e) {
@@ -45,7 +48,7 @@ export default function DailyTask() {
       setLoading(false);
     }
     fetchDailyCount();
-  }, []);
+  }, [lang]);
 
   const pct = (done / TOTAL) * 100;
   const radius = 28;

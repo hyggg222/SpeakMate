@@ -24,8 +24,7 @@ export const useAudioRecorder = () => {
             mediaRecorder.current.start();
             setIsRecording(true);
         } catch (err) {
-            console.error('Lỗi truy cập Microphone:', err);
-            // Có thể throw toast ở đây
+            console.error('Microphone access error:', err);
         }
     }, []);
 

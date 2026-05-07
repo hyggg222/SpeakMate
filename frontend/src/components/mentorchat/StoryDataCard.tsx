@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { STATUS_LABELS, FRAMEWORK_COLORS } from '@/lib/storybank-constants';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
     story: {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function StoryDataCard({ story }: Props) {
+    const { t } = useLanguage();
     const statusInfo = STATUS_LABELS[story.status] || STATUS_LABELS.draft;
     const frameworkColor = FRAMEWORK_COLORS[story.framework] || '#6b7280';
 
@@ -30,7 +32,7 @@ export default function StoryDataCard({ story }: Props) {
                             {story.framework}
                         </span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${statusInfo.color}15`, color: statusInfo.color }}>
-                            {statusInfo.label}
+                            {t(statusInfo.labelKey)}
                         </span>
                         {story.practice_count != null && story.practice_count > 0 && (
                             <span className="text-[10px] text-slate-400">{story.practice_count}x{story.last_score != null && ` | ${story.last_score}%`}</span>
