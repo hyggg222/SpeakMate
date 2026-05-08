@@ -43,7 +43,7 @@ export default function HistoryPage() {
             <main className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 {/* We use Topbar directly here since practice pages don't have sidebar but have topbar */}
                 <Topbar />
-                <AuthGate feature="Lịch sử">
+                <AuthGate feature="nav.history">
                 <section className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-[10%] xl:px-[20%] py-10 md:py-16 bg-[#f8fafc]">
                     <div className="max-w-5xl mx-auto space-y-12">
 

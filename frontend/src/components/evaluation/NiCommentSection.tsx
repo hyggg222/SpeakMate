@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { apiClient } from '@/lib/apiClient'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface Props {
     evalReport: any;
@@ -12,10 +13,10 @@ interface Props {
     previousScore?: number;
 }
 
-// Mock comment for demo mode
 const MOCK_COMMENT = 'Phiên này bạn trình bày ý kiến rõ ràng hơn nhiều, đặc biệt phần mở đầu rất tự tin. Nhưng khi bị hỏi ngược thì vẫn hơi lúng túng — thử tập pause 2 giây trước khi trả lời xem sao nhé.'
 
 export default function NiCommentSection({ evalReport, storyCoverage, previousScore }: Props) {
+    const { t } = useLanguage()
     const [comment, setComment] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -47,11 +48,11 @@ export default function NiCommentSection({ evalReport, storyCoverage, previousSc
                     <Image src="/ni-avatar.png" alt="Ni" width={44} height={44} className="object-cover" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="font-semibold text-slate-800 text-sm mb-2">Nhận xét từ Ni</h3>
+                    <h3 className="font-semibold text-slate-800 text-sm mb-2">{t('eval.niFromNi')}</h3>
                     {loading ? (
                         <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
                             <Loader2 size={16} className="animate-spin text-teal-500" />
-                            Ni đang đọc báo cáo...
+                            {t('eval.niReading')}
                         </div>
                     ) : (
                         <div className="bg-slate-50 rounded-xl rounded-tl-none p-4 border border-slate-100 text-[14px] text-slate-700 leading-relaxed">

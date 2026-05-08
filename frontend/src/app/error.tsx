@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function RootError({
   error,
@@ -11,6 +12,8 @@ export default function RootError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     console.error('[RootError]', error);
   }, [error]);
@@ -26,10 +29,10 @@ export default function RootError({
       >
         <AlertTriangle className="w-12 h-12" style={{ color: '#f59e0b' }} />
         <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
-          Đã xảy ra lỗi
+          {t('error.occurred')}
         </h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {error.message?.slice(0, 300) || 'Ứng dụng gặp sự cố. Vui lòng thử lại.'}
+          {error.message?.slice(0, 300) || t('error.appMsg')}
         </p>
         <div className="flex gap-3">
           <button
@@ -38,7 +41,7 @@ export default function RootError({
             style={{ backgroundColor: 'var(--teal)' }}
           >
             <RotateCcw className="w-4 h-4" />
-            Thử lại
+            {t('common.retry')}
           </button>
           <Link
             href="/"
@@ -46,7 +49,7 @@ export default function RootError({
             style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
           >
             <Home className="w-4 h-4" />
-            Về trang chủ
+            {t('error.backHome')}
           </Link>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Target, RefreshCw, BookOpen, Home, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface Props {
     sessionId: string;
@@ -14,6 +15,7 @@ interface Props {
 
 export default function EvalCTASection({ sessionId, weaknesses, lowCoverageStoryIds, onGenerateChallenge, isChallengeVisible }: Props) {
     const router = useRouter()
+    const { t } = useLanguage()
     const [isGenerating, setIsGenerating] = useState(false)
 
     const handleChallenge = async () => {
@@ -35,12 +37,11 @@ export default function EvalCTASection({ sessionId, weaknesses, lowCoverageStory
         router.push(`/stories${highlight ? `?highlight=${highlight}` : ''}`)
     }
 
-    // Dim CTAs when challenge card is visible
     const dimmed = isChallengeVisible
 
     return (
         <section className={`bg-white rounded-2xl p-6 border border-slate-200 shadow-sm transition-opacity ${dimmed ? 'opacity-50 pointer-events-none' : ''}`}>
-            <h3 className="font-semibold text-slate-800 text-sm mb-4">Bước tiếp theo</h3>
+            <h3 className="font-semibold text-slate-800 text-sm mb-4">{t('eval.nextSteps')}</h3>
             <div className="grid grid-cols-2 gap-3">
                 <button
                     onClick={handleChallenge}
@@ -49,14 +50,14 @@ export default function EvalCTASection({ sessionId, weaknesses, lowCoverageStory
                     style={{ backgroundColor: 'var(--teal)' }}
                 >
                     {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Target size={16} />}
-                    Nhận thử thách
+                    {t('eval.getChallenge')}
                 </button>
                 <button
                     onClick={handleRetry}
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                     <RefreshCw size={16} />
-                    Luyện lại
+                    {t('eval.retryPractice')}
                 </button>
                 <button
                     onClick={handleStoryBank}
@@ -70,7 +71,7 @@ export default function EvalCTASection({ sessionId, weaknesses, lowCoverageStory
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                     <Home size={16} />
-                    Trang chính
+                    {t('eval.mainHome')}
                 </button>
             </div>
         </section>

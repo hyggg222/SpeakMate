@@ -2,46 +2,49 @@
 
 import React from "react";
 import Link from "next/link";
-
-const modes = [
-  {
-    id: "monologue",
-    title: "Giao tiếp cơ bản",
-    subtitle: "(Safe Mode)",
-    desc: "Luyện tập giao tiếp thoải mái, phản xạ tự nhiên. AI ít đánh giá khắt khe về nội dung.",
-    bg: "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)", // lighter, more vibrant teal
-    buttonColor: "#ffffff40", // translucent white button to match bright bg
-    svg: <PodiumSvg />,
-    isUpdating: false,
-  },
-  {
-    id: "presentation",
-    title: "Thuyết trình",
-    subtitle: "(Presentation)",
-    desc: "Trau dồi kỹ năng nói trước đám đông, trình bày lưu loát và cấu trúc bài nói mạch lạc.",
-    bg: "linear-gradient(135deg, #1e3a5f 0%, #0f1c3a 100%)",
-    buttonColor: "#3b82f6", // blue-500
-    svg: <PodiumSvg />, // Swapped to Podium for presentation
-    isUpdating: true,
-  },
-];
-
-const debateMode = {
-  id: "debate",
-  title: "Tranh biện",
-  subtitle: "(Debate)",
-  desc: "Luyện phản biện, phản hồi nhanh và xây dựng lập luận chặt chẽ.",
-  bg: "linear-gradient(135deg, #2a1b08 0%, #170e03 100%)",
-  buttonColor: "#f59e0b", // amber-500
-  svg: <DebateSvg />,
-  isUpdating: true,
-};
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function PracticeCards() {
+  const { t } = useLanguage();
+
+  const modes = [
+    {
+      id: "monologue",
+      title: t('practice.mode.monologue.title'),
+      subtitle: "(Safe Mode)",
+      desc: t('practice.mode.monologue.desc'),
+      bg: "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
+      buttonColor: "#ffffff40",
+      svg: <PodiumSvg />,
+      isUpdating: false,
+    },
+    {
+      id: "presentation",
+      title: t('practice.mode.presentation.title'),
+      subtitle: "(Presentation)",
+      desc: t('practice.mode.presentation.desc'),
+      bg: "linear-gradient(135deg, #1e3a5f 0%, #0f1c3a 100%)",
+      buttonColor: "#3b82f6",
+      svg: <PodiumSvg />,
+      isUpdating: true,
+    },
+  ];
+
+  const debateMode = {
+    id: "debate",
+    title: t('practice.mode.debate.title'),
+    subtitle: "(Debate)",
+    desc: t('practice.mode.debate.desc'),
+    bg: "linear-gradient(135deg, #2a1b08 0%, #170e03 100%)",
+    buttonColor: "#f59e0b",
+    svg: <DebateSvg />,
+    isUpdating: true,
+  };
+
   return (
     <section className="mt-8 flex flex-col flex-1 transform scale-[0.95] origin-top">
       <h2 className="text-[16px] font-bold mb-3" style={{ color: "var(--foreground)" }}>
-        Chọn chế độ luyện tập
+        {t('practice.selectMode')}
       </h2>
 
       {/* Top row: 2 cards */}
@@ -63,6 +66,7 @@ export default function PracticeCards() {
 }
 
 function PracticeCard({ mode }: { mode: any }) {
+  const { t } = useLanguage();
   return (
     <div
       className={`relative rounded-3xl p-5 overflow-hidden text-white flex flex-col justify-between shadow-sm ${mode.isUpdating ? 'opacity-80 grayscale-[20%]' : ''}`}
@@ -81,7 +85,7 @@ function PracticeCard({ mode }: { mode: any }) {
             <span className="font-normal text-[14px] opacity-80" style={{ color: mode.id === 'debate' ? '#fde68a' : (mode.id === 'presentation' ? '#93c5fd' : '#99f6e4') }}>{mode.subtitle}</span>
           </h3>
           {mode.isUpdating && (
-            <span className="bg-white/20 text-white text-[11px] font-semibold px-2 py-1 rounded-full whitespace-nowrap shadow-sm border border-white/10">Đang cập nhật</span>
+            <span className="bg-white/20 text-white text-[11px] font-semibold px-2 py-1 rounded-full whitespace-nowrap shadow-sm border border-white/10">{t('practice.updating')}</span>
           )}
         </div>
         <p className="text-[13px] opacity-80 mt-2 leading-relaxed flex-1 max-w-[80%]">{mode.desc}</p>
@@ -90,7 +94,7 @@ function PracticeCard({ mode }: { mode: any }) {
             <span
               className="inline-block px-5 py-2.5 rounded-full text-[13px] font-bold text-white/50 cursor-not-allowed align-center bg-white/10 border border-white/5"
             >
-              Sắp ra mắt
+              {t('practice.comingSoon')}
             </span>
           ) : (
             <Link
@@ -98,7 +102,7 @@ function PracticeCard({ mode }: { mode: any }) {
               className="inline-block px-5 py-2.5 rounded-full text-[13px] font-bold text-white transition-opacity hover:opacity-90 align-center shadow-md hover:shadow-lg hover:-translate-y-0.5"
               style={{ backgroundColor: mode.buttonColor }}
             >
-              Bắt đầu
+              {t('practice.start')}
             </Link>
           )}
         </div>

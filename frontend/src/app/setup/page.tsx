@@ -27,11 +27,11 @@ const CCCD_RE = /\b(\d{12})\b/g;
 
 function detectPII(text: string): string | null {
     PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
-    if (PHONE_RE.test(text)) return 'Phát hiện số điện thoại trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    if (PHONE_RE.test(text)) return 'setup.pii.phone';
     PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
-    if (EMAIL_RE.test(text)) return 'Phát hiện địa chỉ email trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    if (EMAIL_RE.test(text)) return 'setup.pii.email';
     PHONE_RE.lastIndex = 0; EMAIL_RE.lastIndex = 0; CCCD_RE.lastIndex = 0;
-    if (CCCD_RE.test(text)) return 'Phát hiện số CCCD trong nội dung. Hãy xóa để bảo vệ thông tin cá nhân của bạn.';
+    if (CCCD_RE.test(text)) return 'setup.pii.cccd';
     return null;
 }
 
@@ -133,7 +133,7 @@ export default function ContextBuilderPage() {
             if (error?.filtered) {
                 setFilterError(error.message);
             } else {
-                setFilterError('Không thể tạo kịch bản. Vui lòng kiểm tra lại kết nối.');
+                setFilterError(t('setup.error.network'));
             }
         } finally {
             setIsGenerating(false);
@@ -152,7 +152,7 @@ export default function ContextBuilderPage() {
             setAdjustmentText('');
         } catch (error) {
             console.error('Error adjusting scenario:', error);
-            alert('Không thể điều chỉnh kịch bản. Vui lòng thử lại.');
+            alert(t('setup.error.adjust'));
         } finally {
             setIsAdjusting(false);
         }
@@ -179,11 +179,11 @@ export default function ContextBuilderPage() {
                 <div className="flex items-center gap-6">
                     <Link href="/" className="flex items-center gap-2 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Quay lại</span>
+                        <span className="text-sm font-medium">{t('nav.back')}</span>
                     </Link>
                     <Link href="/" className="flex items-center gap-2 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">
                         <Home className="w-4 h-4" />
-                        <span className="text-sm font-medium">Trang chủ</span>
+                        <span className="text-sm font-medium">{t('nav.home')}</span>
                     </Link>
                 </div>
 
@@ -192,11 +192,11 @@ export default function ContextBuilderPage() {
                     {saveIndicator && (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full animate-fade-in">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-xs font-medium text-emerald-300">Đã lưu</span>
+                            <span className="text-xs font-medium text-emerald-300">{t('setup.saved')}</span>
                         </div>
                     )}
                     <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium">Mentor Ni</span>
+                        <span className="text-sm font-medium">{t('nav.mentorNi')}</span>
                         <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-600 bg-slate-800">
                             <Image src="/ni-avatar.png" alt="Mentor Ni" width={32} height={32} className="object-cover" />
                         </div>
@@ -242,7 +242,7 @@ export default function ContextBuilderPage() {
                             <textarea
                                 value={userGoal}
                                 onChange={(e) => handleGoalChange(e.target.value)}
-                                placeholder="Nhập đề cương, nội dung chính hoặc ý tưởng thuyết trình tại đây... Ví dụ: Tôi muốn phỏng vấn Software Engineer bằng tiếng Việt."
+                                placeholder={t('setup.goal.placeholder')}
                                 className="w-full flex-1 resize-none bg-transparent outline-none text-slate-700 placeholder:text-slate-400 text-[15px] leading-relaxed"
                                 disabled={isGenerating || (hasCreatedFirst && true)}
                                 readOnly={hasCreatedFirst}
@@ -275,7 +275,7 @@ export default function ContextBuilderPage() {
                                 <textarea
                                     value={adjustmentText}
                                     onChange={(e) => setAdjustmentText(e.target.value)}
-                                    placeholder="Nhập điều chỉnh... Ví dụ: Tăng độ khó, thêm câu hỏi kỹ thuật, thay đổi vai trò đối phương..."
+                                    placeholder={t('setup.adjust.placeholder')}
                                     className="w-full flex-1 resize-none bg-transparent outline-none text-slate-200 placeholder:text-slate-500 text-[14px] leading-relaxed"
                                     disabled={isAdjusting}
                                 />
@@ -287,31 +287,31 @@ export default function ContextBuilderPage() {
                             <div className="bg-slate-800/60 rounded-2xl p-5 border border-slate-600/40">
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
-                                    <span className="text-sm font-semibold text-teal-300">Nhân vật AI</span>
+                                    <span className="text-sm font-semibold text-teal-300">{t('setup.aiCharacter')}</span>
                                     <select
                                         value={agent1.gender}
                                         onChange={e => setAgent1(a => ({ ...a, gender: e.target.value as 'male' | 'female' }))}
                                         className="ml-auto text-xs bg-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 border border-slate-600 outline-none"
                                     >
-                                        <option value="male">Nam</option>
-                                        <option value="female">Nữ</option>
+                                        <option value="male">{t('setup.male')}</option>
+                                        <option value="female">{t('setup.female')}</option>
                                     </select>
                                 </div>
                                 <input
                                     value={agent1.name}
                                     onChange={e => setAgent1(a => ({ ...a, name: e.target.value }))}
-                                    placeholder="Tên (VD: Anh Minh)"
+                                    placeholder={t('setup.agentNamePlaceholder')}
                                     className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 mb-3"
                                 />
                                 <textarea
                                     value={agent1.persona}
                                     onChange={e => setAgent1(a => ({ ...a, persona: e.target.value }))}
-                                    placeholder="Tính cách (VD: Giám đốc nghiêm túc, hay đưa ra những câu hỏi sắc bén và tình huống khó)"
+                                    placeholder={t('setup.agentPersonaPlaceholder')}
                                     rows={3}
                                     className="w-full bg-slate-700/50 text-slate-200 placeholder:text-slate-500 rounded-xl px-4 py-3 text-sm outline-none border border-slate-600/30 focus:border-teal-500/50 resize-none leading-relaxed"
                                 />
                             </div>
-                            <p className="text-[10px] text-slate-500 mt-2">Để trống để AI tự tạo nhân vật phù hợp với bối cảnh.</p>
+                            <p className="text-[10px] text-slate-500 mt-2">{t('setup.agentAutoHint')}</p>
                         </div>
 
                         <div className="flex justify-center mb-6 z-10 w-full relative">
@@ -420,7 +420,7 @@ export default function ContextBuilderPage() {
                         <div className="w-full lg:w-[240px] shrink-0 flex flex-col">
                             <h3 className="text-sm font-bold text-slate-800 pt-2 mb-4 flex items-center gap-2">
                                 <User className="w-4 h-4 text-teal-500" />
-                                Nhân vật AI
+                                {t('setup.aiCharacter')}
                             </h3>
 
                             {scenario ? (() => {
@@ -436,7 +436,7 @@ export default function ContextBuilderPage() {
                                             </div>
                                             <div className="flex gap-2 mb-3">
                                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-600">
-                                                    {char.gender === 'female' ? 'Nữ' : 'Nam'}
+                                                    {char.gender === 'female' ? t('setup.female') : t('setup.male')}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-slate-600 leading-relaxed">{char.persona}</p>
@@ -446,7 +446,7 @@ export default function ContextBuilderPage() {
                             })() : (
                                 <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
                                     <User className="w-6 h-6 opacity-40" />
-                                    <p className="text-xs text-center">Tạo kịch bản để xem<br />thông tin nhân vật</p>
+                                    <p className="text-xs text-center">{t('setup.createScenarioFirst').split('\n').map((l, i) => <span key={i}>{l}{i === 0 && <br />}</span>)}</p>
                                 </div>
                             )}
                         </div>

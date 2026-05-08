@@ -3,16 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Mic, MessageCircle, Settings } from 'lucide-react'
-
-const navItems = [
-    { href: '/', icon: Home, label: 'Trang chủ' },
-    { href: '/setup', icon: Mic, label: 'Luyện tập' },
-    { href: '/chat', icon: MessageCircle, label: 'Mentor Ni' },
-    { href: '/settings', icon: Settings, label: 'Cài đặt' },
-]
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function MobileBottomNav() {
     const pathname = usePathname()
+    const { t } = useLanguage()
+
+    const navItems = [
+        { href: '/', icon: Home, label: t('nav.home') },
+        { href: '/setup', icon: Mic, label: t('nav.practice') },
+        { href: '/chat', icon: MessageCircle, label: t('nav.mentorNi') },
+        { href: '/settings', icon: Settings, label: t('nav.settings') },
+    ]
 
     return (
         <nav

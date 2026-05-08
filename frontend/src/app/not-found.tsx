@@ -1,7 +1,12 @@
+'use client';
+
 import { Home } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function NotFound() {
+  const { t } = useLanguage();
+
   return (
     <div
       className="flex min-h-screen items-center justify-center p-6"
@@ -13,10 +18,10 @@ export default function NotFound() {
       >
         <p className="text-6xl font-bold" style={{ color: 'var(--teal)' }}>404</p>
         <h1 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
-          Trang không tồn tại
+          {t('notFound.title')}
         </h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Trang bạn tìm kiếm không tồn tại hoặc đã được di chuyển.
+          {t('notFound.desc')}
         </p>
         <Link
           href="/"
@@ -24,7 +29,7 @@ export default function NotFound() {
           style={{ backgroundColor: 'var(--teal)' }}
         >
           <Home className="w-4 h-4" />
-          Về trang chủ
+          {t('error.backHome')}
         </Link>
       </div>
     </div>
