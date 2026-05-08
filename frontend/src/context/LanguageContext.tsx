@@ -47,7 +47,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
-      {children}
+      {/* Keying on lang forces a full subtree remount when language changes.
+          This guarantees that any descendant subtree which dropped out of
+          re-rendering due to an earlier hydration mismatch (React #418)
+          gets reconstructed cleanly with the new translations. */}
+      <div key={lang} style={{ display: 'contents' }}>
+        {children}
+      </div>
     </LanguageContext.Provider>
   )
 }
