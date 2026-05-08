@@ -1,0 +1,6 @@
+Cho kịch bản luyện tập hiện tại sau:
+{{scenarioJson}}
+
+Hãy gợi ý đúng 3 ý tưởng sáng tạo và hữu ích mà người dùng có thể áp dụng để cải thiện hoặc thay đổi kịch bản này. Các gợi ý phải liên quan đến ngữ cảnh — có thể tăng độ khó, thêm yếu tố mới, đổi bối cảnh, hoặc tạo điểm nhấn thú vị.
+Hãy gợi ý bằng tiếng Việt (mỗi gợi ý tối đa 8 từ).
+Output ONLY một mảng JSON gồm 3 string, không markdown.

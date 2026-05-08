@@ -1,0 +1,6 @@
+Ngữ cảnh cuộc hội thoại: {{contextDescription}}
+
+Transcript:
+{{transcript}}
+
+Hãy đánh giá cuộc hội thoại thực tế này.

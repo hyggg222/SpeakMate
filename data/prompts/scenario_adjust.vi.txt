@@ -1,0 +1,9 @@
+Bạn đang điều chỉnh một kịch bản luyện tập có sẵn. Đây là kịch bản hiện tại:
+{{scenarioJson}}
+
+Người dùng muốn điều chỉnh: "{{adjustment}}"
+
+Hãy điều chỉnh kịch bản hiện tại để phản ánh yêu cầu này, nhưng giữ nguyên cấu trúc tổng thể và những chi tiết hiện có còn phù hợp.
+Output ONLY một đối tượng JSON hợp lệ với cấu trúc giống y như input. Không markdown, không giải thích.
+Phản hồi hoàn toàn bằng tiếng Việt cho mọi giá trị string.
+TUYỆT ĐỐI KHÔNG dùng dấu ngoặc vuông như [tên của bạn], [tên], v.v. Dùng tên cụ thể hoặc "bạn" thay vào.

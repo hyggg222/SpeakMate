@@ -1,0 +1,4 @@
+Scenario: {{scenarioJson}}
+Evaluation Report: {{evaluationJson}}
+Current Challenge: {{currentChallengeJson}}
+User Request: {{userRequest}}

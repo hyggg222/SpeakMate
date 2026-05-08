@@ -1,0 +1,5 @@
+Framework yêu cầu: {{framework}}
+Input thô từ user ({{inputMethod}}):
+{{rawInput}}
+{{followUpSection}}
+{{chatHistorySection}}

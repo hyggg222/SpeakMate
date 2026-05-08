@@ -1,0 +1,4 @@
+Scenario: {{scenarioJson}}
+Evaluation Report: {{evaluationJson}}
+Challenge hiện tại: {{currentChallengeJson}}
+User Request: {{userRequest}}

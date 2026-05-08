@@ -1,0 +1,12 @@
+(A) Story Bank Entry đã chuẩn bị:
+Title: {{title}}
+Framework: {{framework}}
+Structured:
+- Situation: {{situation}}
+- Task: {{task}}
+- Action: {{action}}
+- Result: {{result}}
+Full Script: {{fullScript}}
+
+(B) Transcript thực tế từ phiên luyện tập:
+{{transcript}}
