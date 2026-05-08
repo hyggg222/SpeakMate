@@ -300,55 +300,15 @@ function OverallContent() {
             <div className="flex flex-col xl:flex-row gap-6 items-start">
             {/* ───── LEFT COLUMN: full evaluation ───── */}
             <div className="flex-1 min-w-0 w-full">
-            {/* Score and Comment Box */}
-            <div className="flex items-center gap-8 mb-6">
-                <div className="flex flex-col items-center gap-2 shrink-0 min-w-[110px]">
-                    {userProgress ? (
-                        <>
-                            {/* Level badge */}
-                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-black text-2xl shadow-md">
-                                {userProgress.communication_level || 1}
-                            </div>
-                            <ProficiencyBadge level={(evalReport as any).proficiencyLevel} />
-                            {/* XP bar */}
-                            <div className="w-full">
-                                <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
-                                    <span>{userProgress.total_xp || 0} XP</span>
-                                    <span>+{Math.round(evalReport.goalProgress * 0.85)} XP</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-1000"
-                                        style={{ width: `${Math.min(((userProgress.total_xp || 0) % ((userProgress.communication_level || 1) * 100)) / ((userProgress.communication_level || 1) * 100) * 100, 100)}%` }}
-                                    />
-                                </div>
-                            </div>
-                            {/* Score vs previous */}
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-bold text-[#0b1325] leading-none">{evalReport.goalProgress}</span>
-                                <span className="text-sm font-bold text-slate-400">%</span>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-[3.5rem] font-bold text-[#0b1325] leading-none">{evalReport.goalProgress}</span>
-                                <span className="text-2xl font-bold text-slate-400">%</span>
-                            </div>
-                            <ProficiencyBadge level={(evalReport as any).proficiencyLevel} />
-                        </>
-                    )}
+            {/* Ni Comment Box (score / proficiency badge removed per product feedback) */}
+            <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-slate-200 mt-1 shadow-sm">
+                    <Image src="/ni-avatar.png" alt="Ni Mentor" width={48} height={48} className="object-cover" />
                 </div>
-
-                <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-slate-200 mt-1 shadow-sm">
-                        <Image src="/ni-avatar.png" alt="Ni Mentor" width={48} height={48} className="object-cover" />
-                    </div>
-                    <div className="bg-[#0b1325] text-white p-4 rounded-2xl rounded-tl-none border border-[#1e293b] w-full relative before:content-[''] before:absolute before:top-4 before:-left-2 before:w-4 before:h-4 before:bg-[#0b1325] before:rotate-45 before:border-l before:border-b before:border-[#1e293b] shadow-xl">
-                        <p className="text-[15px] font-medium leading-relaxed">
-                            {evalReport.overallFeedback || t('eval.defaultComment')}
-                        </p>
-                    </div>
+                <div className="bg-[#0b1325] text-white p-4 rounded-2xl rounded-tl-none border border-[#1e293b] w-full relative before:content-[''] before:absolute before:top-4 before:-left-2 before:w-4 before:h-4 before:bg-[#0b1325] before:rotate-45 before:border-l before:border-b before:border-[#1e293b] shadow-xl">
+                    <p className="text-[15px] font-medium leading-relaxed">
+                        {evalReport.overallFeedback || t('eval.defaultComment')}
+                    </p>
                 </div>
             </div>
 
