@@ -194,7 +194,7 @@ export class StoryBankController {
                 return;
             }
 
-            const result = await analystAgent.compareWithStoryBank(story, transcript);
+            const result = await analystAgent.compareWithStoryBank(story, transcript, req.language);
 
             // Save practice history
             await databaseService.createStoryPracticeHistory({

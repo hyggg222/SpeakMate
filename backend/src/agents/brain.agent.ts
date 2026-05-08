@@ -1,7 +1,14 @@
 import { FullScenarioContext } from '../contracts/data.contracts';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
 import { sanitizeObj } from '../utils/sanitize';
-import { PromptService } from '../services/prompt.service';
+import { PromptService, Lang } from '../services/prompt.service';
+
+type LangParam = Lang | string;
+
+/** Coerce arbitrary string into Lang ('vi' | 'en'). Default 'vi'. */
+function toLang(language?: LangParam): Lang {
+  return language === 'en' ? 'en' : 'vi';
+}
 
 export class BrainAgent {
   private modelName = GEMINI_MODEL;
@@ -14,33 +21,26 @@ export class BrainAgent {
   /**
    * Generates a complete scenario context including goals, starting turns, and evaluation rules
    * based on the user's requirement.
-   *
-   * @param {string} userRequirement - The target skill, job, or topic the user wants to practice.
-   * @returns {Promise<FullScenarioContext>} A structured scenario object containing setup data.
-   * @throws Will throw an error if the model fails to generate content or returns invalid JSON.
    */
-  public async generateScenario(userRequirement: string, language = 'vi'): Promise<FullScenarioContext> {
+  public async generateScenario(userRequirement: string, language: LangParam = 'vi'): Promise<FullScenarioContext> {
+    const lang = toLang(language);
     const maxAttempts = 3;
     let lastError: unknown;
-    const langInstr = language === 'en'
-      ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-      : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const response = await getGenAI().models.generateContent({
           model: this.modelName,
           contents: [{ role: 'user', parts: [{ text: `User Goal: ${userRequirement}` }] }],
           config: {
-            systemInstruction: this.promptService.getScenarioSystemPrompt() + langInstr,
+            systemInstruction: this.promptService.getScenarioSystemPrompt(lang),
             responseMimeType: "application/json",
             safetySettings: SAFETY_SETTINGS,
           }
         });
         const jsonStr = response.text || "{}";
         const raw = sanitizeObj(JSON.parse(jsonStr));
-        // Normalize: prompt returns flat object, but FullScenarioContext needs { scenario, evalRules }
         const configObj: FullScenarioContext = (raw.scenario && raw.evalRules)
-          ? raw  // already correct shape
+          ? raw
           : {
               scenario: {
                 scenarioName: raw.title || raw.scenarioName || userRequirement,
@@ -64,26 +64,16 @@ export class BrainAgent {
   }
 
   /**
-   * Generates contextual scaffolding hints (a.k.a "Ni ơi, cứu!") to help the user 
-   * when they are stuck during a conversation.
-   *
-   * @param {any} scenario - The current active scenario context.
-   * @param {any[]} conversationHistory - The chat history of the current session.
-   * @returns {Promise<string[]>} An array of 3 short hint phrases in Vietnamese.
+   * Generates contextual scaffolding hints to help the user when stuck.
    */
-  public async generateHints(scenario: any, conversationHistory: any[], language = 'vi'): Promise<string[]> {
+  public async generateHints(scenario: any, conversationHistory: any[], language: LangParam = 'vi'): Promise<string[]> {
+    const lang = toLang(language);
+    const fallback = lang === 'en'
+      ? ['Try again', 'Talk about yourself', 'Ask another question']
+      : ['Hãy thử lại', 'Nói về bản thân', 'Hỏi thêm câu hỏi'];
+
     try {
-      const historyText = conversationHistory.map((h: any) => `${h.speaker}: ${h.line}`).join('\n');
-      const langNote = language === 'en'
-        ? 'Generate hints in English.'
-        : 'Generate hints in Vietnamese.';
-      const prompt = `Scenario: ${JSON.stringify(scenario)}
-Conversation so far:
-${historyText}
-
-The user is stuck and needs help. Generate exactly 3 short keyword hints or phrases (max 5 words each) that would help the user continue the conversation naturally. ${langNote} These should be suggestive, not full sentences.
-Output ONLY a JSON array of 3 strings, no markdown. Example: ["hint 1", "hint 2", "hint 3"]`;
-
+      const prompt = this.promptService.buildScenarioHintsPrompt(scenario, conversationHistory, lang);
       const response = await getGenAI().models.generateContent({
         model: this.modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -93,42 +83,26 @@ Output ONLY a JSON array of 3 strings, no markdown. Example: ["hint 1", "hint 2"
           safetySettings: SAFETY_SETTINGS,
         }
       });
-      const jsonStr = response.text || '["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"]';
+      const jsonStr = response.text || JSON.stringify(fallback);
       return JSON.parse(jsonStr);
     } catch (error) {
       console.error("[BrainAgent] Failed to generate hints:", error);
-      return ["Hãy thử lại", "Nói về bản thân", "Hỏi thêm câu hỏi"];
+      return fallback;
     }
   }
 
   /**
    * Adjusts an existing scenario based on user modification text.
-   * Instead of regenerating from scratch, this refines the current context.
-   *
-   * @param {FullScenarioContext} currentScenario - The currently active scenario to adjust.
-   * @param {string} adjustmentText - The user's adjustment request or new text input.
-   * @returns {Promise<FullScenarioContext>} An adjusted scenario context.
    */
-  public async adjustScenario(currentScenario: FullScenarioContext, adjustmentText: string, language = 'vi'): Promise<FullScenarioContext> {
+  public async adjustScenario(currentScenario: FullScenarioContext, adjustmentText: string, language: LangParam = 'vi'): Promise<FullScenarioContext> {
+    const lang = toLang(language);
     try {
-      const langInstr = language === 'en'
-        ? 'You MUST respond entirely in English. Do not use Vietnamese.'
-        : 'Respond in Vietnamese inside string values.';
-      const prompt = `You are adjusting an existing practice scenario. Here is the current scenario:
-${JSON.stringify(currentScenario, null, 2)}
-
-The user wants to make this adjustment: "${adjustmentText}"
-
-Modify the existing scenario to incorporate this adjustment while preserving the overall structure and any relevant existing details.
-Output ONLY a valid JSON object matching the exact same structure as the input scenario. No markdown, no explanation.
-${langInstr}
-NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], etc. Use concrete names or "bạn" instead.`;
-
+      const prompt = this.promptService.buildScenarioAdjustPrompt(currentScenario, adjustmentText, lang);
       const response = await getGenAI().models.generateContent({
         model: this.modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
-          systemInstruction: this.promptService.getScenarioSystemPrompt(),
+          systemInstruction: this.promptService.getScenarioSystemPrompt(lang),
           responseMimeType: "application/json",
           safetySettings: SAFETY_SETTINGS,
         }
@@ -158,23 +132,15 @@ NEVER use bracketed placeholders like [tên của bạn], [your name], [tên], e
 
   /**
    * Generates context-aware suggestion ideas based on the current scenario.
-   * These suggestions help users discover ways to refine or enhance their practice context.
-   *
-   * @param {FullScenarioContext} currentScenario - The currently active scenario.
-   * @returns {Promise<string[]>} An array of 3 suggestion strings in Vietnamese.
    */
-  public async generateSuggestions(currentScenario: FullScenarioContext, language = 'vi'): Promise<string[]> {
+  public async generateSuggestions(currentScenario: FullScenarioContext, language: LangParam = 'vi'): Promise<string[]> {
+    const lang = toLang(language);
+    const fallback = lang === 'en'
+      ? ['Add a challenger character', 'Set in a large hall', 'Audience is experts']
+      : ['Thêm nhân vật phản biện', 'Bối cảnh hội trường lớn', 'Khán giả là chuyên gia'];
+
     try {
-      const langNote = language === 'en'
-        ? 'Generate suggestions in English (each max 8 words).'
-        : 'Generate suggestions in Vietnamese (each max 8 words).';
-      const prompt = `Given this current practice scenario:
-${JSON.stringify(currentScenario, null, 2)}
-
-Generate exactly 3 creative and useful suggestions that the user could apply to enhance or modify this scenario. These should be contextually relevant — they could adjust difficulty, add new elements, change the setting, or introduce interesting twists.
-${langNote}
-Output ONLY a JSON array of 3 strings, no markdown.`;
-
+      const prompt = this.promptService.buildScenarioSuggestionsPrompt(currentScenario, lang);
       const response = await getGenAI().models.generateContent({
         model: this.modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -184,24 +150,21 @@ Output ONLY a JSON array of 3 strings, no markdown.`;
           safetySettings: SAFETY_SETTINGS,
         }
       });
-      const jsonStr = response.text || '["Thêm nhân vật phản biện", "Bối cảnh hội trường lớn", "Khán giả là chuyên gia"]';
+      const jsonStr = response.text || JSON.stringify(fallback);
       return JSON.parse(jsonStr);
     } catch (error) {
       console.error("[BrainAgent] Failed to generate suggestions:", error);
-      return ["Thêm nhân vật phản biện", "Bối cảnh hội trường lớn", "Khán giả là chuyên gia"];
+      return fallback;
     }
   }
 
   /**
-   * Phase 3: Generates a Real-world Challenge from user weaknesses.
+   * Generates a Real-world Challenge from user weaknesses.
    */
-  public async generateChallenge(scenario: any, evaluationReport: any, language = 'vi'): Promise<any> {
-    const prompt = `
-Scenario: ${JSON.stringify(scenario)}
-Evaluation Report: ${JSON.stringify(evaluationReport)}
-User Request: null
-    `;
-    return this._callGamificationPrompt(prompt, language);
+  public async generateChallenge(scenario: any, evaluationReport: any, language: LangParam = 'vi'): Promise<any> {
+    const lang = toLang(language);
+    const prompt = this.promptService.buildChallengeUserPrompt(scenario, evaluationReport, null, null, lang);
+    return this._callGamificationPrompt(prompt, lang);
   }
 
   public async adjustChallenge(
@@ -209,27 +172,21 @@ User Request: null
     userRequest: string,
     scenario: any,
     evaluationReport: any,
-    language = 'vi'
+    language: LangParam = 'vi'
   ): Promise<any> {
-    const prompt = `
-Scenario: ${JSON.stringify(scenario)}
-Evaluation Report: ${JSON.stringify(evaluationReport)}
-Challenge hiện tại: ${JSON.stringify(currentChallenge)}
-User Request: "${userRequest}"
-    `;
-    return this._callGamificationPrompt(prompt, language);
+    const lang = toLang(language);
+    const prompt = this.promptService.buildChallengeUserPrompt(scenario, evaluationReport, currentChallenge, userRequest, lang);
+    return this._callGamificationPrompt(prompt, lang);
   }
 
-  private async _callGamificationPrompt(prompt: string, language = 'vi'): Promise<any> {
-    const langInstr = language === 'en'
-      ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-      : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
+  private async _callGamificationPrompt(prompt: string, language: Lang = 'vi'): Promise<any> {
+    const fallbackTitle = language === 'en' ? 'Communication challenge' : 'Thử thách giao tiếp';
     try {
       const response = await getGenAI().models.generateContent({
         model: this.modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
-          systemInstruction: this.promptService.getGamificationSystemPrompt() + langInstr,
+          systemInstruction: this.promptService.getGamificationSystemPrompt(language),
           responseMimeType: "application/json",
           temperature: 0.8,
           safetySettings: SAFETY_SETTINGS,
@@ -237,9 +194,8 @@ User Request: "${userRequest}"
       });
       const jsonStr = response.text || "{}";
       const parsed = JSON.parse(jsonStr);
-      // Ensure required fields have defaults
       return {
-        title: parsed.title || 'Thử thách giao tiếp',
+        title: parsed.title || fallbackTitle,
         description: parsed.description || '',
         difficulty: Math.min(5, Math.max(1, parsed.difficulty || 3)),
         sourceWeakness: parsed.sourceWeakness || null,

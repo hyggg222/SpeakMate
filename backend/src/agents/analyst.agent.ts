@@ -1,7 +1,12 @@
 import { EvaluationRubric, EvaluationReport } from '../contracts/data.contracts';
 import { getGenAI, isRateLimited, switchToFallback, GEMINI_MODEL, SAFETY_SETTINGS } from '../config/genai';
 import { sanitizeObj } from '../utils/sanitize';
-import { PromptService } from '../services/prompt.service';
+import { PromptService, Lang } from '../services/prompt.service';
+
+type LangParam = Lang | string;
+function toLang(language?: LangParam): Lang {
+    return language === 'en' ? 'en' : 'vi';
+}
 
 export class AnalystAgent {
     private modelName = GEMINI_MODEL;
@@ -12,41 +17,21 @@ export class AnalystAgent {
     }
 
     /**
-     * Evaluates the entire session transcript based on the provided rubric.
-     *
-     * @param {EvaluationRubric} rubric - The scoring categories and logic.
-     * @param {string} sessionAudioPath - Used for accessing full-session audio if needed for pacing analysis.
-     * @param {string} transcript - The combined transcript of the entire session.
-     * @returns {Promise<EvaluationReport>} A structured JSON evaluation report.
-     */
-    /**
      * Compares a Story Bank entry with actual practice transcript.
      * Returns coverage score, missed/added parts, and feedback.
      */
-    public async compareWithStoryBank(storyEntry: any, transcript: string): Promise<any> {
+    public async compareWithStoryBank(storyEntry: any, transcript: string, language: LangParam = 'vi'): Promise<any> {
+        const lang = toLang(language);
         const maxAttempts = 3;
         let lastError: unknown;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const promptText = `
-(A) Story Bank Entry đã chuẩn bị:
-Title: ${storyEntry.title}
-Framework: ${storyEntry.framework}
-Structured:
-- Situation: ${storyEntry.structured?.situation || storyEntry.structured?.situation || ''}
-- Task: ${storyEntry.structured?.task || ''}
-- Action: ${storyEntry.structured?.action || ''}
-- Result: ${storyEntry.structured?.result || ''}
-Full Script: ${storyEntry.full_script || storyEntry.fullScript || ''}
-
-(B) Transcript thực tế từ phiên luyện tập:
-${transcript}
-`;
+                const promptText = this.promptService.buildStoryBankComparePrompt(storyEntry, transcript, lang);
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: promptText }] }],
                     config: {
-                        systemInstruction: this.promptService.getStoryBankAnalystSystemPrompt(),
+                        systemInstruction: this.promptService.getStoryBankAnalystSystemPrompt(lang),
                         responseMimeType: 'application/json',
                         temperature: 0.3,
                         safetySettings: SAFETY_SETTINGS,
@@ -63,27 +48,19 @@ ${transcript}
         throw lastError;
     }
 
-    public async evaluateSession(rubric: EvaluationRubric, sessionAudioPath: string, transcript: string, language = 'vi'): Promise<EvaluationReport> {
+    public async evaluateSession(rubric: EvaluationRubric, sessionAudioPath: string, transcript: string, language: LangParam = 'vi'): Promise<EvaluationReport> {
+        const lang = toLang(language);
         const maxAttempts = 3;
         let lastError: unknown;
-        const langInstr = language === 'en'
-            ? '\n\nIMPORTANT: You MUST respond entirely in English. Do not use Vietnamese.'
-            : '\n\nIMPORTANT: Phản hồi hoàn toàn bằng tiếng Việt.';
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const promptText = `
-Here is the Full Transcript of the session:
-${transcript}
-
-Analysis Request: Review the transcript and return the JSON report.
-Rubric categories: ${JSON.stringify(rubric.categories || [])}
-`;
+                const promptText = this.promptService.buildEvaluationUserPrompt(transcript, rubric, lang);
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: promptText }] }],
                     config: {
-                        systemInstruction: this.promptService.getEvaluationSystemPrompt() + langInstr,
+                        systemInstruction: this.promptService.getEvaluationSystemPrompt(lang),
                         responseMimeType: 'application/json',
                         temperature: 0.2,
                         safetySettings: SAFETY_SETTINGS,
@@ -104,27 +81,20 @@ Rubric categories: ${JSON.stringify(rubric.categories || [])}
 
     /**
      * Evaluates a real-world conversation transcript (not a practice session).
-     * Uses a different prompt adapted for real conversations.
      */
-    public async evaluateRealWorldConversation(transcript: string, contextDescription: string): Promise<EvaluationReport> {
+    public async evaluateRealWorldConversation(transcript: string, contextDescription: string, language: LangParam = 'vi'): Promise<EvaluationReport> {
+        const lang = toLang(language);
         const maxAttempts = 3;
         let lastError: unknown;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const promptText = `
-Ngữ cảnh cuộc hội thoại: ${contextDescription}
-
-Transcript:
-${transcript}
-
-Hãy đánh giá cuộc hội thoại thực tế này.
-`;
+                const promptText = this.promptService.buildRealWorldEvalUserPrompt(transcript, contextDescription, lang);
                 const response = await getGenAI().models.generateContent({
                     model: this.modelName,
                     contents: [{ role: 'user', parts: [{ text: promptText }] }],
                     config: {
-                        systemInstruction: this.promptService.getRealWorldEvaluationPrompt(),
+                        systemInstruction: this.promptService.getRealWorldEvaluationPrompt(lang),
                         responseMimeType: 'application/json',
                         temperature: 0.2,
                         safetySettings: SAFETY_SETTINGS,
@@ -145,7 +115,6 @@ Hãy đánh giá cuộc hội thoại thực tế này.
 
     /**
      * Validates and fills defaults for evaluation report fields.
-     * Ensures sub-scores and proficiencyLevel always exist.
      */
     private validateReport(report: EvaluationReport): EvaluationReport {
         const DEFAULT_SUB = 50;
@@ -163,12 +132,16 @@ Hãy đánh giá cuộc hội thoại thực tế này.
             }
         };
 
-        ensureSubScores(report.language, ['vocabularyRange', 'grammarAccuracy', 'honorificUsage']);
-        ensureSubScores(report.content, ['persuasion', 'clarity', 'professionalism']);
-        ensureSubScores(report.emotion, ['empathy', 'confidence', 'toneControl']);
+        ensureSubScores(report.language, ['grammarAccuracy', 'vocabularyDiversity', 'expressionClarity']);
+        ensureSubScores(report.content, ['goalCompletion', 'responseRelevance', 'informationDepth']);
+        if (!report.fluency && (report as any).emotion) {
+            report.fluency = (report as any).emotion;
+            delete (report as any).emotion;
+        }
+        ensureSubScores(report.fluency, ['fillerControl', 'responseCoherence', 'answerCompleteness']);
 
         if (!report.proficiencyLevel || !VALID_LEVELS.includes(report.proficiencyLevel)) {
-            const avg = ((report.language?.score || 0) + (report.content?.score || 0) + (report.emotion?.score || 0)) / 3;
+            const avg = ((report.language?.score || 0) + (report.content?.score || 0) + (report.fluency?.score || 0)) / 3;
             if (avg >= 90) report.proficiencyLevel = 'C2';
             else if (avg >= 75) report.proficiencyLevel = 'C1';
             else if (avg >= 60) report.proficiencyLevel = 'B2';
@@ -177,10 +150,9 @@ Hãy đánh giá cuộc hội thoại thực tế này.
             else report.proficiencyLevel = 'A1';
         }
 
-        // Validate sessionMetrics
         if (!report.sessionMetrics || typeof report.sessionMetrics !== 'object') {
             report.sessionMetrics = {
-                coherenceScore: report.content?.subScores?.clarity ?? DEFAULT_SUB,
+                coherenceScore: report.fluency?.subScores?.responseCoherence ?? report.content?.subScores?.responseRelevance ?? DEFAULT_SUB,
                 jargonCount: 0,
                 jargonList: [],
                 fillerCount: 0,
