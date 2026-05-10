@@ -36,9 +36,14 @@ setGlobalDispatcher(ipv4Agent);
 // Override globalThis.fetch so @google/genai SDK also uses IPv4
 (globalThis as any).fetch = (url: any, opts: any) => undiciFetch(url, { ...opts, dispatcher: ipv4Agent });
 
-// Warm up DNS + connection pool on startup (non-blocking)
+// Warm up DNS + connection pool on startup (non-blocking).
+// Supabase host is derived from SUPABASE_URL so it follows env changes
+// (e.g. when migrating to a new Supabase project).
 dns.resolve4('generativelanguage.googleapis.com', () => { });
-dns.resolve4('vlxpxatpuwkjnwhwfprz.supabase.co', () => { });
+try {
+    const supabaseHost = new URL(process.env.SUPABASE_URL || '').hostname;
+    if (supabaseHost) dns.resolve4(supabaseHost, () => { });
+} catch { /* SUPABASE_URL missing or invalid — non-fatal */ }
 
 // Init express
 const app = express();
