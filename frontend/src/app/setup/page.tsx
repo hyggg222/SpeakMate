@@ -120,8 +120,17 @@ export default function ContextBuilderPage() {
             const result = await apiClient.setupScenario(enrichedGoal);
 
             const scenarioObj = result.scenario || result as any;
-            // Single agent — remove characters to ensure AUDIO mode
-            delete scenarioObj.characters;
+            // Single-agent mode: keep exactly 1 character entry so the
+            // backend can read the user's gender pick (otherwise voice
+            // selection falls back to a fragile persona-text heuristic).
+            // characters.length === 1 still triggers AUDIO mode in
+            // createGeminiDirectToken (isDual requires >= 2).
+            scenarioObj.characters = [{
+                id: 'agent-1',
+                name: agent1.name || scenarioObj.interviewerPersona?.split(',')[0]?.trim() || 'AI',
+                persona: agent1.persona || scenarioObj.interviewerPersona || '',
+                gender: agent1.gender,
+            }];
 
             setScenario(result);
             setHistory([]);
