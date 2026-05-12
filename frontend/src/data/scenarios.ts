@@ -3,10 +3,63 @@ export interface ScenarioItem {
     title: string;
     requirement: string;
     tag: string;
-    difficulty: "Dễ" | "Trung bình" | "Khó";
+    difficulty: "Dễ" | "Trung bình" | "Khó" | "Easy" | "Medium" | "Hard";
     color: string;
 }
 
+/** Tech-focused English scenarios — shown when language === 'en'. */
+export const hotScenariosEn: ScenarioItem[] = [
+    {
+        id: "swe-interview",
+        title: "Software Engineer Interview",
+        requirement: "You are in a behavioral interview for a Senior Software Engineer role at a fast-growing startup. Walk the interviewer through a challenging bug you debugged in production — what symptoms you saw, how you isolated the root cause, and what you'd do differently next time. Aim for the STAR structure.",
+        tag: "Interview",
+        difficulty: "Hard",
+        color: "from-slate-700 to-slate-900",
+    },
+    {
+        id: "system-design",
+        title: "System Design Round",
+        requirement: "Design a URL shortener (Bitly-style) that handles 100M reads per day. Talk through your high-level architecture, database schema, hash generation strategy, caching layer, and how you'd scale writes. The interviewer will push back on every shortcut — defend your trade-offs clearly.",
+        tag: "Interview",
+        difficulty: "Hard",
+        color: "from-indigo-600 to-purple-700",
+    },
+    {
+        id: "sprint-demo",
+        title: "Sprint Demo",
+        requirement: "Present the feature your team shipped this sprint to stakeholders from Product, Design, and Engineering. Lead with the user problem, demo the happy path, then call out one technical decision the audience might question. Keep it under 5 minutes and end with what's next.",
+        tag: "Present project",
+        difficulty: "Medium",
+        color: "from-teal-500 to-emerald-600",
+    },
+    {
+        id: "vc-pitch",
+        title: "VC Pitch — Seed Round",
+        requirement: "You have 3 minutes to pitch your dev-tool startup to a Tier 1 VC. Cover: the painful workflow you're killing, why now, your traction, the team, and how much you're raising. Be ready for sharp questions on go-to-market and moat.",
+        tag: "Pitch",
+        difficulty: "Hard",
+        color: "from-amber-500 to-orange-600",
+    },
+    {
+        id: "rfc-defense",
+        title: "Architecture RFC Review",
+        requirement: "You proposed migrating the monolith to event-driven microservices. A skeptical staff engineer thinks it's over-engineered. Walk through your reasoning, acknowledge the costs honestly, and address concerns about distributed tracing, data consistency, and deploy complexity.",
+        tag: "Tech",
+        difficulty: "Hard",
+        color: "from-blue-600 to-indigo-700",
+    },
+    {
+        id: "offer-negotiation",
+        title: "Offer Negotiation",
+        requirement: "You received an offer from a top tech company: base salary, equity, signing bonus, and benefits. The number is decent but lower than your competing offer. Negotiate professionally — anchor with data, ask for what you actually want, and avoid burning the relationship.",
+        tag: "Career",
+        difficulty: "Medium",
+        color: "from-rose-500 to-pink-600",
+    },
+];
+
+/** Vietnamese scenarios (24 items) — shown when language === 'vi'. */
 export const hotScenarios: ScenarioItem[] = [
     {
         id: "negotiation",
@@ -201,3 +254,8 @@ export const hotScenarios: ScenarioItem[] = [
         color: "from-yellow-400 to-amber-600",
     },
 ];
+
+/** Pick the right featured dataset based on UI language. */
+export function getHotScenarios(lang: 'vi' | 'en'): ScenarioItem[] {
+    return lang === 'en' ? hotScenariosEn : hotScenarios;
+}

@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import { useScenario } from "@/context/ScenarioContext";
 import { apiClient } from "@/lib/apiClient";
 import { motion } from "framer-motion";
-import { hotScenarios } from "@/data/scenarios";
+import { getHotScenarios, type ScenarioItem } from "@/data/scenarios";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function FeaturedScenarios() {
-    const { t } = useLanguage();
+    const { t, lang } = useLanguage();
     const router = useRouter();
     const [loadingId, setLoadingId] = useState<string | null>(null);
+    const scenarios = getHotScenarios(lang);
 
-    const selectScenario = async (scenario: typeof hotScenarios[0]) => {
+    const selectScenario = async (scenario: ScenarioItem) => {
         setLoadingId(scenario.id);
         // Redirect to setup page with the topic as a query param
         // This satisfies "chỉ tạo bối cảnh trong khung chứ không vào thẳng phòng"
@@ -38,7 +39,7 @@ export default function FeaturedScenarios() {
             </div>
 
             <div className="flex gap-5 overflow-x-auto pb-8 -mx-6 px-6 custom-scrollbar-horizontal snap-x snap-mandatory select-none">
-                {hotScenarios.map((s, index) => (
+                {scenarios.map((s, index) => (
                     <motion.div
                         key={s.id}
                         initial={{ opacity: 0, y: 20 }}

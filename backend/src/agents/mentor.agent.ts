@@ -247,26 +247,43 @@ ${previousScore != null ? `Điểm phiên trước: ${previousScore}%` : 'Đây 
         const maxAttempts = 2;
         let lastError: unknown;
 
+        const isEn = lang === 'en';
+        const L = isEn ? {
+            challenge: 'Challenge', title: 'Title', desc: 'Description',
+            weakness: 'Source weakness', diff: 'Difficulty', userFb: 'User feedback',
+            done: 'Done', yes: 'Yes', no: 'No', flow: 'What happened', emoBefore: 'Emotion before',
+            emoAfter: 'Emotion after', userSaid: 'What you said', reaction: 'Their reaction',
+            worked: 'What went well', stuck: 'What got stuck', none: 'N/A',
+            unknown: 'Unknown', prevWeak: 'Recent gym weakness',
+        } : {
+            challenge: 'Challenge', title: 'Tiêu đề', desc: 'Mô tả',
+            weakness: 'Nguồn điểm yếu', diff: 'Độ khó', userFb: 'Feedback từ user',
+            done: 'Đã thực hiện', yes: 'Có', no: 'Chưa', flow: 'Diễn biến', emoBefore: 'Cảm xúc trước',
+            emoAfter: 'Cảm xúc sau', userSaid: 'Bạn đã nói gì', reaction: 'Người kia phản ứng sao',
+            worked: 'Chỗ suôn sẻ', stuck: 'Chỗ bị kẹt', none: 'Không có',
+            unknown: 'Không rõ', prevWeak: 'Điểm yếu từ gym gần nhất',
+        };
+
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const context = `
-Challenge:
-- Tiêu đề: ${challenge.title}
-- Mô tả: ${challenge.description}
-- Nguồn điểm yếu: ${challenge.sourceWeakness || 'Không rõ'}
-- Độ khó: ${challenge.difficulty}/5
+${L.challenge}:
+- ${L.title}: ${challenge.title}
+- ${L.desc}: ${challenge.description}
+- ${L.weakness}: ${challenge.sourceWeakness || L.unknown}
+- ${L.diff}: ${challenge.difficulty}/5
 
-Feedback từ user:
-- Đã thực hiện: ${feedbackData.completed ? 'Có' : 'Chưa'}
-- Diễn biến: ${feedbackData.situation || 'Không có'}
-- Cảm xúc trước: ${feedbackData.emotionBefore || 'Không có'}
-- Cảm xúc sau: ${feedbackData.emotionAfter || 'Không có'}
-- Bạn đã nói gì: ${feedbackData.whatUserSaid || 'Không có'}
-- Người kia phản ứng sao: ${feedbackData.othersReaction || 'Không có'}
-- Chỗ suôn sẻ: ${feedbackData.whatWorked || 'Không có'}
-- Chỗ bị kẹt: ${feedbackData.whatStuck || 'Không có'}
+${L.userFb}:
+- ${L.done}: ${feedbackData.completed ? L.yes : L.no}
+- ${L.flow}: ${feedbackData.situation || L.none}
+- ${L.emoBefore}: ${feedbackData.emotionBefore || L.none}
+- ${L.emoAfter}: ${feedbackData.emotionAfter || L.none}
+- ${L.userSaid}: ${feedbackData.whatUserSaid || L.none}
+- ${L.reaction}: ${feedbackData.othersReaction || L.none}
+- ${L.worked}: ${feedbackData.whatWorked || L.none}
+- ${L.stuck}: ${feedbackData.whatStuck || L.none}
 ${voiceTranscript ? `\nVoice transcript: ${voiceTranscript}` : ''}
-${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
+${prevWeakness ? `\n${L.prevWeak}: ${prevWeakness}` : ''}
 `;
                 const systemPrompt = this.promptService.getFeedbackAnalysisPrompt(lang);
 
@@ -296,7 +313,7 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
                     newStoryCandidate: parsed.newStoryCandidate === true,
                     newStorySuggestion: parsed.newStorySuggestion || undefined,
                     nextDifficulty: Math.min(5, Math.max(1, parsed.nextDifficulty || challenge.difficulty)),
-                    nextChallengeHint: parsed.nextChallengeHint || 'Tiếp tục luyện tập nhé!',
+                    nextChallengeHint: parsed.nextChallengeHint || (isEn ? 'Keep practicing!' : 'Tiếp tục luyện tập nhé!'),
                     xpEarned: parsed.xpEarned || xpEarned,
                     niComment: parsed.niComment || undefined,
                     dialogueAnalysis: parsed.dialogueAnalysis || null,
@@ -312,18 +329,20 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
 
         // Fallback
         const xp = feedbackData.completed ? 150 : 75;
+        const completedMsg = isEn
+            ? 'You dared to try and finished! That is the most important step forward.'
+            : 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.';
+        const triedMsg = isEn
+            ? 'Just daring to try is already a win. You will nail it next time!'
+            : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!';
         return {
-            comparisonWithGym: feedbackData.completed
-                ? 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.'
-                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
+            comparisonWithGym: feedbackData.completed ? completedMsg : triedMsg,
             progressNote: '',
             newStoryCandidate: false,
             nextDifficulty: challenge.difficulty,
-            nextChallengeHint: 'Tiếp tục luyện tập để cải thiện nhé!',
+            nextChallengeHint: isEn ? 'Keep practicing to improve!' : 'Tiếp tục luyện tập để cải thiện nhé!',
             xpEarned: xp,
-            niComment: feedbackData.completed
-                ? 'Bạn đã dám thử và hoàn thành! Đó là bước tiến quan trọng nhất.'
-                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ làm được thôi!',
+            niComment: feedbackData.completed ? completedMsg : triedMsg,
             dialogueAnalysis: null,
             betterPhrasing: null,
         };
@@ -354,21 +373,40 @@ ${prevWeakness ? `\nĐiểm yếu từ gym gần nhất: ${prevWeakness}` : ''}
         const maxAttempts = 2;
         let lastError: unknown;
 
+        const isEnFull = lang === 'en';
+        const F = isEnFull ? {
+            tx: 'Transcript (retell or recording)', txNull: 'Transcript: null (user only filled text form)',
+            form: 'Form data', flow: 'What happened', emoBefore: 'Emotion before', emoAfter: 'Emotion after',
+            said: 'What you said', reaction: 'Their reaction', worked: 'Went well', stuck: 'Got stuck',
+            none: 'N/A', chTitle: 'Title', chDesc: 'Description', chWeak: 'Weakness',
+            chNull: 'Challenge context: null (free share)',
+            prev: 'Last 5 real shares', avgCoh: 'avg coherenceScore', avgJar: 'avg jargonCount', avgFill: 'avg fillerPerMinute',
+            prevNull: 'previousMetrics: null (first time)',
+        } : {
+            tx: 'Transcript (bài kể lại hoặc ghi âm)', txNull: 'Transcript: null (user chỉ điền text form)',
+            form: 'Form data', flow: 'Diễn biến', emoBefore: 'Cảm xúc trước', emoAfter: 'Cảm xúc sau',
+            said: 'Bạn đã nói gì', reaction: 'Người kia phản ứng', worked: 'Suôn sẻ', stuck: 'Kẹt',
+            none: 'Không có', chTitle: 'Tiêu đề', chDesc: 'Mô tả', chWeak: 'Điểm yếu',
+            chNull: 'Challenge context: null (free share)',
+            prev: '5 lượt thực tế gần nhất', avgCoh: 'coherenceScore trung bình', avgJar: 'jargonCount trung bình', avgFill: 'fillerPerMinute trung bình',
+            prevNull: 'previousMetrics: null (lần đầu tiên)',
+        };
+
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const context = `
-${transcript ? `Transcript (bài kể lại hoặc ghi âm):\n${transcript}\n` : 'Transcript: null (user chỉ điền text form)\n'}
-Form data:
-- Diễn biến: ${feedbackData.situation || 'Không có'}
-- Cảm xúc trước: ${feedbackData.emotionBefore || 'Không có'}
-- Cảm xúc sau: ${feedbackData.emotionAfter || 'Không có'}
-- Bạn đã nói gì: ${feedbackData.whatUserSaid || 'Không có'}
-- Người kia phản ứng: ${feedbackData.othersReaction || 'Không có'}
-- Suôn sẻ: ${feedbackData.whatWorked || 'Không có'}
-- Kẹt: ${feedbackData.whatStuck || 'Không có'}
+${transcript ? `${F.tx}:\n${transcript}\n` : `${F.txNull}\n`}
+${F.form}:
+- ${F.flow}: ${feedbackData.situation || F.none}
+- ${F.emoBefore}: ${feedbackData.emotionBefore || F.none}
+- ${F.emoAfter}: ${feedbackData.emotionAfter || F.none}
+- ${F.said}: ${feedbackData.whatUserSaid || F.none}
+- ${F.reaction}: ${feedbackData.othersReaction || F.none}
+- ${F.worked}: ${feedbackData.whatWorked || F.none}
+- ${F.stuck}: ${feedbackData.whatStuck || F.none}
 
-${challenge ? `Challenge context:\n- Tiêu đề: ${challenge.title}\n- Mô tả: ${challenge.description}\n- Điểm yếu: ${challenge.sourceWeakness || 'N/A'}\n` : 'Challenge context: null (free share)\n'}
-${previousMetrics ? `5 lượt thực tế gần nhất:\n- coherenceScore trung bình: ${previousMetrics.coherenceScore}\n- jargonCount trung bình: ${previousMetrics.jargonCount}\n- fillerPerMinute trung bình: ${previousMetrics.fillerPerMinute}` : 'previousMetrics: null (lần đầu tiên)'}
+${challenge ? `Challenge context:\n- ${F.chTitle}: ${challenge.title}\n- ${F.chDesc}: ${challenge.description}\n- ${F.chWeak}: ${challenge.sourceWeakness || 'N/A'}\n` : `${F.chNull}\n`}
+${previousMetrics ? `${F.prev}:\n- ${F.avgCoh}: ${previousMetrics.coherenceScore}\n- ${F.avgJar}: ${previousMetrics.jargonCount}\n- ${F.avgFill}: ${previousMetrics.fillerPerMinute}` : F.prevNull}
 
 completed: ${feedbackData.completed}
 `;
@@ -396,17 +434,19 @@ completed: ${feedbackData.completed}
                         emotionBefore: feedbackData.emotionBefore,
                         emotionAfter: feedbackData.emotionAfter,
                         trend: parsed.psychology?.trend || 'unknown',
-                        trendNote: parsed.psychology?.trendNote || 'Không có đủ dữ liệu',
+                        trendNote: parsed.psychology?.trendNote || (isEnFull ? 'Not enough data' : 'Không có đủ dữ liệu'),
                     },
                     strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
                     improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
-                    niComment: parsed.niComment || 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.',
+                    niComment: parsed.niComment || (isEnFull
+                        ? "Thanks for sharing! Every experience is a valuable lesson."
+                        : 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.'),
                     dialogueAnalysis: parsed.dialogueAnalysis || null,
                     betterPhrasing: parsed.betterPhrasing || null,
                     newStoryCandidate: parsed.newStoryCandidate === true,
                     newStorySuggestion: parsed.newStorySuggestion || undefined,
                     nextDifficulty: Math.min(5, Math.max(1, parsed.nextDifficulty || (challenge?.difficulty ?? 3))),
-                    nextChallengeHint: parsed.nextChallengeHint || 'Tiếp tục luyện tập nhé!',
+                    nextChallengeHint: parsed.nextChallengeHint || (isEnFull ? 'Keep practicing!' : 'Tiếp tục luyện tập nhé!'),
                     xpEarned: parsed.xpEarned || xp,
                     sourceType: 'realworld',
                     comparisonWithPrevious: parsed.comparisonWithPrevious || undefined,
@@ -428,18 +468,18 @@ completed: ${feedbackData.completed}
                 emotionBefore: feedbackData.emotionBefore,
                 emotionAfter: feedbackData.emotionAfter,
                 trend: 'unknown',
-                trendNote: 'Không có đủ dữ liệu để phân tích',
+                trendNote: isEnFull ? 'Not enough data to analyze' : 'Không có đủ dữ liệu để phân tích',
             },
-            strengths: ['Bạn đã dám chia sẻ trải nghiệm thực tế'],
-            improvements: ['Tiếp tục luyện tập để cải thiện'],
+            strengths: [isEnFull ? 'You dared to share a real experience' : 'Bạn đã dám chia sẻ trải nghiệm thực tế'],
+            improvements: [isEnFull ? 'Keep practicing to improve' : 'Tiếp tục luyện tập để cải thiện'],
             niComment: feedbackData.completed
-                ? 'Bạn đã dám thử và hoàn thành — đó là điều quan trọng nhất!'
-                : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ tự tin hơn!',
+                ? (isEnFull ? 'You dared to try and finished — that is what matters most!' : 'Bạn đã dám thử và hoàn thành — đó là điều quan trọng nhất!')
+                : (isEnFull ? 'Just daring to try is a win. Next time you will be more confident!' : 'Dám thử là đã giỏi rồi. Lần sau bạn sẽ tự tin hơn!'),
             dialogueAnalysis: null,
             betterPhrasing: null,
             newStoryCandidate: false,
             nextDifficulty: challenge?.difficulty ?? 3,
-            nextChallengeHint: 'Tiếp tục luyện tập để cải thiện nhé!',
+            nextChallengeHint: isEnFull ? 'Keep practicing to improve!' : 'Tiếp tục luyện tập để cải thiện nhé!',
             xpEarned: feedbackData.completed ? 150 : (challenge ? 75 : 50),
             sourceType: 'realworld',
         };

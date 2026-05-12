@@ -691,16 +691,19 @@ export class PracticeController {
             const feedbackData = { completed: isCompleted, situation, emotionBefore, emotionAfter, whatUserSaid, othersReaction, whatWorked, whatStuck };
 
             // Run Ni analysis (non-blocking fallback)
+            const isEn = req.language === 'en';
             let analysis: any;
             try {
                 analysis = await mentorAgent.analyzeFeedback(
-                    challenge || { title: 'Thử thách', description: '', difficulty: 3 },
+                    challenge || { title: isEn ? 'Challenge' : 'Thử thách', description: '', difficulty: 3 },
                     feedbackData,
-                    voiceTranscript
+                    voiceTranscript,
+                    null,
+                    req.language
                 );
             } catch (err) {
                 console.warn('[PracticeController] analyzeFeedback failed, using defaults:', err);
-                analysis = { xpEarned: isCompleted ? 150 : 75, nextDifficulty: 3, nextChallengeHint: 'Tiếp tục luyện tập!', newStoryCandidate: false };
+                analysis = { xpEarned: isCompleted ? 150 : 75, nextDifficulty: 3, nextChallengeHint: isEn ? 'Keep practicing!' : 'Tiếp tục luyện tập!', newStoryCandidate: false };
             }
 
             await databaseService.updateChallengeStatus(challengeId, req.user.id, status);
@@ -740,16 +743,19 @@ export class PracticeController {
             const feedbackData = { completed: isCompleted, situation, emotionBefore, emotionAfter, whatUserSaid, othersReaction, whatWorked, whatStuck };
 
             // Run Ni analysis
+            const isEn = req.language === 'en';
             let analysis: any;
             try {
                 analysis = await mentorAgent.analyzeFeedback(
-                    challenge || { title: 'Thử thách', description: '', difficulty: 3 },
+                    challenge || { title: isEn ? 'Challenge' : 'Thử thách', description: '', difficulty: 3 },
                     feedbackData,
-                    voiceTranscript
+                    voiceTranscript,
+                    null,
+                    req.language
                 );
             } catch (err) {
                 console.warn('[PracticeController] analyzeFeedback failed, using defaults:', err);
-                analysis = { xpEarned: isCompleted ? 150 : 75, nextDifficulty: 3, nextChallengeHint: 'Tiếp tục luyện tập!', newStoryCandidate: false };
+                analysis = { xpEarned: isCompleted ? 150 : 75, nextDifficulty: 3, nextChallengeHint: isEn ? 'Keep practicing!' : 'Tiếp tục luyện tập!', newStoryCandidate: false };
             }
 
             await databaseService.updateChallengeStatus(challengeId, req.user.id, status);
@@ -850,15 +856,18 @@ export class PracticeController {
             res.status(200).json({ data: { analysis, transcript: voiceTranscript } });
         } catch (err) {
             console.error("[PracticeController] submitFeedbackFree error:", err);
+            const isEnFb = req.language === 'en';
             res.status(200).json({
                 data: {
                     analysis: {
                         hasAudio: false,
                         sourceType: 'realworld',
                         xpEarned: 50,
-                        niComment: 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.',
+                        niComment: isEnFb
+                            ? "Thanks for sharing! Every experience is a valuable lesson."
+                            : 'Cảm ơn bạn đã chia sẻ! Mỗi trải nghiệm là một bài học quý.',
                         nextDifficulty: 3,
-                        nextChallengeHint: 'Tiếp tục luyện tập nhé!',
+                        nextChallengeHint: isEnFb ? 'Keep practicing!' : 'Tiếp tục luyện tập nhé!',
                         newStoryCandidate: false,
                         psychology: { trend: 'unknown', trendNote: '' },
                         strengths: [],
