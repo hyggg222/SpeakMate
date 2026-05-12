@@ -29,7 +29,7 @@ export const hotScenariosEn: ScenarioItem[] = [
         id: "sprint-demo",
         title: "Sprint Demo",
         requirement: "Present the feature your team shipped this sprint to stakeholders from Product, Design, and Engineering. Lead with the user problem, demo the happy path, then call out one technical decision the audience might question. Keep it under 5 minutes and end with what's next.",
-        tag: "Present project",
+        tag: "Demo",
         difficulty: "Medium",
         color: "from-teal-500 to-emerald-600",
     },
