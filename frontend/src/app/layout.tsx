@@ -8,7 +8,7 @@ import GuestAuthInit from '@/components/GuestAuthInit'
 
 export const metadata: Metadata = {
   title: 'SpeakMate',
-  description: 'Ứng dụng luyện tập kỹ năng nói tiếng Việt',
+  description: 'AI-Powered English Conversation Platform',
   generator: 'v0.app',
   icons: {
     icon: '/icon.png',
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="vi">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

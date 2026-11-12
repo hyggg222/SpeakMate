@@ -13,16 +13,16 @@ interface LanguageContextValue {
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
-  lang: 'vi',
+  lang: 'en',
   setLang: () => {},
   t: (key) => key,
 })
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Always start at 'vi' on both server and client to keep SSR HTML in sync
+  // Always start at 'en' on both server and client to keep SSR HTML in sync
   // with the first client render. The user's saved preference is applied
   // in a useEffect AFTER hydration so React can safely re-render the tree.
-  const [lang, setLangState] = useState<Lang>('vi')
+  const [lang, setLangState] = useState<Lang>('en')
 
   useEffect(() => {
     try {
@@ -43,7 +43,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   const t = (key: string): string =>
-    translations[lang][key] ?? translations['vi'][key] ?? key
+    translations[lang][key] ?? translations['en'][key] ?? key
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

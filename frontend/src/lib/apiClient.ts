@@ -82,9 +82,9 @@ function getTokenFromCookie(): string | null {
 
 function getCurrentLanguage(): 'vi' | 'en' {
     const lang = typeof window !== 'undefined'
-        ? localStorage.getItem('speakmate_language') || 'vi'
-        : 'vi'
-    return lang === 'en' ? 'en' : 'vi'
+        ? localStorage.getItem('speakmate_language') || 'en'
+        : 'en'
+    return lang === 'vi' ? 'vi' : 'en'
 }
 
 function getLangHeader(): Record<string, string> {
@@ -100,7 +100,7 @@ function tFallback(key: string): string {
         const lang = getCurrentLanguage()
         // Lazy require to avoid circular import at module load time
         const { translations } = require('../i18n/translations') as typeof import('../i18n/translations')
-        return translations[lang]?.[key] ?? translations.vi?.[key] ?? key
+        return translations[lang]?.[key] ?? translations.en?.[key] ?? key
     } catch {
         return key
     }
