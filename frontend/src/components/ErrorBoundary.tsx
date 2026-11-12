@@ -15,13 +15,13 @@ interface State {
 }
 
 function getLang(): 'vi' | 'en' {
-  if (typeof window === 'undefined') return 'vi';
-  return (localStorage.getItem('speakmate_language') as 'vi' | 'en') || 'vi';
+  if (typeof window === 'undefined') return 'en';
+  return (localStorage.getItem('speakmate_language') as 'vi' | 'en') || 'en';
 }
 
 function t(key: string): string {
   const lang = getLang();
-  return translations[lang][key] ?? translations.vi[key] ?? key;
+  return translations[lang][key] ?? translations.en[key] ?? key;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
