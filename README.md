@@ -9,6 +9,16 @@ Live Demo: [https://speak-mate-frontend-4q8c.vercel.app](https://speak-mate-fron
 
 ---
 
+## Key Features
+
+- **Scenario-Based Roleplay**: Practice spoken English with dynamic AI personas across tailored scenarios (job interviews, tech discussions, debates).
+- **Multi-Dimensional Assessment**: Receive automated evaluation across fluency, content depth, and delivery with evidence-based feedback.
+- **Story Bank**: Curate and structure personal experiences into STAR-format narratives to retrieve and practice during speaking sessions.
+- **Mentor Ni Chat**: Interact with an on-demand AI coach for reflection, strategy guidance, and personalized real-world communication challenges.
+- **Sub-Second Voice Turnaround**: Converse naturally with ~1s voice latency powered by WebRTC streaming and serverless GPU pipelines.
+
+---
+
 ## Awards and Recognitions
 
 - **Top 3** — **AI Young Guru 2026** (Organized by FPT University)
