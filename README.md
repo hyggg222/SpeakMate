@@ -8,6 +8,17 @@ SpeakMate is a full-stack AI-driven web application designed to help learners pr
 Live Demo: [https://speak-mate-frontend-4q8c.vercel.app](https://speak-mate-frontend-4q8c.vercel.app)
 
 ---
+## Screenshots
+First login
+<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/5680f0a6-3dc1-41f1-8863-1b1bfd0623e2" />
+
+Main Page
+<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/2ef1ef22-162c-4d01-bcab-ad239d0d671d" />
+
+Scenario Build
+<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/9562b033-35f2-4ba1-a89a-9d1a8ae5897c" />
+
+---
 
 ## Key Features
 
