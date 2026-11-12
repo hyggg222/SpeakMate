@@ -1,35 +1,24 @@
 # SpeakMate: AI-Powered English Conversation Platform
 
-[![Live Demo](https://img.shields.io/badge/Demo-speak--mate-brightgreen?style=flat-square&logo=vercel)](https://speak-mate-frontend-4q8c.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Demo-speak--mate-brightgreen?style=flat-square)](https://speak-mate-frontend-4q8c.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
 SpeakMate is a full-stack AI-driven web application designed to help learners practice spoken English through low-pressure, realistic scenarios with multi-agent dynamic AI feedback.
 
-🌐 **Live Demo:** [https://speak-mate-frontend-4q8c.vercel.app](https://speak-mate-frontend-4q8c.vercel.app)
+Live Demo: [https://speak-mate-frontend-4q8c.vercel.app](https://speak-mate-frontend-4q8c.vercel.app)
 
 ---
 
-## 🏆 Awards & Recognitions
+## Awards and Recognitions
 
-- 🥉 **Top 3** — **AI Young Guru 2026**
-- 🥈 **Runner-up** — **Vietnam AI Contest**
-
----
-
-## 📸 Product Preview
-
-| Practice Studio (Real-Time Voice) | Assessment & Detailed Evaluation |
-|:---:|:---:|
-| ![Practice Studio](docs/screenshots/practice-room.png) | ![Evaluation Report](docs/screenshots/evaluation.png) |
-
-<p align="center">
-  <em>Scenario Hub & Dashboard Overview:</em><br />
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="85%" />
-</p>
+- **Top 3** — **AI Young Guru 2026** (Organized by FPT University)
+  - Placed in the top 3 nationwide out of more than 15,000 participating teams (over 26,000 contestants representing 1,800 educational institutions across 34 provinces).
+- **Runner-up** — **Vietnam AI Contest** (Organized by VietNamNet and VLAB Innovation)
+  - Awarded Runner-up in the nationwide competition featuring thousands of student candidates and hundreds of competing teams from across Vietnam.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 SpeakMate is structured as a scalable monorepo comprising:
 
@@ -59,43 +48,41 @@ SpeakMate is structured as a scalable monorepo comprising:
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 SpeakMate/
-├── ai/                       # Modal Cloud Python AI worker code & pipelines
+├── ai/                       # Modal Cloud Python AI worker code and pipelines
 ├── backend/                  # Node.js/Express API control plane server
 │   ├── src/
 │   │   ├── agents/           # Domain agents (Brain, Voice, Analyst, Mentor, StoryBank)
-│   │   ├── controllers/      # Route controllers & orchestration
-│   │   ├── middleware/       # Auth, rate limiting & error handling
+│   │   ├── controllers/      # Route controllers and orchestration
+│   │   ├── middleware/       # Auth, rate limiting, and error handling
 │   │   ├── routes/           # Express API endpoints
-│   │   └── services/         # Storage, audio, & Gemini SDK integration
+│   │   └── services/         # Storage, audio, and Gemini SDK integration
 ├── frontend/                 # Next.js web application
 │   ├── src/
 │   │   ├── app/              # App Router pages (/practice, /stories, /evaluation)
-│   │   ├── components/       # UI components & practice room modules
+│   │   ├── components/       # UI components and practice room modules
 │   │   ├── context/          # React contexts (Language, Auth)
 │   │   └── hooks/            # Custom hooks (Audio recording, LiveKit, Gemini Direct)
 ├── packages/
-│   └── contracts/            # Shared TypeScript contracts & schemas
-├── docs/                     # Architecture, presentation & product documentation
-│   ├── presentation/         # Pitch deck & checkpoint specifications
-│   └── screenshots/          # Application preview captures
-├── scripts/                  # Development & utility scripts
+│   └── contracts/            # Shared TypeScript contracts and schemas
+├── docs/                     # Architecture, presentation, and product specifications
+├── scripts/                  # Development and utility scripts
 └── package.json              # Monorepo root workspace configuration
 ```
 
 ---
 
-## 🚀 Quick Start & Development
+## Quick Start and Development
 
 ### Prerequisites
 - **Node.js**: v18 or later
 - **npm**: v9 or later
 - **FFmpeg**: Installed and available in PATH (required for server-side audio processing)
 
-### Installation & Setup
+### Installation and Setup
 
 1. **Install dependencies across monorepo**:
    ```bash
@@ -129,7 +116,7 @@ SpeakMate/
 
 ---
 
-## 🛠️ Build & Verification
+## Build and Verification
 
 To verify full build integrity:
 
@@ -146,26 +133,6 @@ npm run build --workspace=frontend
 
 ---
 
-## 👥 Team & Roles
-
-Developed by team **NextGents** (5 members):
-
-- **Nguyen Le Gia Huy** ([@hyggg222](https://github.com/hyggg222)) — **Team Lead & Full-Stack AI Engineer**
-  - Architected end-to-end platform design and monorepo structure.
-  - Implemented Next.js 16 frontend with LiveKit WebRTC streaming and Gemini Direct audio pipelines.
-  - Built Express control plane, Zod validation gates, session state isolation, and multi-agent orchestration (Brain, Voice, Analyst, Mentor Ni).
-  - Configured and deployed serverless GPU pipeline on Modal Cloud (PhoWhisper STT, NeuTTS, Gemma/Gemini).
-- **Nguyen Pham Hoang Lam** — **Co-founder & Product Strategy**
-  - Led product concept, user journey definition, market analysis, and pitch presentations.
-- **AI & NLP Research**
-  - Formulated conversational prompts, STAR framework modeling, and CEFR-aligned evaluation criteria.
-- **Frontend Development**
-  - Collaborated on UI component integration, responsive layouts, and interactive visualizers.
-- **UI/UX & Product Design**
-  - Crafted design system, screen mockups, and end-to-end user experience flows.
-
----
-
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
